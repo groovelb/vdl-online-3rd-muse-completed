@@ -13,3 +13,4 @@
 | 007 | MUSE IA 완성 — ProjectListPage + SettingsPage 추가 | 2026-04-22 | [007-MUSE-ProjectListPage-SettingsPage-추가.md](./007-MUSE-ProjectListPage-SettingsPage-추가.md) |
 | 008 | MUSE 데이터 모델 정의 + 더미 데이터 중앙화 (src/data/muse/) + 스토리 연동 | 2026-04-22 | [008-MUSE-더미-데이터-중앙화.md](./008-MUSE-더미-데이터-중앙화.md) |
 | 009 | MUSE 더미 이미지 28장 실제 연결 + 데이터 카탈로그 4종 스토리북 등록 | 2026-04-22 | [009-MUSE-실제-이미지-연결-및-데이터-카탈로그.md](./009-MUSE-실제-이미지-연결-및-데이터-카탈로그.md) |
+| 010 | MUSE — reference1.jpg 삭제 및 ProjectListPage MoodboardCard 썸네일 렌더 버그 수정 | 2026-04-22 | [010-MUSE-reference1-삭제-및-MoodboardCard-썸네일-수정.md](./010-MUSE-reference1-삭제-및-MoodboardCard-썸네일-수정.md) |

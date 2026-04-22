@@ -1,4 +1,5 @@
-
+import { mergeConfig } from 'vite';
+import { museApiPlugin } from './museApiPlugin.js';
 
 /** @type { import('@storybook/react-vite').StorybookConfig } */
 const config = {
@@ -13,6 +14,11 @@ const config = {
     "@storybook/addon-docs",
     "@storybook/addon-onboarding"
   ],
-  "framework": "@storybook/react-vite"
+  "framework": "@storybook/react-vite",
+  async viteFinal(config) {
+    return mergeConfig(config, {
+      plugins: [museApiPlugin()],
+    });
+  },
 };
 export default config;

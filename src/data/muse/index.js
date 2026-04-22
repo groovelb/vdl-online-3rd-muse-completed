@@ -9,3 +9,12 @@ export { references, referencesById, getReferenceThumbnails } from './references
 export { projects, projectsById, projectsWithThumbnails } from './projects.js';
 export { analysisResultsByProjectId, getAnalysisResult } from './analysisResults.js';
 export { defaultUserSettings } from './userSettings.js';
+export {
+  TAG_VOCABULARY,
+  TASK_AUTO_TAG,
+  TASK_RECOMMEND,
+  TASK_ANALYZE_TOKENS,
+  AI_TASKS,
+  AI_TASKS_BY_ID,
+  AI_WORKFLOW_DIAGRAM,
+} from './aiTasks.js';

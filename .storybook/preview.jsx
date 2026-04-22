@@ -57,7 +57,7 @@ const preview = {
           'Template',
           'Page',
           'MUSE',
-          ['Data'],
+          ['Data', 'AI Tasks', 'AI Playground'],
           'Test Data',
         ],
         method: 'alphabetical',

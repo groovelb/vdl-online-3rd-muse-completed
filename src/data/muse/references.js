@@ -12,7 +12,7 @@
  */
 
 // 정적 import — reference18~21만 .jpeg, 나머지는 .jpg
-import ref1 from './dummyImage/reference1.jpg';
+// reference1.jpg 제거됨 (sess 009 이후), ref-001은 이제 reference2.jpg로 매핑
 import ref2 from './dummyImage/reference2.jpg';
 import ref3 from './dummyImage/reference3.jpg';
 import ref4 from './dummyImage/reference4.jpg';
@@ -42,7 +42,7 @@ import ref27 from './dummyImage/reference27.jpg';
 import ref28 from './dummyImage/reference28.jpg';
 
 const IMAGES = [
-  ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, ref10,
+  ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, ref10,
   ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref20,
   ref21, ref22, ref23, ref24, ref25, ref26, ref27, ref28,
 ];

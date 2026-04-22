@@ -96,9 +96,10 @@ export function ProjectListPage({
                     id={ project.id }
                     name={ project.name }
                     description={ project.intent }
-                    items={ (project.thumbnails || []).map((src, i) => ({
+                    items={ (project.thumbnails || []).map((url, i) => ({
                       id: `${project.id}-thumb-${i}`,
-                      src,
+                      // MoodboardCard는 image.thumbnail 또는 image.src.medium을 읽음
+                      thumbnail: url,
                     })) }
                     createdAt={ project.createdAt }
                     onClick={ () => onSelectProject?.(project.id) }

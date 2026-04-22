@@ -31,7 +31,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 
 - CardContainer: 카드 기본 컨테이너. variant, padding, elevation (`components/card/CardContainer.jsx`)
 - CustomCard: 미디어+콘텐츠 카드. vertical/horizontal/overlay 레이아웃 (`components/card/CustomCard.jsx`)
-- ImageCard: 이미지 카드 (`components/card/ImageCard.jsx`)
+- ImageCard: 이미지 카드. 태그 배지, 선택 체크박스(`isSelectable`/`isSelected`/`onToggleSelect`), 기본 좋아요 액션 (`components/card/ImageCard.jsx`)
 - MoodboardCard: 무드보드 컬렉션 카드. 2x2 썸네일 그리드 (`components/card/MoodboardCard.jsx`)
 - Card: MUI Card 컴포넌트 [MUI]
 
@@ -44,6 +44,12 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 
 ## 5. Data Display — 구조화된 데이터 시각화
 
+- TokenListItem: 토큰 편집 공통 행. preview 48x48 슬롯 + label/value + emphasis(Low/Mid/High) + on/off Switch (`components/data-display/TokenListItem.jsx`)
+- ColorSwatchList: 컬러 레이어 토큰 목록. TokenListItem 반복, 선택적 group 헤더 (`components/data-display/ColorSwatchList.jsx`)
+- TypographyPreview: 타이포 레이어 토큰 목록. preview에 실제 폰트로 샘플 문자 렌더 (`components/data-display/TypographyPreview.jsx`)
+- LayoutTokenPreview: 레이아웃 레이어(grid/spacing/container) mini-diagram 프리뷰 (`components/data-display/LayoutTokenPreview.jsx`)
+- GradientPreview: 그라디언트 레이어 토큰 목록. preview에 실제 gradient 스와치 (`components/data-display/GradientPreview.jsx`)
+- KeyVisualBoard: 키비주얼 레이어. 토큰이 아닌 이미지 집합 — 카드 그리드 + 오버레이 컨트롤(emphasis 사이클/on-off/제거) (`components/data-display/KeyVisualBoard.jsx`)
 - Table: MUI Table 컴포넌트 [MUI]
 
 ## 6. In-page Navigation — 페이지 내 탐색
@@ -72,11 +78,15 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - PageContainer: 반응형 페이지 컨테이너. PC maxWidth 고정, 모바일 100% (`components/layout/PageContainer.jsx`)
 - AppShell: 반응형 앱 셸. GNB + 메인 콘텐츠 영역 (`components/layout/AppShell.jsx`)
 - StickyAsideCenterLayout: 대칭 3열 그리드. sticky aside + 페이지 정중앙 콘텐츠 + 빈 대칭 칼럼 (`components/layout/StickyAsideCenterLayout.jsx`)
+- InfiniteMasonry: MUI Masonry 기반 인피니트 스크롤 그리드. IntersectionObserver sentinel + 로딩/빈/끝 상태 내장 (`components/layout/InfiniteMasonry.jsx`)
+- useInfiniteScroll: IntersectionObserver 기반 무한 스크롤 훅. `{ onLoadMore, hasMore, isEnabled, rootMargin }` (`components/layout/useInfiniteScroll.js`)
 - Grid: MUI Grid 컴포넌트 [MUI]
 - Masonry: MUI Masonry 컴포넌트 [MUI]
 
 ## 9. Overlay & Feedback — 맥락적 정보 표시
 
+- AnalysisProgress: 레이어별 단계 상태(pending/running/done/error) + 전체 진행률 집계. 취소/재시도 액션 (`components/overlay-feedback/AnalysisProgress.jsx`)
+- ThemeExportDialog: MUI `createTheme` 코드 export 다이얼로그. 클립보드 복사 + 파일 다운로드, 필수 토큰 누락 경고. `utils/serializeTheme.js`와 페어 (`components/overlay-feedback/ThemeExportDialog.jsx`)
 - Dialog: MUI Dialog 컴포넌트 [MUI]
 
 ## 10. Navigation (Global) — 페이지 간 이동
@@ -118,3 +128,9 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - Indicator: 범용 인디케이터 (`common/ui/Indicator.jsx`)
 - Placeholder: 스토리 예제용 FPO 플레이스홀더 시스템. Box/Image/Media/Text/Line/Paragraph/Card 서브컴포넌트 (`common/ui/Placeholder.jsx`)
 - FilterBar: 필터 바 (`components/templates/FilterBar.jsx`)
+- ReferencePicker: 추천 + 아카이브 탭 레퍼런스 다중 선택 패널. InfiniteMasonry + ImageCard(selectable) 조합, 태그 칩 필터 (`components/templates/ReferencePicker.jsx`)
+- ProjectCreateWizard: 3-스텝 프로젝트 생성 위자드 (기본정보 → 레퍼런스 선택 → 분석). useReducer 기반, `onAnalyze` 경계면 노출 (`components/templates/ProjectCreateWizard.jsx`)
+- ArchivePage: MUSE 아카이브 페이지 템플릿. AppShell + FileDropzone + 검색/태그 필터 + InfiniteMasonry + ImageCard 조립 (`components/templates/ArchivePage.jsx`)
+- ProjectDetailPage: MUSE 프로젝트 상세 페이지 템플릿. AppShell + CategoryTab(레이어) + SplitScreen(편집/프리뷰) + 레이어별 프리뷰 5종 + ThemeExportDialog 조립 (`components/templates/ProjectDetailPage.jsx`)
+- ProjectListPage: MUSE 프로젝트 목록 페이지. MoodboardCard를 Grid에 배치, 유형 Chip 오버레이, 빈 상태 CTA (`components/templates/ProjectListPage.jsx`)
+- SettingsPage: MUSE 설정 페이지. AI 모델(Select) / 자동 태깅(Switch) / 스토리지(Radio) / 테마 모드(Radio) 4섹션 (`components/templates/SettingsPage.jsx`)

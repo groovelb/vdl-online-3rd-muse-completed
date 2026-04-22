@@ -2,19 +2,22 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
+import Checkbox from '@mui/material/Checkbox';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { CustomCard } from './CustomCard';
 
 /**
  * ImageCard 컴포넌트
  *
- * 메인 그리드의 기본 아이템. CustomCard를 확장하여 구현.
- * Hover 시 위치 변경 효과와 액션 버튼 표시.
+ * 그리드의 기본 아이템. CustomCard를 확장하여 구현.
+ * Hover 시 위치 변경 효과 + 액션 버튼 / 선택 체크박스 표시.
  *
  * 동작 방식:
- * 1. 사용자가 카드에 마우스를 올리면 카드가 위로 살짝 이동
- * 2. Hover 상태에서 우측 상단에 좋아요 버튼 표시
- * 3. 카드 하단에 제목과 태그 정보 항상 표시
+ * 1. 사용자가 카드에 마우스를 올리면 카드가 살짝 위로 이동
+ * 2. Hover 상태에서 우측 상단에 기본 액션(좋아요) 또는 customOverlay 표시
+ * 3. `isSelectable`일 경우 좌측 상단에 선택 체크박스 표시 (선택된 경우 항상 보임)
+ * 4. `isSelected`일 때 primary 컬러 링으로 선택 상태 강조
+ * 5. 카드 하단에 제목/태그 정보 상시 표시
  *
  * Props:
  * @param {string} src - 이미지 URL [Required]
@@ -23,21 +26,26 @@ import { CustomCard } from './CustomCard';
  * @param {function} onLike - 좋아요 버튼 클릭 핸들러 [Optional]
  * @param {boolean} hideActions - 기본 액션 버튼 숨김 여부 [Optional, 기본값: false]
  * @param {node} customOverlay - 커스텀 오버레이 요소 (hideActions와 함께 사용) [Optional]
+ * @param {boolean} isSelectable - 선택 체크박스 표시 여부 [Optional, 기본값: false]
+ * @param {boolean} isSelected - 현재 선택 상태 [Optional, 기본값: false]
+ * @param {function} onToggleSelect - 선택 토글 핸들러 (nextSelected) => void [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
  * <ImageCard
  *   src="/image.jpg"
  *   title="Beautiful landscape"
- *   tags={['nature', 'landscape']}
- *   onLike={() => handleLike()}
+ *   tags={ ['nature', 'landscape'] }
+ *   onLike={ () => handleLike() }
  * />
  *
- * // 커스텀 오버레이 사용
+ * // 선택 가능 모드 (ReferencePicker 등)
  * <ImageCard
  *   src="/image.jpg"
- *   hideActions
- *   customOverlay={<MyCustomButtons />}
+ *   tags={ ['Minimal', 'Blue'] }
+ *   isSelectable
+ *   isSelected={ picked.has(id) }
+ *   onToggleSelect={ (next) => toggle(id, next) }
  * />
  */
 export function ImageCard({
@@ -47,18 +55,22 @@ export function ImageCard({
   onLike,
   hideActions = false,
   customOverlay,
+  isSelectable = false,
+  isSelected = false,
+  onToggleSelect,
   sx,
   ...props
 }) {
-  /**
-   * 액션 버튼 오버레이
-   * - Hover 시에만 표시 (opacity 트랜지션)
-   * - 좋아요 버튼 제공
-   */
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    onToggleSelect?.(!isSelected);
+  };
+
+  /** 우측 상단 액션 버튼 (기본: 좋아요) */
   const ActionButtons = (
     <Box
       className="action-buttons"
-      sx={{
+      sx={ {
         position: 'absolute',
         top: 8,
         right: 8,
@@ -66,92 +78,132 @@ export function ImageCard({
         gap: 0.5,
         opacity: 0,
         transition: 'opacity 0.2s',
-      }}
+      } }
     >
       <IconButton
         size="small"
-        onClick={(e) => {
+        onClick={ (e) => {
           e.stopPropagation();
           onLike?.();
-        }}
-        sx={{
+        } }
+        sx={ {
           bgcolor: 'background.paper',
           boxShadow: 1,
-          '&:hover': { bgcolor: 'white' },
-        }}
+          '&:hover': { bgcolor: 'background.default' },
+        } }
       >
         <FavoriteBorderIcon fontSize="small" />
       </IconButton>
     </Box>
   );
 
-  // 제목이나 태그가 있는지 확인
+  /** 좌측 상단 선택 체크박스 (isSelectable일 때만) */
+  const SelectCheckbox = isSelectable ? (
+    <Box
+      className="select-checkbox"
+      onClick={ handleToggle }
+      sx={ {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        // 선택됐거나 hover 상태일 때 보이도록
+        opacity: isSelected ? 1 : 0,
+        transition: 'opacity 0.2s',
+      } }
+    >
+      <Checkbox
+        checked={ isSelected }
+        onChange={ (e) => {
+          e.stopPropagation();
+          onToggleSelect?.(e.target.checked);
+        } }
+        size="small"
+        sx={ {
+          p: 0.5,
+          bgcolor: 'background.paper',
+          borderRadius: '50%',
+          boxShadow: 1,
+          '&:hover': { bgcolor: 'background.default' },
+        } }
+      />
+    </Box>
+  ) : null;
+
+  /** 오버레이 슬롯 결정 — isSelectable이 우선순위, 그 외엔 기존 로직 유지 */
+  const overlaySlot = (
+    <>
+      { SelectCheckbox }
+      { hideActions ? customOverlay : ActionButtons }
+    </>
+  );
+
   const hasContent = title || tags.length > 0;
 
   return (
     <CustomCard
       layout="vertical"
-      mediaSrc={src}
-      mediaAlt={title || 'Image asset'}
+      mediaSrc={ src }
+      mediaAlt={ title || 'Image asset' }
       mediaRatio="auto"
-      contentPadding={hasContent ? 'sm' : 'none'}
-      overlaySlot={hideActions ? customOverlay : ActionButtons}
-      sx={{
+      contentPadding={ hasContent ? 'sm' : 'none' }
+      overlaySlot={ overlaySlot }
+      onClick={ isSelectable ? handleToggle : props.onClick }
+      sx={ {
         cursor: 'pointer',
-        transition: 'transform 0.2s',
+        transition: 'transform 0.2s, box-shadow 0.2s, outline-color 0.2s',
+        outline: '2px solid',
+        outlineOffset: 0,
+        outlineColor: isSelected ? 'info.main' : 'transparent',
         '&:hover': {
           transform: 'translateY(-4px)',
-          '& .action-buttons': {
-            opacity: 1,
-          },
+          '& .action-buttons': { opacity: 1 },
+          '& .select-checkbox': { opacity: 1 },
         },
-        // CustomCard 기본 border 제거 (기존 ImageCard 스타일 유지)
+        // CustomCard 기본 border 제거
         border: 'none',
         ...sx,
-      }}
-      {...props}
+      } }
+      { ...props }
     >
-      {hasContent && (
+      { hasContent && (
         <>
-          {/* 제목 */}
-          {title && (
+          { title && (
             <Typography
               variant="body2"
-              sx={{
+              sx={ {
                 fontWeight: 600,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-              }}
+              } }
             >
-              {title}
+              { title }
             </Typography>
-          )}
-          {/* 태그 */}
-          {tags.length > 0 && (
+          ) }
+          { tags.length > 0 && (
             <Box
-              sx={{
+              sx={ {
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: 0.5,
                 mt: title ? 0.5 : 0,
-              }}
+              } }
             >
-              {tags.slice(0, 3).map((tag) => (
+              { tags.slice(0, 3).map((tag) => (
                 <Chip
-                  key={tag}
-                  label={tag}
+                  key={ tag }
+                  label={ tag }
                   size="small"
-                  sx={{
+                  sx={ {
                     height: 20,
                     fontSize: '0.7rem',
-                  }}
+                  } }
                 />
-              ))}
+              )) }
             </Box>
-          )}
+          ) }
         </>
-      )}
+      ) }
     </CustomCard>
   );
 }

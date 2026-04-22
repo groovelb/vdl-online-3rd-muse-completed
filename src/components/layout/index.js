@@ -32,3 +32,7 @@ export { PageContainer } from './PageContainer.jsx';
 // AppShell - 반응형 앱 셸
 export { AppShell } from './AppShell.jsx';
 export { useAppShell } from './useAppShell.js';
+
+// InfiniteMasonry - 인피니트 스크롤 Masonry 래퍼 + 훅
+export { InfiniteMasonry } from './InfiniteMasonry.jsx';
+export { useInfiniteScroll } from './useInfiniteScroll.js';

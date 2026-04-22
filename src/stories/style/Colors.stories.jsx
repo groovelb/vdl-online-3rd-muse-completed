@@ -8,21 +8,41 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import { useTheme } from '@mui/material/styles';
-import {
-  blue,
-  blueGrey,
-  grey,
-  red,
-  orange,
-  green,
-  lightBlue,
-} from '@mui/material/colors';
+import { red, orange, green } from '@mui/material/colors';
 import {
   DocumentTitle,
   PageContainer,
   SectionTitle,
   TreeNode,
 } from '../../components/storybookDocumentation';
+
+/** MUSE Neutral Tint Scale — 바이올렛 틴트 커스텀 그레이 */
+const museNeutralScale = {
+  50: '#FAFAFD',
+  100: '#F3F3F9',
+  200: '#E8E7F0',
+  300: '#D6D5E0',
+  400: '#B5B4C2',
+  500: '#9493A3',
+  600: '#7A798E',
+  700: '#5A586E',
+  800: '#3A384E',
+  900: '#14132B',
+};
+
+/** MUSE Accent Scale — 필수 강조용 바이올렛 (info.main 계열) */
+const museAccentScale = {
+  50: '#EEF0FF',
+  100: '#E0E3FF',
+  200: '#C7CCFF',
+  300: '#A5ABFF',
+  400: '#8289F5',
+  500: '#6366F1',
+  600: '#4F46E5',
+  700: '#4338CA',
+  800: '#3730A3',
+  900: '#1E1B4B',
+};
 
 export default {
   title: 'Style/Colors',
@@ -48,13 +68,15 @@ const PaletteScale = ({ name, colorObj, description }) => (
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 1,
+            borderRadius: 3,
+            border: shade < 200 ? '1px solid' : 'none',
+            borderColor: 'divider',
           } }
         >
           <Typography
             variant="caption"
             sx={ {
-              color: shade >= 400 ? 'white' : 'rgba(0,0,0,0.7)',
+              color: shade >= 400 ? '#FFFFFF' : 'rgba(20, 19, 43, 0.7)',
               fontSize: 12,
               fontWeight: 700,
             } }
@@ -64,7 +86,7 @@ const PaletteScale = ({ name, colorObj, description }) => (
           <Typography
             variant="caption"
             sx={ {
-              color: shade >= 400 ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)',
+              color: shade >= 400 ? 'rgba(255,255,255,0.7)' : 'rgba(20, 19, 43, 0.5)',
               fontSize: 10,
               fontFamily: 'monospace',
             } }
@@ -99,14 +121,15 @@ const SemanticColorBlock = ({ name, colorObj, description }) => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 1,
-                border: isLight ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                borderRadius: 3,
+                border: isLight ? '1px solid' : 'none',
+                borderColor: 'divider',
               } }
             >
               <Typography
                 variant="caption"
                 sx={ {
-                  color: isLight ? 'rgba(0,0,0,0.7)' : 'white',
+                  color: isLight ? 'rgba(20, 19, 43, 0.7)' : '#FFFFFF',
                   fontSize: 12,
                   fontWeight: 700,
                 } }
@@ -116,7 +139,7 @@ const SemanticColorBlock = ({ name, colorObj, description }) => {
               <Typography
                 variant="caption"
                 sx={ {
-                  color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
+                  color: isLight ? 'rgba(20, 19, 43, 0.5)' : 'rgba(255,255,255,0.7)',
                   fontSize: 10,
                   fontFamily: 'monospace',
                 } }
@@ -142,14 +165,15 @@ const SingleColorBlock = ({ name, color, hasBorder = false }) => (
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 1,
-      border: hasBorder ? '1px solid rgba(0,0,0,0.1)' : 'none',
+      borderRadius: 3,
+      border: hasBorder ? '1px solid' : 'none',
+      borderColor: 'divider',
     } }
   >
     <Typography
       variant="caption"
       sx={ {
-        color: hasBorder ? 'rgba(0,0,0,0.7)' : 'white',
+        color: hasBorder ? 'rgba(20, 19, 43, 0.7)' : '#FFFFFF',
         fontSize: 12,
         fontWeight: 700,
       } }
@@ -159,7 +183,7 @@ const SingleColorBlock = ({ name, color, hasBorder = false }) => (
     <Typography
       variant="caption"
       sx={ {
-        color: hasBorder ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)',
+        color: hasBorder ? 'rgba(20, 19, 43, 0.5)' : 'rgba(255,255,255,0.7)',
         fontSize: 10,
         fontFamily: 'monospace',
       } }
@@ -342,7 +366,7 @@ hover 시 error.dark로 어두워지게 해줘."` }
   },
 };
 
-/** 1. Color Palette - 원시 색상 */
+/** 1. Color Palette - MUSE 원시 스케일 */
 export const Palette = {
   name: '1. Color Palette',
   render: () => (
@@ -350,53 +374,60 @@ export const Palette = {
       <DocumentTitle
         title="Color Palette"
         status="Available"
-        note="MUI default color palette"
-        brandName="Design System"
-        systemName="Starter Kit"
+        note="MUSE tinted neutral + accent + state scales"
+        brandName="MUSE"
+        systemName="Design System"
         version="1.0"
       />
       <PageContainer>
         <Typography variant="h4" sx={ { fontWeight: 700, mb: 1 } }>
-          Color Palette (원시 색상)
+          Color Palette (MUSE 원시 스케일)
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={ { mb: 4 } }>
-          MUI에서 제공하는 기본 색상 팔레트입니다. 이 색상들을 조합하여 테마를 구성합니다.
+          MUSE는 완벽한 흰/검을 제거하고 은은한 바이올렛 틴트축 위에 그레이를 재정의했다.
+          이 스케일들을 조합해 시멘틱 토큰(primary/secondary/text/background 등)을 구성한다.
         </Typography>
 
         <Divider sx={ { mb: 4 } } />
 
-        <PaletteScale name="Blue" colorObj={ blue } description="Primary 색상의 기반" />
-        <PaletteScale name="Blue Grey" colorObj={ blueGrey } description="Secondary 색상의 기반" />
-        <PaletteScale name="Grey" colorObj={ grey } description="텍스트, 배경, 보더" />
-        <PaletteScale name="Red" colorObj={ red } description="Error 상태" />
-        <PaletteScale name="Orange" colorObj={ orange } description="Warning 상태" />
-        <PaletteScale name="Green" colorObj={ green } description="Success 상태" />
-        <PaletteScale name="Light Blue" colorObj={ lightBlue } description="Info 상태" />
+        <PaletteScale
+          name="Neutral Tint"
+          colorObj={ museNeutralScale }
+          description="MUSE 기본 그레이 스케일 — 배경/텍스트/보더의 축. `theme.palette.grey[*]`로 접근"
+        />
+        <PaletteScale
+          name="Accent Violet"
+          colorObj={ museAccentScale }
+          description="필수 강조용 바이올렛 — `theme.palette.info.main (#4F46E5)` 계열. 분석 중, 선택 표시 등 소량만 사용"
+        />
+        <PaletteScale name="Red" colorObj={ red } description="Error 상태 (MUI 기본 유지)" />
+        <PaletteScale name="Orange" colorObj={ orange } description="Warning 상태 (MUI 기본 유지)" />
+        <PaletteScale name="Green" colorObj={ green } description="Success 상태 (MUI 기본 유지)" />
 
-        <SectionTitle title="명도 가이드" />
+        <SectionTitle title="명도 가이드" description="MUSE Neutral Tint 기준" />
 
         <TableContainer>
           <Table size="small">
             <TableBody>
               <TableRow>
                 <TableCell sx={ { fontWeight: 600, width: '20%' } }>50-100</TableCell>
-                <TableCell>매우 밝음 - 배경색</TableCell>
+                <TableCell>매우 밝음 — `background.default (#FCFCFF)` / `paper (#F8F8FC)` 근방</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell sx={ { fontWeight: 600 } }>200-300</TableCell>
-                <TableCell>밝음 - hover, 보더</TableCell>
+                <TableCell>밝음 — divider, hover, 보더</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell sx={ { fontWeight: 600 } }>400-500</TableCell>
-                <TableCell>기본 - main 색상</TableCell>
+                <TableCell>중간 — disabled, placeholder</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell sx={ { fontWeight: 600 } }>600-700</TableCell>
-                <TableCell>어두움 - active, dark</TableCell>
+                <TableCell>어두움 — `text.secondary (#7A798E)`, `secondary.main (#5A586E)`</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell sx={ { fontWeight: 600 } }>800-900</TableCell>
-                <TableCell>매우 어두움 - 텍스트</TableCell>
+                <TableCell>매우 어두움 — `primary.main` & `text.primary (#14132B)` (이미지 퍼스트 뉴트럴)</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -523,11 +554,12 @@ export const Usage = {
         <Box
           component="pre"
           sx={ {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'grey.100',
             p: 2,
             fontSize: 12,
             fontFamily: 'monospace',
             overflow: 'auto',
+            borderRadius: 2,
             mb: 4,
           } }
         >
@@ -544,11 +576,12 @@ export const Usage = {
         <Box
           component="pre"
           sx={ {
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'grey.100',
             p: 2,
             fontSize: 12,
             fontFamily: 'monospace',
             overflow: 'auto',
+            borderRadius: 2,
           } }
         >
 { `// 문자열로 참조 (권장)

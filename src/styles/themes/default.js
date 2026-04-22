@@ -1,39 +1,39 @@
 /**
- * Default Theme
+ * Default Theme — MUSE Visual Direction
  *
- * 프로젝트의 기본 디자인 토큰을 정의하는 표준 테마입니다.
- * 피그마의 Design Tokens / Variables와 동일한 역할입니다.
+ * MUSE 프로젝트의 기본 디자인 토큰.
+ * docs/muse/03-visual-direction.md 의 설계 원칙을 구현한다.
  *
- * ## 핵심 철학
- * - **Sharp Corners**: borderRadius 0 (날카로운 모서리)
- * - **Dimmed Shadow**: offset 없이 blur만 사용하는 은은한 그림자
- * - **Pure White**: 깔끔한 흰색 배경
- * - **Brand Blue**: Primary 색상 #0000FF
+ * ## 핵심 철학 (MUSE)
+ * - **Image-First Neutral**: Primary는 near-black `#14132B` — 레퍼런스 이미지/토큰이 주인공
+ * - **Subtle Tint**: 완벽한 흰/검 제거, 바이올렛 틴트는 은은하게만
+ * - **Sharp by default, Round on clickables**: 전역 borderRadius=0 유지, 클리커블만 pill/24px
+ * - **Dimmed Tinted Shadow**: offset 없는 blur 기반 그림자, 색은 near-black 틴트로 일관
+ * - **Accent Sparingly**: 바이올렛 `#4F46E5`는 "분석 중" 등 필수 강조에만 소량 사용
  */
 
 import { createTheme } from '@mui/material/styles';
-import { blueGrey, grey } from '@mui/material/colors';
 
 // ============================================================
 // 1. Color Tokens (색상 토큰)
 // ============================================================
 const palette = {
   mode: 'light',
-  // 브랜드 색상
+  // 브랜드 색상 — Image-First Neutral (near-black with subtle violet tint)
   primary: {
-    light: '#6666FF',
-    main: '#0000FF',
-    dark: '#0000B2',
+    light: '#2D2B5A',
+    main: '#14132B',
+    dark: '#0A091A',
     contrastText: '#FFFFFF',
   },
   secondary: {
-    light: blueGrey[700],
-    main: blueGrey[900],
-    dark: '#1a252b',
+    light: '#7A798E',
+    main: '#5A586E',
+    dark: '#3A384E',
     contrastText: '#FFFFFF',
   },
 
-  // 상태 색상 (Feedback)
+  // 상태 색상 (Feedback) — MUI 기본 유지
   error: {
     light: '#ef5350',
     main: '#d32f2f',
@@ -52,51 +52,52 @@ const palette = {
     dark: '#1b5e20',
     contrastText: '#FFFFFF',
   },
+  // info = MUSE Accent (필수 강조용 바이올렛, 소량 사용)
   info: {
-    light: '#03a9f4',
-    main: '#0288d1',
-    dark: '#01579b',
+    light: '#6366F1',
+    main: '#4F46E5',
+    dark: '#3730A3',
     contrastText: '#FFFFFF',
   },
 
-  // 텍스트 색상
+  // 텍스트 색상 — Primary와 동일축 near-black (ink 개념)
   text: {
-    primary: 'rgba(0, 0, 0, 0.87)',
-    secondary: 'rgba(0, 0, 0, 0.6)',
-    disabled: 'rgba(0, 0, 0, 0.38)',
+    primary: '#14132B',
+    secondary: '#7A798E',
+    disabled: 'rgba(20, 19, 43, 0.38)',
   },
 
-  // 배경 색상
+  // 배경 색상 — 은은한 블루-바이올렛 틴트 (완벽한 흰색 회피)
   background: {
-    default: '#FFFFFF',
-    paper: '#FFFFFF',
+    default: '#FCFCFF',
+    paper: '#F8F8FC',
   },
 
-  // 구분선
-  divider: 'rgba(0, 0, 0, 0.12)',
+  // 구분선 — near-black 저투명
+  divider: 'rgba(20, 19, 43, 0.08)',
 
-  // 액션 상태
+  // 액션 상태 — near-black 틴트로 일관
   action: {
-    active: 'rgba(0, 0, 0, 0.54)',
-    hover: 'rgba(0, 0, 0, 0.04)',
-    selected: 'rgba(0, 0, 0, 0.08)',
-    disabled: 'rgba(0, 0, 0, 0.26)',
-    disabledBackground: 'rgba(0, 0, 0, 0.12)',
-    focus: 'rgba(0, 0, 0, 0.12)',
+    active: 'rgba(20, 19, 43, 0.54)',
+    hover: 'rgba(20, 19, 43, 0.04)',
+    selected: 'rgba(20, 19, 43, 0.06)',
+    disabled: 'rgba(20, 19, 43, 0.26)',
+    disabledBackground: 'rgba(20, 19, 43, 0.08)',
+    focus: 'rgba(20, 19, 43, 0.12)',
   },
 
-  // Grey 스케일
+  // Grey 스케일 — 바이올렛 틴트 재정의 (기존 MUI grey 대체)
   grey: {
-    50: grey[50],
-    100: grey[100],
-    200: grey[200],
-    300: grey[300],
-    400: grey[400],
-    500: grey[500],
-    600: grey[600],
-    700: grey[700],
-    800: grey[800],
-    900: grey[900],
+    50: '#FAFAFD',
+    100: '#F3F3F9',
+    200: '#E8E7F0',
+    300: '#D6D5E0',
+    400: '#B5B4C2',
+    500: '#9493A3',
+    600: '#7A798E',
+    700: '#5A586E',
+    800: '#3A384E',
+    900: '#14132B',
   },
 };
 
@@ -136,92 +137,93 @@ const typography = {
   fontWeightMedium: 500,
   fontWeightBold: 700,
 
-  // 헤딩 스타일
+  // 헤딩 스타일 — MUSE: fluid 대형화 + 덜 무거운 weight
   h1: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 900,
-    fontSize: '2.5rem',      // 40px
-    lineHeight: 1.2,
+    fontWeight: 700,
+    fontSize: 'clamp(3rem, 6vw, 6rem)', // 48px ~ 96px
+    lineHeight: 1.1,
     letterSpacing: '-0.02em',
   },
   h2: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 900,
-    fontSize: '2rem',        // 32px
-    lineHeight: 1.2,
+    fontWeight: 600,
+    fontSize: 'clamp(2rem, 4vw, 3.5rem)', // 32px ~ 56px
+    lineHeight: 1.15,
     letterSpacing: '-0.02em',
   },
   h3: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 800,
-    fontSize: '1.75rem',     // 28px
-    lineHeight: 1.3,
+    fontWeight: 600,
+    fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', // 24px ~ 32px
+    lineHeight: 1.25,
     letterSpacing: '-0.01em',
   },
   h4: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 700,
+    fontWeight: 600,
     fontSize: '1.5rem',      // 24px
     lineHeight: 1.3,
     letterSpacing: '-0.01em',
   },
   h5: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 700,
+    fontWeight: 600,
     fontSize: '1.25rem',     // 20px
     lineHeight: 1.4,
     letterSpacing: '0',
   },
   h6: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 600,
+    fontWeight: 500,
     fontSize: '1.125rem',    // 18px
     lineHeight: 1.4,
     letterSpacing: '0',
   },
 
-  // 본문 스타일
+  // 본문 스타일 — 넉넉한 line-height로 정보 밀도 낮추기
   body1: {
     fontSize: '1rem',        // 16px
-    lineHeight: 1.6,
+    lineHeight: 1.7,
     letterSpacing: '0',
   },
   body2: {
     fontSize: '0.875rem',    // 14px
-    lineHeight: 1.6,
+    lineHeight: 1.7,
     letterSpacing: '0',
   },
 
   // 부제목
   subtitle1: {
-    fontSize: '1rem',        // 16px
+    fontSize: '1.125rem',    // 18px
     fontWeight: 500,
     lineHeight: 1.5,
-    letterSpacing: '0.01em',
+    letterSpacing: '0',
   },
   subtitle2: {
     fontSize: '0.875rem',    // 14px
     fontWeight: 500,
     lineHeight: 1.5,
-    letterSpacing: '0.01em',
+    letterSpacing: '0',
   },
 
   // 기타
   button: {
-    fontSize: '0.875rem',    // 14px
-    fontWeight: 600,
-    lineHeight: 1.75,
-    letterSpacing: '0.02em',
-    textTransform: 'none',   // 대문자 변환 비활성화
+    fontSize: '0.9375rem',   // 15px
+    fontWeight: 500,
+    lineHeight: 1.5,
+    letterSpacing: '0',
+    textTransform: 'none',
   },
   caption: {
     fontSize: '0.75rem',     // 12px
+    fontWeight: 500,
     lineHeight: 1.5,
     letterSpacing: '0.02em',
   },
   overline: {
     fontSize: '0.75rem',     // 12px
-    fontWeight: 600,
+    fontWeight: 500,
     lineHeight: 2,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
@@ -241,14 +243,14 @@ const shape = {
 };
 
 // ============================================================
-// 5. Shadow Tokens (그림자 토큰)
+// 5. Shadow Tokens (그림자 토큰) — MUSE near-black 틴트
 // ============================================================
 const customShadows = {
   none: 'none',
-  sm: '0 0 12px rgba(0, 0, 0, 0.06)',
-  md: '0 0 16px rgba(0, 0, 0, 0.08)',
-  lg: '0 0 20px rgba(0, 0, 0, 0.10)',
-  xl: '0 0 24px rgba(0, 0, 0, 0.12)',
+  sm: '0 0 12px rgba(20, 19, 43, 0.05)',
+  md: '0 0 16px rgba(20, 19, 43, 0.07)',
+  lg: '0 8px 24px rgba(20, 19, 43, 0.08)',
+  xl: '0 16px 40px rgba(20, 19, 43, 0.10)',
 };
 
 // ============================================================
@@ -313,44 +315,74 @@ const components = {
   MuiPaper: {
     styleOverrides: {
       root: {
+        backgroundImage: 'none',
         boxShadow: customShadows.lg,
       },
-      elevation0: {
-        boxShadow: customShadows.none,
-      },
-      elevation1: {
-        boxShadow: customShadows.sm,
-      },
-      elevation2: {
-        boxShadow: customShadows.md,
-      },
-      elevation3: {
-        boxShadow: customShadows.lg,
-      },
-      elevation4: {
-        boxShadow: customShadows.xl,
-      },
+      elevation0: { boxShadow: customShadows.none },
+      elevation1: { boxShadow: customShadows.sm },
+      elevation2: { boxShadow: customShadows.md },
+      elevation3: { boxShadow: customShadows.lg },
+      elevation4: { boxShadow: customShadows.xl },
     },
   },
+  // 클리커블 요소 — pill (가장 큰 radius)
   MuiButton: {
     styleOverrides: {
       root: {
-        borderRadius: 0,
+        borderRadius: 999,
         textTransform: 'none',
+        paddingInline: 24,
+      },
+      sizeLarge: {
+        paddingInline: 28,
+        paddingBlock: 12,
+      },
+      sizeSmall: {
+        paddingInline: 16,
       },
     },
   },
-  MuiCard: {
+  MuiIconButton: {
     styleOverrides: {
       root: {
-        borderRadius: 0,
+        borderRadius: 999,
       },
     },
   },
   MuiChip: {
     styleOverrides: {
       root: {
-        borderRadius: 4,
+        borderRadius: 999,
+      },
+    },
+  },
+  // 입력 요소 — 16px (클리커블이되 텍스트 정렬 유지)
+  MuiOutlinedInput: {
+    styleOverrides: {
+      root: {
+        borderRadius: 16,
+      },
+    },
+  },
+  MuiFilledInput: {
+    styleOverrides: {
+      root: {
+        borderRadius: 16,
+      },
+    },
+  },
+  // 카드·최상위 면 — 24px 통일 (클리커블/비클리커블 구분 없음)
+  MuiCard: {
+    styleOverrides: {
+      root: {
+        borderRadius: 24,
+      },
+    },
+  },
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        borderRadius: 24,
       },
     },
   },
@@ -380,45 +412,45 @@ defaultTheme.dashboard = {
   style: 'default',
   iconStyle: 'outlined',
   iconWeight: 400,
-  cardBorderRadius: 0,
+  cardBorderRadius: 24,
   cardColors: [
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
-    'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
+    'linear-gradient(to bottom, #F8F8FC 0%, #F8F8FC 100%)',
   ],
   subCardColors: [
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
-    'linear-gradient(to bottom, #FAFAFA 0%, #FAFAFA 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
+    'linear-gradient(to bottom, #F3F3F9 0%, #F3F3F9 100%)',
   ],
   textColor: palette.text.primary,
   textSecondary: palette.text.secondary,
-  textShadow: '0 0 0 rgba(0, 0, 0, 0)',
+  textShadow: '0 0 0 rgba(20, 19, 43, 0)',
   backdropFilter: 'blur(0px)',
   WebkitBackdropFilter: 'blur(0px)',
   border: '1px solid transparent',
   borderColor: 'transparent',
   shadow: customShadows.lg,
-  subBorder: '1px solid rgba(0, 0, 0, 0.06)',
-  subShadow: '0 0 0 rgba(0, 0, 0, 0)',
+  subBorder: '1px solid rgba(20, 19, 43, 0.06)',
+  subShadow: '0 0 0 rgba(20, 19, 43, 0)',
   subBackdropFilter: 'blur(0px)',
-  subBorderRadius: 0,
-  dividerColor: 'rgba(0, 0, 0, 0.12)',
+  subBorderRadius: 16,
+  dividerColor: 'rgba(20, 19, 43, 0.08)',
   progressHeight: 6,
-  progressTrackColor: 'rgba(0, 0, 0, 0.08)',
+  progressTrackColor: 'rgba(20, 19, 43, 0.06)',
   progressBarColor: palette.primary.main,
   progressGradient: false,
-  progressBorderRadius: 0,
-  background: '#FFFFFF',
-  atmosphere: 'linear-gradient(to bottom, #FFFFFF 0%, #FFFFFF 100%)',
+  progressBorderRadius: 999,
+  background: '#FCFCFF',
+  atmosphere: 'linear-gradient(to bottom, #FCFCFF 0%, #F8F8FC 100%)',
   atmosphereOpacity: 0,
-  accentColor: palette.primary.main,
+  accentColor: '#4F46E5', // MUSE Accent (info.main) — 필수 강조용
   accentColors: {
     wind: '#4DB6AC',
     humidity: '#FFB74D',

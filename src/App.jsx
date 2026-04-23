@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-import { defaultTheme as theme } from './styles/themes';
-import { MuseStoreProvider } from './store';
+import { defaultTheme, darkTheme } from './styles/themes';
+import { MuseStoreProvider, useSettingsSlice } from './store';
 import { AuthProvider } from './hooks/auth';
 import {
   ArchiveRoute,
@@ -15,12 +15,23 @@ import {
 import AuthPage from './pages/auth/AuthPage';
 import AuthGuard from './pages/auth/AuthGuard';
 
+/** settings.themeMode 구독해서 light/dark 테마 선택 */
+function ThemedApp({ children }) {
+  const { settings } = useSettingsSlice();
+  const theme = settings?.themeMode === 'dark' ? darkTheme : defaultTheme;
+  return (
+    <ThemeProvider theme={ theme }>
+      <CssBaseline />
+      { children }
+    </ThemeProvider>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <MuseStoreProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
+        <ThemedApp>
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
@@ -33,7 +44,7 @@ function App() {
               <Route path="*" element={<Navigate to="/archive" replace />} />
             </Routes>
           </BrowserRouter>
-        </ThemeProvider>
+        </ThemedApp>
       </MuseStoreProvider>
     </AuthProvider>
   );

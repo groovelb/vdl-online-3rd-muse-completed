@@ -22,7 +22,8 @@ import { CustomCard } from './CustomCard';
  * Props:
  * @param {string} src - 이미지 URL [Required]
  * @param {string} title - 이미지 제목/설명 [Optional]
- * @param {string[]} tags - 관련 태그 목록 [Optional]
+ * @param {string[]} tags - 관련 태그 목록 (상위 3개 표시) [Optional]
+ * @param {string[]} dominantColors - HEX 색상 배열 (상위 5개를 작은 원형 swatch 로 표시) [Optional, 기본값: []]
  * @param {function} onLike - 좋아요 버튼 클릭 핸들러 [Optional]
  * @param {boolean} hideActions - 기본 액션 버튼 숨김 여부 [Optional, 기본값: false]
  * @param {node} customOverlay - 커스텀 오버레이 요소 (hideActions와 함께 사용) [Optional]
@@ -52,6 +53,7 @@ export function ImageCard({
   src,
   title,
   tags = [],
+  dominantColors = [],
   onLike,
   hideActions = false,
   customOverlay,
@@ -88,7 +90,8 @@ export function ImageCard({
         } }
         sx={ {
           bgcolor: 'background.paper',
-          boxShadow: 1,
+          border: '1px solid',
+          borderColor: 'divider',
           '&:hover': { bgcolor: 'background.default' },
         } }
       >
@@ -137,7 +140,7 @@ export function ImageCard({
     </>
   );
 
-  const hasContent = title || tags.length > 0;
+  const hasContent = title || tags.length > 0 || dominantColors.length > 0;
 
   return (
     <CustomCard
@@ -150,17 +153,16 @@ export function ImageCard({
       onClick={ isSelectable ? handleToggle : props.onClick }
       sx={ {
         cursor: 'pointer',
-        transition: 'transform 0.2s, box-shadow 0.2s, outline-color 0.2s',
+        transition: 'outline-color 150ms',
         outline: '2px solid',
         outlineOffset: 0,
         outlineColor: isSelected ? 'info.main' : 'transparent',
         '&:hover': {
-          transform: 'translateY(-4px)',
           '& .action-buttons': { opacity: 1 },
           '& .select-checkbox': { opacity: 1 },
         },
-        // CustomCard 기본 border 제거
         border: 'none',
+        boxShadow: 'none',
         ...sx,
       } }
       { ...props }
@@ -180,13 +182,39 @@ export function ImageCard({
               { title }
             </Typography>
           ) }
+          { dominantColors.length > 0 && (
+            <Box
+              sx={ {
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mt: title ? 0.5 : 0,
+              } }
+            >
+              { dominantColors.slice(0, 5).map((hex, i) => (
+                <Box
+                  key={ `${hex}-${i}` }
+                  title={ hex }
+                  sx={ {
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    bgcolor: hex,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    flexShrink: 0,
+                  } }
+                />
+              )) }
+            </Box>
+          ) }
           { tags.length > 0 && (
             <Box
               sx={ {
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: 0.5,
-                mt: title ? 0.5 : 0,
+                mt: (title || dominantColors.length) ? 0.5 : 0,
               } }
             >
               { tags.slice(0, 3).map((tag) => (

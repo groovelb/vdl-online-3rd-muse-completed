@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
@@ -28,7 +27,6 @@ const STORAGE_MODES = [
 const THEME_MODES = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
 ];
 
 /**
@@ -50,7 +48,7 @@ const THEME_MODES = [
  *   onSave={ () => api.save(settings) }
  * />
  */
-export function SettingsPage({ settings, onChange, onSave, logo, sx }) {
+export function SettingsPage({ settings, onChange, onSave, logo, headerEnd, sx }) {
   const [dirty, setDirty] = useState(false);
 
   const patch = (next) => {
@@ -61,15 +59,13 @@ export function SettingsPage({ settings, onChange, onSave, logo, sx }) {
   return (
     <AppShell
       logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
+      headerPersistent={ headerEnd }
       sx={ sx }
     >
       <PageContainer>
         {/* Hero */}
-        <Box sx={ { py: { xs: 4, md: 8 } } }>
-          <Typography variant="h2" sx={ { mb: 1 } }>Settings</Typography>
-          <Typography variant="body1" color="text.secondary" sx={ { maxWidth: 640 } }>
-            AI 모델, 스토리지, 테마 모드를 관리합니다
-          </Typography>
+        <Box sx={ { py: { xs: 3, md: 5 } } }>
+          <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Settings</Typography>
         </Box>
 
         <Box sx={ { maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 5 } }>
@@ -79,10 +75,7 @@ export function SettingsPage({ settings, onChange, onSave, logo, sx }) {
             description="레퍼런스 태깅과 토큰 분석에 사용할 모델"
           >
             <FormControl fullWidth>
-              <InputLabel id="ai-model-label">AI 모델</InputLabel>
               <Select
-                labelId="ai-model-label"
-                label="AI 모델"
                 value={ settings.aiModel || 'claude-sonnet-4-6' }
                 onChange={ (e) => patch({ aiModel: e.target.value }) }
               >

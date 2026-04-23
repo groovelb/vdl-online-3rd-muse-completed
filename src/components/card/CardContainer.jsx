@@ -72,7 +72,7 @@ const CardContainer = forwardRef(function CardContainer({
         return {
           ...base,
           backgroundColor: 'background.paper',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05)',
+          boxShadow: 'none',
         };
 
       case 'ghost':
@@ -107,29 +107,16 @@ const CardContainer = forwardRef(function CardContainer({
     if (!isInteractive && !onClick) return {};
 
     const hoverStyles = {
-      outlined: {
-        borderColor: 'primary.main',
-        boxShadow: '0 0 0 1px rgba(25, 118, 210, 0.2)',
-      },
-      elevation: {
-        boxShadow: '0 4px 12px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.08)',
-        transform: 'translateY(-2px)',
-      },
-      ghost: {
-        backgroundColor: 'action.hover',
-      },
-      filled: {
-        backgroundColor: 'grey.200',
-      },
+      outlined: { borderColor: 'text.primary' },
+      elevation: { backgroundColor: 'action.hover' },
+      ghost: { backgroundColor: 'action.hover' },
+      filled: { backgroundColor: 'grey.200' },
     };
 
     return {
       cursor: 'pointer',
-      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: 'background-color 150ms, border-color 150ms',
       '&:hover': hoverStyles[variant] || hoverStyles.outlined,
-      '&:active': {
-        transform: 'scale(0.98)',
-      },
     };
   };
 
@@ -141,7 +128,6 @@ const CardContainer = forwardRef(function CardContainer({
 
     return {
       borderColor: 'primary.main',
-      boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.3)',
       '&::before': {
         content: '""',
         position: 'absolute',

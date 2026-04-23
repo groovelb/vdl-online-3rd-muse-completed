@@ -52,6 +52,7 @@ export function ProjectDetailPage({
   onUpdateToken,
   onBack,
   logo,
+  headerEnd,
   sx,
 }) {
   const [activeLayer, setActiveLayer] = useState('color');
@@ -213,14 +214,17 @@ export function ProjectDetailPage({
     <AppShell
       logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
       headerPersistent={
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={ <FolderZipIcon /> }
-          onClick={ () => setExportOpen(true) }
-        >
-          Export
-        </Button>
+        <Box sx={ { display: 'flex', alignItems: 'center', gap: 1.5 } }>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={ <FolderZipIcon /> }
+            onClick={ () => setExportOpen(true) }
+          >
+            Export
+          </Button>
+          { headerEnd }
+        </Box>
       }
       sx={ sx }
     >

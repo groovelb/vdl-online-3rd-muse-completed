@@ -615,43 +615,33 @@ export const T3AnalyzeTokens = {
         const selectedRefs = references.filter((r) => selectedIds.has(r.id));
         if (!selectedRefs.length) throw new Error('최소 1장 이상 선택 필요');
 
-        // 512px 리사이즈
-        const imageBlocks = [];
-        for (const ref of selectedRefs) {
-          const dataUrl = await imageUrlToBase64DataUrl(ref.thumbnailUrl);
-          const resized = await resizeDataUrl(dataUrl);
-          imageBlocks.push({ ref, block: toImageBlock(resized) });
-        }
-
-        // T1 분석 결과를 PRIMARY signal JSON 헤더로 상단 배치
-        const t1Summary = selectedRefs.map((ref) => ({
+        // 이미지 없음 — 사전 추출된 데이터만 전송
+        const extractedPool = selectedRefs.map((ref) => ({
           id: ref.id,
+          title: ref.title || null,
           tags: ref.tags || {},
           dominantColors: ref.dominantColors || [],
-          title: ref.title || null,
+          extracted: ref.extracted || {},
         }));
 
-        const content = [];
-        content.push({
-          type: 'text',
-          text: `=== PRIMARY SIGNAL: T1 pre-analysis (${selectedRefs.length} references) ===
+        const content = [
+          {
+            type: 'text',
+            text: `=== Pre-extracted references (${selectedRefs.length}) ===
 
-${JSON.stringify(t1Summary, null, 2)}
+${JSON.stringify(extractedPool, null, 2)}
 
-=== SECONDARY: images below (512px, same order as ids above) ===`,
-        });
-        imageBlocks.forEach(({ ref, block }) => {
-          content.push(block);
-          content.push({ type: 'text', text: `↑ image for id: ${ref.id}` });
-        });
-        content.push({
-          type: 'text',
-          text: TASK_ANALYZE_TOKENS.userMessageTemplate
-            .replace('{{intent}}', intent)
-            .replace('{{type}}', type)
-            .replace('{{count}}', String(selectedRefs.length))
-            .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
-        });
+=== End of references ===`,
+          },
+          {
+            type: 'text',
+            text: TASK_ANALYZE_TOKENS.userMessageTemplate
+              .replace('{{intent}}', intent)
+              .replace('{{type}}', type)
+              .replace('{{count}}', String(selectedRefs.length))
+              .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
+          },
+        ];
 
         const response = await callAnthropic({
           model,
@@ -693,7 +683,7 @@ ${JSON.stringify(t1Summary, null, 2)}
             T3 · Analyze Tokens + VD
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={ { mb: 3 } }>
-            { TASK_ANALYZE_TOKENS.purpose } · T1 primary + 512px 이미지 verify · 최대 4장 · 2 tool 단일 호출
+            { TASK_ANALYZE_TOKENS.purpose } · 이미지 없음 (T1 extracted 기반) · Haiku · 2 tool 단일 호출
           </Typography>
 
           {/* Controls */}

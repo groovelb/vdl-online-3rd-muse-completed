@@ -6,19 +6,20 @@
  */
 
 import defaultTheme from './default.js';
+import darkTheme from './dark.js';
 
 /** 사용 가능한 테마 목록 */
 export const themes = {
   default: defaultTheme,
+  light: defaultTheme,
+  dark: darkTheme,
 };
 
 /** 테마 메타데이터 */
 export const themeMeta = {
-  default: {
-    name: 'Default',
-    description: '프로젝트 기본 테마',
-    mode: 'light',
-  },
+  default: { name: 'Default', description: '프로젝트 기본 테마', mode: 'light' },
+  light: { name: 'Light', description: 'MUSE light mode', mode: 'light' },
+  dark: { name: 'Dark', description: 'MUSE dark mode', mode: 'dark' },
 };
 
 /**
@@ -38,5 +39,5 @@ export const getTheme = (themeName) => {
  */
 export const getThemeNames = () => Object.keys(themes);
 
-export { defaultTheme };
+export { defaultTheme, darkTheme };
 export default themes;

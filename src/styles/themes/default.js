@@ -312,33 +312,71 @@ const components = {
       },
     },
   },
+  // 최상위 면 — elevation 전 레벨 shadow 제거 (flat)
   MuiPaper: {
+    defaultProps: { elevation: 0 },
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        boxShadow: customShadows.lg,
+        boxShadow: 'none',
       },
-      elevation0: { boxShadow: customShadows.none },
-      elevation1: { boxShadow: customShadows.sm },
-      elevation2: { boxShadow: customShadows.md },
-      elevation3: { boxShadow: customShadows.lg },
-      elevation4: { boxShadow: customShadows.xl },
+      elevation0: { boxShadow: 'none' },
+      elevation1: { boxShadow: 'none' },
+      elevation2: { boxShadow: 'none' },
+      elevation3: { boxShadow: 'none' },
+      elevation4: { boxShadow: 'none' },
     },
   },
-  // 클리커블 요소 — pill (가장 큰 radius)
+  MuiAppBar: {
+    defaultProps: { elevation: 0 },
+    styleOverrides: {
+      root: { boxShadow: 'none', backgroundImage: 'none' },
+    },
+  },
+  MuiCard: {
+    defaultProps: { elevation: 0 },
+    styleOverrides: {
+      root: {
+        borderRadius: 24,
+        boxShadow: 'none',
+        backgroundImage: 'none',
+      },
+    },
+  },
+  MuiDialog: {
+    defaultProps: { elevation: 0 },
+    styleOverrides: {
+      paper: {
+        borderRadius: 24,
+        boxShadow: 'none',
+      },
+    },
+  },
+  // 클리커블 요소 — pill + 사이즈 업 + elevation 제거
   MuiButton: {
+    defaultProps: {
+      disableElevation: true,
+      disableRipple: false,
+    },
     styleOverrides: {
       root: {
         borderRadius: 999,
         textTransform: 'none',
-        paddingInline: 24,
+        paddingInline: 32,
+        paddingBlock: 10,
+        boxShadow: 'none',
+        transition: 'background-color 150ms, border-color 150ms, color 150ms',
+        '&:hover': { boxShadow: 'none', transform: 'none' },
+        '&:active': { transform: 'none' },
       },
       sizeLarge: {
-        paddingInline: 28,
-        paddingBlock: 12,
+        paddingInline: 36,
+        paddingBlock: 14,
+        fontSize: '0.95rem',
       },
       sizeSmall: {
-        paddingInline: 16,
+        paddingInline: 20,
+        paddingBlock: 6,
       },
     },
   },
@@ -346,6 +384,8 @@ const components = {
     styleOverrides: {
       root: {
         borderRadius: 999,
+        transition: 'background-color 150ms, color 150ms',
+        '&:hover': { transform: 'none' },
       },
     },
   },
@@ -356,11 +396,18 @@ const components = {
       },
     },
   },
-  // 입력 요소 — 16px (클리커블이되 텍스트 정렬 유지)
+  // 입력 요소 — 16px radius, padding 확대, 내부 input 사이즈 업
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
         borderRadius: 16,
+      },
+      input: {
+        paddingBlock: 16,
+        paddingInline: 18,
+      },
+      multiline: {
+        padding: 0,
       },
     },
   },
@@ -369,21 +416,20 @@ const components = {
       root: {
         borderRadius: 16,
       },
-    },
-  },
-  // 카드·최상위 면 — 24px 통일 (클리커블/비클리커블 구분 없음)
-  MuiCard: {
-    styleOverrides: {
-      root: {
-        borderRadius: 24,
+      input: {
+        paddingBlock: 16,
+        paddingInline: 18,
       },
     },
   },
-  MuiDialog: {
+  MuiTextField: {
+    defaultProps: {
+      variant: 'outlined',
+    },
+  },
+  MuiTabs: {
     styleOverrides: {
-      paper: {
-        borderRadius: 24,
-      },
+      root: { minHeight: 48 },
     },
   },
 };

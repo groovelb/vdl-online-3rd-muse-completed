@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProjectListPage } from '../components/templates/ProjectListPage.jsx';
 import { useProjectsSlice, useReferencesSlice } from '../store';
 import { MuseNav } from './MuseNav.jsx';
+import { UserMenu } from './UserMenu.jsx';
 
 export function ProjectListRoute() {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export function ProjectListRoute() {
   return (
     <ProjectListPage
       logo={ <MuseNav /> }
+      headerEnd={ <UserMenu /> }
       projects={ projectsWithThumbnails }
       onSelectProject={ (id) => navigate(`/projects/${id}`) }
       onNewProject={ () => navigate('/projects/new') }

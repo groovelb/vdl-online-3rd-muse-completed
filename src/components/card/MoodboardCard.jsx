@@ -168,11 +168,82 @@ export function MoodboardCard({
       );
     }
 
-    // 기본 상태: 2×2 썸네일 그리드
+    // 기본 상태: 개수에 따라 적응형 레이아웃 — 빈 슬롯 노출 방지
+    //   1개 → 풀블리드
+    //   2개 → 좌/우 50:50
+    //   3개 → 좌 1개 풀 + 우 2개 스택
+    //   4+개 → 2×2 그리드 (처음 4장)
+    const renderImage = (image, idx) => (
+      <Box
+        component="img"
+        key={ `${idx}-${image.thumbnail || image.src}` }
+        src={ image.thumbnail || image.src?.medium || image.src }
+        alt={ image.title || `Image ${idx + 1}` }
+        sx={ {
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        } }
+      />
+    );
+
+    const slotWrap = (children, key) => (
+      <Box key={ key } sx={ { position: 'relative', overflow: 'hidden', bgcolor: 'grey.100' } }>
+        { children }
+      </Box>
+    );
+
+    if (thumbnailImages.length === 1) {
+      return (
+        <Box sx={ { width: '100%', height: '100%', position: 'relative', bgcolor: 'grey.100' } }>
+          { renderImage(thumbnailImages[0], 0) }
+        </Box>
+      );
+    }
+
+    if (thumbnailImages.length === 2) {
+      return (
+        <Box sx={ {
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '2px',
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'grey.200',
+        } }>
+          { thumbnailImages.map((img, i) => slotWrap(renderImage(img, i), i)) }
+        </Box>
+      );
+    }
+
+    if (thumbnailImages.length === 3) {
+      return (
+        <Box sx={ {
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: '1fr 1fr',
+          gap: '2px',
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'grey.200',
+        } }>
+          <Box sx={ { gridRow: 'span 2', position: 'relative', overflow: 'hidden', bgcolor: 'grey.100' } }>
+            { renderImage(thumbnailImages[0], 0) }
+          </Box>
+          { slotWrap(renderImage(thumbnailImages[1], 1), 1) }
+          { slotWrap(renderImage(thumbnailImages[2], 2), 2) }
+        </Box>
+      );
+    }
+
+    // 4+ 장: 2×2 그리드 (처음 4장)
     return (
       <Box
         className="thumbnail-grid"
-        sx={{
+        sx={ {
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
           gridTemplateRows: 'repeat(2, 1fr)',
@@ -180,45 +251,9 @@ export function MoodboardCard({
           width: '100%',
           height: '100%',
           backgroundColor: 'grey.200',
-          transition: 'transform 0.3s ease',
-        }}
+        } }
       >
-        {[...Array(4)].map((_, index) => {
-          const image = thumbnailImages[index];
-          return (
-            <Box
-              key={index}
-              sx={{
-                position: 'relative',
-                overflow: 'hidden',
-                backgroundColor: 'grey.100',
-              }}
-            >
-              {image ? (
-                <Box
-                  component="img"
-                  src={image.thumbnail || image.src?.medium}
-                  alt={image.title || `Image ${index + 1}`}
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-              ) : (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundColor: 'grey.100',
-                  }}
-                />
-              )}
-            </Box>
-          );
-        })}
+        { thumbnailImages.map((img, i) => slotWrap(renderImage(img, i), i)) }
       </Box>
     );
   };
@@ -252,7 +287,8 @@ export function MoodboardCard({
             }}
             sx={{
               bgcolor: 'background.paper',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              border: '1px solid',
+              borderColor: 'divider',
               '&:hover': { bgcolor: 'white' },
             }}
           >
@@ -268,7 +304,8 @@ export function MoodboardCard({
             }}
             sx={{
               bgcolor: 'background.paper',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              border: '1px solid',
+              borderColor: 'divider',
               '&:hover': {
                 bgcolor: 'error.light',
                 color: 'white',
@@ -319,14 +356,11 @@ export function MoodboardCard({
       onMouseLeave={handleMouseLeave}
       sx={{
         cursor: 'pointer',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        transition: 'border-color 150ms',
         border: 'none',
+        boxShadow: 'none',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 12px 24px -8px rgba(0,0,0,0.15)',
-          '& .moodboard-actions': {
-            opacity: 1,
-          },
+          '& .moodboard-actions': { opacity: 1 },
         },
         ...sx,
       }}

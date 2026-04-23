@@ -19,12 +19,55 @@
  */
 
 /**
+ * @typedef {Object} ExtractedPaletteItem
+ * @property {string} hex - #RRGGBB
+ * @property {string} label - 1-2 word descriptor
+ * @property {'Brand'|'Surface'|'Data'|'Neutral'} [group] - 단일 이미지 관점 힌트 (role 아님)
+ */
+
+/**
+ * @typedef {Object} ExtractedTypographyItem
+ * @property {'display'|'heading'|'body'|'caption'} hierarchy - 단일 이미지 내 상대 위계
+ * @property {string} fontFamily - CSS stack
+ * @property {number} fontWeight - 100-900
+ * @property {string} fontSize - CSS value
+ * @property {number} lineHeight - unitless
+ * @property {string} [letterSpacing] - em value
+ * @property {string} [sampleText] - 실제 보이는 텍스트 스니펫
+ */
+
+/**
+ * @typedef {Object} ExtractedLayoutItem
+ * @property {'grid'|'spacing'|'container'} kind
+ * @property {number} [columns]
+ * @property {number} [gap]
+ * @property {number} [px]
+ * @property {number} [ratio]
+ * @property {string} [maxWidth]
+ */
+
+/**
+ * @typedef {Object} ExtractedGradientItem
+ * @property {string} gradient - CSS gradient string
+ * @property {Array<{offset: number, color: string}>} stops
+ */
+
+/**
+ * @typedef {Object} ExtractedValues
+ * @property {ExtractedPaletteItem[]} palette - 3~6 관찰된 색
+ * @property {ExtractedTypographyItem[]} typography - 1~4 위계별 타이포 스펙
+ * @property {ExtractedLayoutItem[]} layout - 0~3 레이아웃 힌트
+ * @property {ExtractedGradientItem[]} gradient - 0~2 그라디언트
+ */
+
+/**
  * @typedef {Object} Reference
  * @property {string} id - 고유 식별자 (예: 'ref-001')
  * @property {'file'|'url'} source - 입력 소스 유형
  * @property {string} thumbnailUrl - 썸네일 URL 또는 data URI
  * @property {ReferenceLayeredTags} tags - 레이어별 태그 (preset 어휘에서만 선택)
  * @property {string[]} [dominantColors] - 대표 색 HEX (선택)
+ * @property {ExtractedValues} [extracted] - T1 에서 추출한 T3-level 관찰값 (role/emphasis 제외)
  * @property {string} createdAt - ISO 날짜 문자열
  * @property {string} [title] - 제목 (선택)
  */

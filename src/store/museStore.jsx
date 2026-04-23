@@ -242,6 +242,7 @@ export function useReferencesSlice() {
       title: fields.title || '',
       tags: fields.tags || {},
       dominantColors: fields.dominantColors || [],
+      extracted: fields.extracted || {},
       createdAt: fields.createdAt || new Date().toISOString(),
     };
 
@@ -264,6 +265,7 @@ export function useReferencesSlice() {
       if ('title' in patch) dbPatch.title = patch.title;
       if ('tags' in patch) dbPatch.tags = patch.tags;
       if ('dominantColors' in patch) dbPatch.dominant_colors = patch.dominantColors;
+      if ('extracted' in patch) dbPatch.extracted = patch.extracted;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from('reference_items').update(dbPatch).eq('id', id);
         if (error) throw error;

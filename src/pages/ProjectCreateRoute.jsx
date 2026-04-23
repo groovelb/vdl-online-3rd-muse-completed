@@ -7,6 +7,7 @@ import { PageContainer } from '../components/layout/PageContainer.jsx';
 import { useProjectsSlice, useReferencesSlice, useAnalysesSlice } from '../store';
 import { runRecommend, runAnalyzeTokens } from '../utils/museAiTasks';
 import { MuseNav } from './MuseNav.jsx';
+import { UserMenu } from './UserMenu.jsx';
 
 /** Reference → ReferencePicker item 변환 */
 const toPickerItem = (r) => ({
@@ -14,9 +15,10 @@ const toPickerItem = (r) => ({
   src: r.thumbnailUrl,
   title: r.title,
   tags: r.tags,
+  dominantColors: r.dominantColors,
 });
 
-const makeProjectId = () => `proj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+// project/analysis id 는 store 가 crypto.randomUUID() 로 생성 (DB 컬럼이 uuid 타입)
 
 export function ProjectCreateRoute() {
   const navigate = useNavigate();
@@ -27,9 +29,22 @@ export function ProjectCreateRoute() {
   const archive = useMemo(() => references.map(toPickerItem), [references]);
 
   return (
-    <AppShell logo={ <MuseNav /> }>
+    <AppShell
+      logo={ <MuseNav /> }
+      headerPersistent={ <UserMenu /> }
+    >
       <PageContainer>
-        <Box sx={ { py: { xs: 4, md: 6 } } }>
+        <Box
+          sx={ {
+            minHeight: 'calc(100vh - 64px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            py: { xs: 6, md: 10 },
+          } }
+        >
+          <Box sx={ { width: '100%', maxWidth: 860, mx: 'auto' } }>
           <ProjectCreateWizard
             archive={ archive }
             recommendedLoader={ async ({ intent, type }) => {
@@ -57,43 +72,44 @@ export function ProjectCreateRoute() {
               });
               return result;
             } }
-            onComplete={ ({ form, referenceIds, analysis: analysisResult }) => {
-              const id = makeProjectId();
-              const createdAt = new Date().toISOString().slice(0, 10);
-              const project = {
-                id,
-                name: form.name,
-                intent: form.intent,
-                type: form.type,
-                referenceIds: referenceIds || [],
-                createdAt,
-              };
-              addProject(project);
+            onComplete={ async ({ form, referenceIds, analysis: analysisResult }) => {
+              // id 는 store 가 UUID 로 생성. 여기서 만들면 Postgres uuid 컬럼 insert 실패
+              try {
+                const createdProject = await addProject({
+                  name: form.name,
+                  intent: form.intent,
+                  type: form.type,
+                  referenceIds: referenceIds || [],
+                });
+                const projectId = createdProject.id;
 
-              // analysisResult: { tokens, visualDirection } — runAnalyzeTokens 반환값
-              const tokens = analysisResult?.tokens || {};
-              const vd = analysisResult?.visualDirection || {
-                markdown: '',
-                tags: { genre: [], style: [], subject: [] },
-              };
-              setAnalysis({
-                id: `analysis-${id}`,
-                projectId: id,
-                status: 'done',
-                updatedAt: createdAt,
-                layers: {
-                  color: tokens.color || [],
-                  typography: tokens.typography || [],
-                  layout: tokens.layout || [],
-                  gradient: tokens.gradient || [],
-                  visualDirection: vd,
-                },
-              });
+                const tokens = analysisResult?.tokens || {};
+                const vd = analysisResult?.visualDirection || {
+                  markdown: '',
+                  tags: { genre: [], style: [], subject: [] },
+                };
+                await setAnalysis({
+                  projectId,
+                  status: 'done',
+                  layers: {
+                    color: tokens.color || [],
+                    typography: tokens.typography || [],
+                    layout: tokens.layout || [],
+                    gradient: tokens.gradient || [],
+                    visualDirection: vd,
+                  },
+                });
 
-              navigate(`/projects/${id}`);
+                navigate(`/projects/${projectId}`);
+              } catch (e) {
+                // eslint-disable-next-line no-console
+                console.error('[프로젝트 생성 실패]', e);
+                window.alert(`프로젝트 저장 중 에러: ${e?.message || e}`);
+              }
             } }
             onCancel={ () => navigate('/') }
           />
+          </Box>
         </Box>
       </PageContainer>
     </AppShell>

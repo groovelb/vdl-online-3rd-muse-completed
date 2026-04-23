@@ -10,8 +10,14 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { REPRESENTATIVE_COLORS, isSimilarColor } from '../../utils/colorSimilarity';
 import { AppShell } from '../layout/AppShell.jsx';
 import { PageContainer } from '../layout/PageContainer.jsx';
 import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
@@ -19,11 +25,66 @@ import { ImageCard } from '../card/ImageCard.jsx';
 import { SearchBar } from '../input/SearchBar.jsx';
 import { FileDropzone } from '../input/FileDropzone.jsx';
 import { flattenTags } from '../../data/muse';
-import { fileToDataUrl, resizeDataUrl } from '../../utils/museAi';
+import { fileToDataUrl, resizeDataUrl, imageUrlToBase64DataUrl } from '../../utils/museAi';
 import { runAutoTag } from '../../utils/museAiTasks';
 import { useReferencesSlice } from '../../store';
 
 // id 생성은 store.addReference 내부에서 처리 (crypto.randomUUID)
+
+/** 필터 카테고리 Accordion — 접기/펼치기 */
+function FilterAccordion({ label, count, defaultExpanded = false, children }) {
+  return (
+    <Accordion
+      defaultExpanded={ defaultExpanded }
+      disableGutters
+      elevation={ 0 }
+      sx={ {
+        bgcolor: 'transparent',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        '&:before': { display: 'none' },
+        '&:last-of-type': { borderBottom: 'none' },
+      } }
+    >
+      <AccordionSummary
+        expandIcon={ <ExpandMoreIcon fontSize="small" /> }
+        sx={ { px: 0, minHeight: 40, '& .MuiAccordionSummary-content': { my: 1 } } }
+      >
+        <Typography
+          variant="overline"
+          sx={ { fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', color: 'text.primary' } }
+        >
+          { label }
+          { count > 0 && (
+            <Box component="span" sx={ { ml: 1, color: 'primary.main', fontSize: '0.7rem' } }>
+              { count }
+            </Box>
+          ) }
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails sx={ { px: 0, pt: 0, pb: 2, display: 'flex', flexDirection: 'column', gap: 1.5 } }>
+        { children }
+      </AccordionDetails>
+    </Accordion>
+  );
+}
+
+/** 서브 행 (타이포 / 레이아웃 / 그라디언트 / 장르 / 스타일 / 주제 레벨) */
+function FilterSubRow({ label, children }) {
+  return (
+    <Box sx={ { display: 'flex', alignItems: 'flex-start', gap: 1.5 } }>
+      <Typography
+        variant="caption"
+        sx={ { minWidth: 64, pt: 0.75, color: 'text.secondary', fontSize: '0.72rem' } }
+      >
+        { label }
+      </Typography>
+      <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.5 } }>
+        { children }
+      </Box>
+    </Box>
+  );
+}
 
 /**
  * ArchivePage 템플릿
@@ -52,10 +113,12 @@ export function ArchivePage({
   isLoading = false,
   onNewProject,
   logo,
+  headerEnd,
   sx,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTags, setActiveTags] = useState([]);
+  const [activeColors, setActiveColors] = useState([]); // hex 필터 (dominantColors 기반)
   const [uploadState, setUploadState] = useState({ isUploading: false, error: null, lastId: null });
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, title } | null
   const [deleteState, setDeleteState] = useState({ isDeleting: false, error: null });
@@ -64,33 +127,77 @@ export function ArchivePage({
   const storeSlice = useReferencesSlice();
   const references = useStoreMode ? storeSlice.references : (externalReferences || []);
 
-  /** 단일 파일 처리: Storage 업로드 + DB insert → 백그라운드 T1 태깅 → updateReference */
+  /**
+   * 단일 파일 처리: Storage 업로드 + DB insert → 백그라운드 T1 태깅 → updateReference
+   * Storage/DB 실패 시 1회 재시도 (네트워크 일시 장애 방어)
+   */
   const uploadOne = async (file) => {
     const dataUrl = await fileToDataUrl(file);
     const resized = await resizeDataUrl(dataUrl, 512);
 
-    const ref = await storeSlice.addReference({
-      file,
-      source: 'file',
-      tags: { color: [], typography: [], layout: [], gradient: [], visualDirection: { genre: [], style: [], subject: [] } },
-      dominantColors: [],
-      title: file.name?.replace(/\.[^.]+$/, '') || 'Untitled',
-      _pending: true,
-    });
+    const addWithRetry = async () => {
+      try {
+        return await storeSlice.addReference({
+          file,
+          source: 'file',
+          tags: { color: [], typography: [], layout: [], gradient: [], visualDirection: { genre: [], style: [], subject: [] } },
+          dominantColors: [],
+          extracted: {},
+          title: file.name?.replace(/\.[^.]+$/, '') || 'Untitled',
+          _pending: true,
+        });
+      } catch (e) {
+        // 1회 재시도 (Storage/DB 네트워크 일시 장애)
+        // eslint-disable-next-line no-console
+        console.warn('[uploadOne] 1차 실패, 재시도', file.name, e);
+        await new Promise((r) => setTimeout(r, 500));
+        return await storeSlice.addReference({
+          file,
+          source: 'file',
+          tags: { color: [], typography: [], layout: [], gradient: [], visualDirection: { genre: [], style: [], subject: [] } },
+          dominantColors: [],
+          extracted: {},
+          title: file.name?.replace(/\.[^.]+$/, '') || 'Untitled',
+          _pending: true,
+        });
+      }
+    };
 
-    // 백그라운드 T1 태깅 (실패해도 업로드 자체는 성공 취급)
+    const ref = await addWithRetry();
+
+    // T1 태깅 실패는 reference 자체 삭제하지 않음 — _tagError 표시 후 수동 편집 가능
     try {
       const result = await runAutoTag({ imageUrl: resized });
       await storeSlice.updateReference(ref.id, {
         tags: result.tags,
         dominantColors: result.dominantColors,
         title: result.title,
+        extracted: result.extracted || {},
         _pending: false,
       });
     } catch (tagError) {
       await storeSlice.updateReference(ref.id, { _pending: false, _tagError: tagError?.message || String(tagError) });
     }
     return ref;
+  };
+
+  /** concurrency 제한 배치 실행 — 병렬 폭주로 인한 rate limit/timeout 방어 */
+  const runWithConcurrency = async (items, limit, fn) => {
+    const results = new Array(items.length);
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < items.length) {
+        const i = cursor;
+        cursor += 1;
+        try {
+          results[i] = { status: 'fulfilled', value: await fn(items[i]), item: items[i] };
+        } catch (e) {
+          results[i] = { status: 'rejected', reason: e, item: items[i] };
+        }
+      }
+    };
+    await Promise.all(Array(Math.min(limit, items.length)).fill(null).map(worker));
+    return results;
   };
 
   /** 단일 파일 (FileDropzone multiple=false 경로 — 외부 주입 모드용) */
@@ -107,31 +214,86 @@ export function ArchivePage({
     }
   };
 
-  /** 다중 파일: Storage 업로드는 병렬, 각 파일의 T1 태깅도 병렬 진행 */
+  /**
+   * 다중 파일: 동시 3개씩 배치 처리.
+   *   - 무제한 병렬이면 Supabase Storage / Anthropic API rate limit 시 drop 발생
+   *   - addReference 내부에도 1회 재시도 로직 있음
+   *   - 최종 실패한 파일명 리스트를 사용자에게 표시
+   */
   const handleUploadFiles = async (files) => {
     const list = Array.from(files || []);
     if (!list.length) return;
     if (!useStoreMode) {
-      // 외부 주입 모드: 파일별로 onUploadFile 콜백만 호출
       list.forEach((f) => onUploadFile?.(f));
       return;
     }
     setUploadState({ isUploading: true, error: null, lastId: null });
 
-    const results = await Promise.allSettled(list.map((f) => uploadOne(f)));
+    const results = await runWithConcurrency(list, 3, (f) => uploadOne(f));
     const failed = results.filter((r) => r.status === 'rejected');
     const lastOk = [...results].reverse().find((r) => r.status === 'fulfilled');
+
+    let errorMsg = null;
+    if (failed.length) {
+      const names = failed.map((r) => r.item?.name || '?').slice(0, 3).join(', ');
+      const more = failed.length > 3 ? ` 외 ${failed.length - 3}장` : '';
+      errorMsg = `${failed.length}장 업로드 실패: ${names}${more}`;
+      // eslint-disable-next-line no-console
+      console.warn('[handleUploadFiles] 실패 목록', failed.map((r) => ({ name: r.item?.name, reason: r.reason?.message })));
+    }
+
     setUploadState({
       isUploading: false,
-      error: failed.length ? `${list.length}장 중 ${failed.length}장 업로드 실패` : null,
+      error: errorMsg,
       lastId: lastOk?.value?.id || null,
     });
   };
 
-  const allTags = useMemo(() => {
-    const set = new Set();
-    references.forEach((r) => flattenTags(r).forEach((t) => set.add(t)));
-    return [...set];
+  /**
+   * 레퍼런스 메타데이터 구조 그대로 필터 섹션에 노출:
+   *   typography / layout / gradient / genre / style / subject
+   * 색상은 태그가 아닌 dominantColors(hex) 로 별도 처리.
+   */
+  const layeredTags = useMemo(() => {
+    const buckets = {
+      typography: new Set(),
+      layout: new Set(),
+      gradient: new Set(),
+      genre: new Set(),
+      style: new Set(),
+      subject: new Set(),
+    };
+    references.forEach((r) => {
+      const t = r.tags || {};
+      (t.typography || []).forEach((x) => buckets.typography.add(x));
+      (t.layout || []).forEach((x) => buckets.layout.add(x));
+      (t.gradient || []).forEach((x) => buckets.gradient.add(x));
+      const vd = t.visualDirection || {};
+      (vd.genre || []).forEach((x) => buckets.genre.add(x));
+      (vd.style || []).forEach((x) => buckets.style.add(x));
+      (vd.subject || []).forEach((x) => buckets.subject.add(x));
+    });
+    return Object.fromEntries(Object.entries(buckets).map(([k, s]) => [k, [...s].sort()]));
+  }, [references]);
+
+  const hasAnyTag = useMemo(
+    () => Object.values(layeredTags).some((arr) => arr.length > 0),
+    [layeredTags],
+  );
+
+  /**
+   * 대표 색상환 각각에 대해: 해당 색과 유사한 레퍼런스 수 집계.
+   * 0 건이면 숨김, 나머지는 카운트 툴팁 노출.
+   */
+  const representativeCounts = useMemo(() => {
+    return REPRESENTATIVE_COLORS
+      .map((rep) => {
+        const count = references.filter((r) =>
+          (r.dominantColors || []).some((hex) => isSimilarColor(rep.hex, hex)),
+        ).length;
+        return { ...rep, count };
+      })
+      .filter((rep) => rep.count > 0);
   }, [references]);
 
   const pendingCount = useMemo(
@@ -148,14 +310,58 @@ export function ArchivePage({
         || refTags.some((t) => t.toLowerCase().includes(term));
       const matchesTags = !activeTags.length
         || activeTags.every((t) => refTags.includes(t));
-      return matchesTerm && matchesTags;
+      // 색상 필터 = 대표 색상환 기반 유사도 매칭 (대표색 1개라도 주변색 포함 → OR)
+      const refColors = r.dominantColors || [];
+      const matchesColors = !activeColors.length
+        || activeColors.some((repHex) => refColors.some((hex) => isSimilarColor(repHex, hex)));
+      return matchesTerm && matchesTags && matchesColors;
     });
-  }, [references, searchTerm, activeTags]);
+  }, [references, searchTerm, activeTags, activeColors]);
 
   const toggleTag = (tag) => {
     setActiveTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+  };
+
+  const toggleColor = (hex) => {
+    const key = hex.toLowerCase();
+    setActiveColors((prev) =>
+      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key],
+    );
+  };
+
+  const totalActiveFilters = activeTags.length + activeColors.length;
+  const resetAllFilters = () => {
+    setActiveTags([]);
+    setActiveColors([]);
+  };
+
+  /**
+   * _tagError 상태 카드에서 "다시 시도" — T1 호출 재수행.
+   * 성공: tags/extracted 채워지고 _tagError 초기화
+   * 실패: 새 에러로 갱신 (런타임 재시도 3회 포함)
+   */
+  const retryTagging = async (ref) => {
+    try {
+      await storeSlice.updateReference(ref.id, { _pending: true, _tagError: null });
+      const dataUrl = await imageUrlToBase64DataUrl(ref.thumbnailUrl);
+      const resized = await resizeDataUrl(dataUrl, 512);
+      const result = await runAutoTag({ imageUrl: resized });
+      await storeSlice.updateReference(ref.id, {
+        tags: result.tags,
+        dominantColors: result.dominantColors,
+        title: result.title,
+        extracted: result.extracted || {},
+        _pending: false,
+        _tagError: null,
+      });
+    } catch (e) {
+      await storeSlice.updateReference(ref.id, {
+        _pending: false,
+        _tagError: e?.message || String(e),
+      });
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -175,24 +381,24 @@ export function ArchivePage({
     <AppShell
       logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
       headerPersistent={
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={ <AddIcon /> }
-          onClick={ onNewProject }
-        >
-          새 프로젝트
-        </Button>
+        <Box sx={ { display: 'flex', alignItems: 'center', gap: 1.5 } }>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={ <AddIcon /> }
+            onClick={ onNewProject }
+          >
+            새 프로젝트
+          </Button>
+          { headerEnd }
+        </Box>
       }
       sx={ sx }
     >
       <PageContainer>
         {/* Hero */}
-        <Box sx={ { py: { xs: 4, md: 8 } } }>
-          <Typography variant="h2" sx={ { mb: 1 } }>Archive</Typography>
-          <Typography variant="body1" color="text.secondary" sx={ { maxWidth: 640 } }>
-            프로젝트와 무관하게 수시로 쌓는 레퍼런스. AI가 자동으로 태그를 달아둔다.
-          </Typography>
+        <Box sx={ { py: { xs: 3, md: 5 } } }>
+          <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Archive</Typography>
         </Box>
 
         {/* Upload dropzone */}
@@ -236,21 +442,134 @@ export function ArchivePage({
             onClear={ () => setSearchTerm('') }
             isFullWidth
           />
-          { allTags.length > 0 && (
-            <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 2 } }>
-              { allTags.map((tag) => (
-                <Chip
-                  key={ tag }
-                  label={ tag }
+          { (hasAnyTag || representativeCounts.length > 0) && (
+            <Box sx={ { mt: 2 } }>
+              { /* 색상 — 대표 색상환 기반, 선택 시 주변색 유사도 매칭 */ }
+              { representativeCounts.length > 0 && (
+                <FilterAccordion label="색상" count={ activeColors.length }>
+                  <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 1 } }>
+                    { representativeCounts.map(({ hex, label, count }) => {
+                      const isActive = activeColors.includes(hex);
+                      return (
+                        <Box
+                          key={ hex }
+                          onClick={ () => toggleColor(hex) }
+                          title={ `${label} · ${count}장` }
+                          sx={ {
+                            position: 'relative',
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            bgcolor: hex,
+                            cursor: 'pointer',
+                            outline: '2px solid',
+                            outlineOffset: 2,
+                            outlineColor: isActive ? 'primary.main' : 'transparent',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            transition: 'outline-color 150ms',
+                          } }
+                        >
+                          { isActive && (
+                            <Box
+                              sx={ {
+                                position: 'absolute',
+                                top: -6,
+                                right: -6,
+                                minWidth: 18,
+                                height: 18,
+                                px: 0.5,
+                                borderRadius: '9px',
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                fontSize: '0.65rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              } }
+                            >
+                              { count }
+                            </Box>
+                          ) }
+                        </Box>
+                      );
+                    }) }
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    대표 색 선택 시 유사 계열 레퍼런스가 함께 필터링됩니다
+                  </Typography>
+                </FilterAccordion>
+              ) }
+
+              { /* 디자인 레이어 */ }
+              { ['typography', 'layout', 'gradient'].some((k) => layeredTags[k]?.length > 0) && (
+                <FilterAccordion
+                  label="디자인 레이어"
+                  count={ activeTags.filter((t) =>
+                    ['typography', 'layout', 'gradient'].some((k) => layeredTags[k]?.includes(t))
+                  ).length }
+                >
+                  { [
+                    { key: 'typography', label: '타이포' },
+                    { key: 'layout', label: '레이아웃' },
+                    { key: 'gradient', label: '그라디언트' },
+                  ].filter(({ key }) => layeredTags[key]?.length > 0).map(({ key, label }) => (
+                    <FilterSubRow key={ key } label={ label }>
+                      { layeredTags[key].map((tag) => (
+                        <Chip
+                          key={ tag }
+                          label={ tag }
+                          size="small"
+                          color={ activeTags.includes(tag) ? 'primary' : 'default' }
+                          variant={ activeTags.includes(tag) ? 'filled' : 'outlined' }
+                          onClick={ () => toggleTag(tag) }
+                          sx={ { height: 26, fontSize: '0.72rem' } }
+                        />
+                      )) }
+                    </FilterSubRow>
+                  )) }
+                </FilterAccordion>
+              ) }
+
+              { /* 비주얼 디렉션 */ }
+              { ['genre', 'style', 'subject'].some((k) => layeredTags[k]?.length > 0) && (
+                <FilterAccordion
+                  label="비주얼 디렉션"
+                  count={ activeTags.filter((t) =>
+                    ['genre', 'style', 'subject'].some((k) => layeredTags[k]?.includes(t))
+                  ).length }
+                >
+                  { [
+                    { key: 'genre', label: '장르' },
+                    { key: 'style', label: '스타일' },
+                    { key: 'subject', label: '주제' },
+                  ].filter(({ key }) => layeredTags[key]?.length > 0).map(({ key, label }) => (
+                    <FilterSubRow key={ key } label={ label }>
+                      { layeredTags[key].map((tag) => (
+                        <Chip
+                          key={ tag }
+                          label={ tag }
+                          size="small"
+                          color={ activeTags.includes(tag) ? 'primary' : 'default' }
+                          variant={ activeTags.includes(tag) ? 'filled' : 'outlined' }
+                          onClick={ () => toggleTag(tag) }
+                          sx={ { height: 26, fontSize: '0.72rem' } }
+                        />
+                      )) }
+                    </FilterSubRow>
+                  )) }
+                </FilterAccordion>
+              ) }
+
+              { totalActiveFilters > 0 && (
+                <Button
                   size="small"
-                  color={ activeTags.includes(tag) ? 'primary' : 'default' }
-                  variant={ activeTags.includes(tag) ? 'filled' : 'outlined' }
-                  onClick={ () => toggleTag(tag) }
-                />
-              )) }
-              { activeTags.length > 0 && (
-                <Button size="small" variant="text" onClick={ () => setActiveTags([]) }>
-                  초기화
+                  variant="text"
+                  onClick={ resetAllFilters }
+                  sx={ { mt: 2 } }
+                >
+                  필터 초기화 ({ totalActiveFilters })
                 </Button>
               ) }
             </Box>
@@ -267,13 +586,13 @@ export function ArchivePage({
         {/* Grid */}
         <InfiniteMasonry
           items={ filtered }
-          hasMore={ hasMore && !searchTerm && !activeTags.length }
+          hasMore={ hasMore && !searchTerm && !activeTags.length && !activeColors.length }
           isLoading={ isLoading }
           onLoadMore={ onLoadMore }
           columns={ { xs: 2, sm: 3, md: 4, lg: 5 } }
           spacing={ 2 }
           emptyContent={
-            searchTerm || activeTags.length
+            searchTerm || activeTags.length || activeColors.length
               ? '조건에 맞는 레퍼런스가 없습니다.'
               : '아직 수집된 레퍼런스가 없습니다. 이미지를 드래그해서 추가해보세요.'
           }
@@ -288,6 +607,7 @@ export function ArchivePage({
                 src={ item.thumbnailUrl || item.src }
                 title={ item.title }
                 tags={ flattenTags(item).slice(0, 3) }
+                dominantColors={ item.dominantColors || [] }
               />
               { useStoreMode && !item._pending && (
                 <IconButton
@@ -341,16 +661,35 @@ export function ArchivePage({
                     position: 'absolute',
                     top: 8,
                     right: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
                     bgcolor: 'error.main',
                     color: 'white',
                     borderRadius: 999,
-                    px: 1,
+                    pl: 1,
+                    pr: 0.25,
                     py: 0.25,
                     fontSize: 10,
                   } }
                   title={ item._tagError }
                 >
-                  태깅 실패
+                  <span>태깅 실패</span>
+                  <IconButton
+                    size="small"
+                    onClick={ (e) => {
+                      e.stopPropagation();
+                      retryTagging(item);
+                    } }
+                    aria-label="태깅 다시 시도"
+                    sx={ {
+                      p: 0.25,
+                      color: 'white',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+                    } }
+                  >
+                    <RefreshIcon sx={ { fontSize: 14 } } />
+                  </IconButton>
                 </Box>
               ) }
             </Box>

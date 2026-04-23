@@ -2,6 +2,16 @@
 
 실습 교육용 작업 로그 인덱스. 번호 순서대로 따라가면 프로젝트 진화 과정을 재현할 수 있다.
 
+## 재현 가이드 (먼저 읽기)
+
+| 문서 | 용도 |
+|---|---|
+| [ANALYSIS.md](./ANALYSIS.md) | 24개 로그 교차 분석 — Timeline / Spec Ledger / Data Schema Diff / Branching Hotspots |
+| [PHASE-CARDS.md](./PHASE-CARDS.md) | 10 Phase로 묶은 카드 — 진입조건 / 핵심결정 / 산출물 / 검증기준 |
+| [REPRODUCE-FAQ.md](./REPRODUCE-FAQ.md) | 바이브 코딩 중 AI가 다른 제안 시 즉답용 35문항 Q&A |
+
+## 로그 (번호순)
+
 | # | 제목 | 날짜 | 파일 |
 |---|------|------|------|
 | 001 | MUSE 프로젝트 기획 Phase 1 (project-summary) 작성 | 2026-04-22 | [001-MUSE-프로젝트-기획-Phase1.md](./001-MUSE-프로젝트-기획-Phase1.md) |
@@ -23,3 +33,8 @@
 | 017 | MUSE — Store seed 분기 (Dev는 empty, Storybook은 fixtures) | 2026-04-22 | [017-MUSE-Store-seed-분기-Dev-empty-Storybook-fixtures.md](./017-MUSE-Store-seed-분기-Dev-empty-Storybook-fixtures.md) |
 | 018 | MUSE — 02-ux-flow 데이터 모델 동기화 + Supabase 백엔드 연동 계획·튜토리얼 작성 | 2026-04-23 | [018-MUSE-UX-Flow-데이터모델-동기화-및-Supabase-백엔드-계획.md](./018-MUSE-UX-Flow-데이터모델-동기화-및-Supabase-백엔드-계획.md) |
 | 019 | MUSE — Supabase Phase 1~4 적용 + 회원가입/로그인 플로우 구축 | 2026-04-23 | [019-MUSE-Supabase-Phase1-4-적용-회원가입-로그인-구축.md](./019-MUSE-Supabase-Phase1-4-적용-회원가입-로그인-구축.md) |
+| 020 | MUSE — Supabase 데이터훅 완성 + AuthProvider 싱글톤 + T3 비용 최적화 + 레퍼런스 삭제/다중업로드 UX | 2026-04-23 | [020-MUSE-Supabase-데이터훅-완성-T3-비용최적화-삭제-다중업로드.md](./020-MUSE-Supabase-데이터훅-완성-T3-비용최적화-삭제-다중업로드.md) |
+| 021 | MUSE — Archive 필터 계층화 + hex 색상 스와치 필터 + 카드 dominantColors 노출 | 2026-04-23 | [021-MUSE-Archive-필터-계층화-및-hex-색상-스와치-필터.md](./021-MUSE-Archive-필터-계층화-및-hex-색상-스와치-필터.md) |
+| 022 | MUSE — 디자인 QA 전수 이행 (elevation/hover/위치 효과 제거, Accordion 필터, 색상환 유사색, GNB 재구성, 앰비언트 배경) | 2026-04-23 | [022-MUSE-디자인-QA-전수-이행.md](./022-MUSE-디자인-QA-전수-이행.md) |
+| 023 | MUSE — T1/T3 아키텍처 전환 (업로드 시 T3 레벨 값 추출 + 프로젝트 시 이미지 없이 compose, Haiku 통일, 비용 ~2.5x 절감) | 2026-04-23 | [023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md](./023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md) |
+| 024 | MUSE — 다중 업로드 간헐 생략 + 프로젝트 생성 후 "없는 프로젝트" 에러 수정 + T1 태깅 재시도 정책 | 2026-04-23 | [024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md](./024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md) |

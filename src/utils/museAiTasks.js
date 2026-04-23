@@ -21,13 +21,30 @@ import {
 } from '../data/muse';
 
 /**
- * T1 · 이미지 URL → 자동 태깅
- * @param {object} params
- * @param {string} params.imageUrl - 원본 이미지 URL (data URL / bundled / http)
- * @param {string} [params.model] - 모델 override (기본: TASK_AUTO_TAG.model)
- * @returns {Promise<{ tags, dominantColors, title }>}
+ * 재시도 가능한 에러인가 판정.
+ *   - network/timeout: retry
+ *   - 429 (rate limit): retry
+ *   - 5xx: retry
+ *   - 4xx (429 제외): no retry (재호출해도 같은 에러)
+ *   - tool_use 응답 없음: 1회 retry (Haiku 가 간헐적으로 schema 위반)
  */
-export async function runAutoTag({ imageUrl, model }) {
+function isRetryableError(err) {
+  if (!err) return false;
+  const status = err.status;
+  if (!status) return true; // network/timeout 등 status 없음
+  if (status === 429) return true;
+  if (status >= 500 && status < 600) return true;
+  if (status >= 400 && status < 500) return false;
+  return false;
+}
+
+/**
+ * T1 · 이미지 URL → 자동 태깅 (자동 재시도 3회)
+ *   - 재시도 조건: network / 429 / 5xx / tool_use 응답 없음
+ *   - 포기 조건: 4xx (except 429) — 설정/이미지 문제
+ * @returns {Promise<{ tags, dominantColors, title, extracted }>}
+ */
+export async function runAutoTag({ imageUrl, model, maxAttempts = 3 }) {
   const dataUrl = imageUrl.startsWith('data:')
     ? imageUrl
     : await imageUrlToBase64DataUrl(imageUrl);
@@ -35,25 +52,40 @@ export async function runAutoTag({ imageUrl, model }) {
   const imageBlock = toImageBlock(resized);
   if (!imageBlock) throw new Error('이미지 블록 생성 실패');
 
-  const response = await callAnthropic({
-    model: model || TASK_AUTO_TAG.model,
-    max_tokens: 512,
-    system: TASK_AUTO_TAG.systemPrompt,
-    tools: [TASK_AUTO_TAG.toolSchema],
-    tool_choice: { type: 'tool', name: TASK_AUTO_TAG.toolSchema.name },
-    messages: [
-      {
-        role: 'user',
-        content: [imageBlock, { type: 'text', text: TASK_AUTO_TAG.userMessageTemplate }],
-      },
-    ],
-  });
-
-  const toolInput = extractToolInput(response, TASK_AUTO_TAG.toolSchema.name);
-  if (!toolInput) {
-    throw new Error(`T1 tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await callAnthropic({
+        model: model || TASK_AUTO_TAG.model,
+        max_tokens: 512,
+        system: TASK_AUTO_TAG.systemPrompt,
+        tools: [TASK_AUTO_TAG.toolSchema],
+        tool_choice: { type: 'tool', name: TASK_AUTO_TAG.toolSchema.name },
+        messages: [
+          {
+            role: 'user',
+            content: [imageBlock, { type: 'text', text: TASK_AUTO_TAG.userMessageTemplate }],
+          },
+        ],
+      });
+      const toolInput = extractToolInput(response, TASK_AUTO_TAG.toolSchema.name);
+      if (!toolInput) {
+        throw new Error(`T1 tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+      }
+      return toolInput;
+    } catch (e) {
+      lastError = e;
+      if (!isRetryableError(e) || attempt === maxAttempts) {
+        throw e;
+      }
+      // exponential backoff: 500ms → 1500ms
+      const delay = 500 * Math.pow(3, attempt - 1);
+      // eslint-disable-next-line no-console
+      console.warn(`[runAutoTag] attempt ${attempt} 실패, ${delay}ms 후 재시도`, e?.message);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
-  return toolInput;
+  throw lastError;
 }
 
 /**
@@ -104,49 +136,33 @@ export async function runRecommend({ intent, type, archive, n = 6, model }) {
 export async function runAnalyzeTokens({ intent, type, selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
-  // 이미지 512px 리사이즈 (T1 primary signal + image verification 역할 분담)
-  const imageBlocks = [];
-  for (const ref of selectedRefs) {
-    const dataUrl = ref.thumbnailUrl.startsWith('data:')
-      ? ref.thumbnailUrl
-      : await imageUrlToBase64DataUrl(ref.thumbnailUrl);
-    const resized = await resizeDataUrl(dataUrl, 512);
-    imageBlocks.push({ ref, block: toImageBlock(resized) });
-  }
-
-  // T1 분석 결과를 JSON 헤더로 상단 배치 (PRIMARY signal)
-  const t1Summary = selectedRefs.map((ref) => ({
+  // 사전 추출된 데이터만 payload 로 전송. 이미지 없음.
+  const extractedPool = selectedRefs.map((ref) => ({
     id: ref.id,
+    title: ref.title || null,
     tags: ref.tags || {},
     dominantColors: ref.dominantColors || [],
-    title: ref.title || null,
+    extracted: ref.extracted || {},
   }));
 
-  // content 구성:
-  //   1) T1 JSON 헤더 (primary classification signal)
-  //   2) 이미지들 + 각각의 경량 id 앵커 (secondary, concrete value 추출용)
-  //   3) 최종 지시 (intent/type/count)
-  const content = [];
-  content.push({
-    type: 'text',
-    text: `=== PRIMARY SIGNAL: T1 pre-analysis (${selectedRefs.length} references) ===
+  const content = [
+    {
+      type: 'text',
+      text: `=== Pre-extracted references (${selectedRefs.length}) ===
 
-${JSON.stringify(t1Summary, null, 2)}
+${JSON.stringify(extractedPool, null, 2)}
 
-=== SECONDARY: images below (512px, same order as ids above) ===`,
-  });
-  imageBlocks.forEach(({ ref, block }) => {
-    content.push(block);
-    content.push({ type: 'text', text: `↑ image for id: ${ref.id}` });
-  });
-  content.push({
-    type: 'text',
-    text: TASK_ANALYZE_TOKENS.userMessageTemplate
-      .replace('{{intent}}', intent)
-      .replace('{{type}}', type)
-      .replace('{{count}}', String(selectedRefs.length))
-      .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
-  });
+=== End of references ===`,
+    },
+    {
+      type: 'text',
+      text: TASK_ANALYZE_TOKENS.userMessageTemplate
+        .replace('{{intent}}', intent)
+        .replace('{{type}}', type)
+        .replace('{{count}}', String(selectedRefs.length))
+        .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
+    },
+  ];
 
   // 진행 상태 시작 — 호출 전 레이어 모두 running
   onProgress?.(

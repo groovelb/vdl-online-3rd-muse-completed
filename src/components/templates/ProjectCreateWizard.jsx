@@ -9,7 +9,6 @@ import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import Button from '@mui/material/Button';
 import { ReferencePicker } from './ReferencePicker.jsx';
 import { AnalysisProgress } from '../overlay-feedback/AnalysisProgress.jsx';
@@ -181,30 +180,31 @@ export function ProjectCreateWizard({
   const renderStep = () => {
     if (state.step === 0) {
       return (
-        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 560 } }>
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 620, mx: 'auto', width: '100%' } }>
           <TextField
-            label="프로젝트 이름"
             value={ state.form.name }
             onChange={ (e) => dispatch({ type: 'UPDATE_FORM', payload: { name: e.target.value } }) }
-            placeholder="예: Editorial Portfolio"
+            placeholder="프로젝트 이름 (예: Editorial Portfolio)"
             fullWidth
           />
           <TextField
-            label="한 문장 의도"
             value={ state.form.intent }
             onChange={ (e) => dispatch({ type: 'UPDATE_FORM', payload: { intent: e.target.value } }) }
-            placeholder="예: 미니멀한 흑백 대비, 라지 타이포 중심의 매거진 톤"
+            placeholder="한 문장 의도 (예: 미니멀한 흑백 대비, 라지 타이포 중심의 매거진 톤)"
             fullWidth
             multiline
-            rows={ 2 }
+            rows={ 3 }
           />
           <FormControl fullWidth>
-            <InputLabel id="project-type-label">프로젝트 유형</InputLabel>
             <Select
-              labelId="project-type-label"
-              label="프로젝트 유형"
+              displayEmpty
               value={ state.form.type }
               onChange={ (e) => dispatch({ type: 'UPDATE_FORM', payload: { type: e.target.value } }) }
+              renderValue={ (v) => {
+                if (!v) return <Box component="span" sx={ { color: 'text.secondary' } }>프로젝트 유형 선택</Box>;
+                const t = PROJECT_TYPES.find((x) => x.value === v);
+                return t ? t.label : v;
+              } }
             >
               { PROJECT_TYPES.map((t) => (
                 <MenuItem key={ t.value } value={ t.value }>{ t.label }</MenuItem>
@@ -243,6 +243,7 @@ export function ProjectCreateWizard({
       <Box sx={ { display: 'flex', justifyContent: 'center' } }>
         <AnalysisProgress
           title={ `"${state.form.name}" 분석 중` }
+          intent={ state.form.intent }
           layers={ state.analysisLayers }
           onCancel={ state.analysisState === 'running' ? onCancel : undefined }
           onRetry={ state.analysisState === 'error' ? handleStartAnalysis : undefined }

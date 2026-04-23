@@ -7,6 +7,7 @@ import { AppShell } from '../components/layout/AppShell.jsx';
 import { PageContainer } from '../components/layout/PageContainer.jsx';
 import { useAnalysesSlice, useProjectsSlice, useReferencesSlice } from '../store';
 import { MuseNav } from './MuseNav.jsx';
+import { UserMenu } from './UserMenu.jsx';
 
 export function ProjectDetailRoute() {
   const { id } = useParams();
@@ -20,7 +21,7 @@ export function ProjectDetailRoute() {
 
   if (!project) {
     return (
-      <AppShell logo={ <MuseNav /> }>
+      <AppShell logo={ <MuseNav /> } headerPersistent={ <UserMenu /> }>
         <PageContainer>
           <Box sx={ { py: 10, textAlign: 'center' } }>
             <Typography variant="h5" sx={ { fontWeight: 600, mb: 2 } }>프로젝트를 찾을 수 없습니다</Typography>
@@ -39,6 +40,7 @@ export function ProjectDetailRoute() {
   return (
     <ProjectDetailPage
       logo={ <MuseNav /> }
+      headerEnd={ <UserMenu /> }
       project={ project }
       analysis={ analysis?.layers || { color: [], typography: [], layout: [], gradient: [], visualDirection: { markdown: '', tags: {} } } }
       references={ references }

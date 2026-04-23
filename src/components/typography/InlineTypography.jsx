@@ -54,12 +54,9 @@ export function InlineObject({
         mx: `${spacing}em`,
         borderRadius: rounded ? '50%' : 0,
         overflow: 'hidden',
-        transition: hover ? 'transform 0.2s ease-out, box-shadow 0.2s ease-out' : 'none',
+        transition: hover ? 'opacity 150ms' : 'none',
         cursor: hover ? 'pointer' : 'inherit',
-        '&:hover': hover ? {
-          transform: 'scale(1.1) rotate(3deg)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        } : {},
+        '&:hover': hover ? { opacity: 0.8 } : {},
         '& > img, & > svg': {
           width: '100%',
           height: '100%',

@@ -191,7 +191,8 @@ export function ThemeExportDialog({
                 top: 28,
                 right: 8,
                 bgcolor: 'background.paper',
-                boxShadow: 1,
+                border: '1px solid',
+                borderColor: 'divider',
                 '&:hover': { bgcolor: 'background.default' },
               } }
               aria-label="JSON 클립보드 복사"

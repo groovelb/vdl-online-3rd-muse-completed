@@ -28,56 +28,87 @@ const COMMON_QUALITY = [
  * ========================================================= */
 export const TASK_AUTO_TAG = {
   id: 't1',
-  name: '자동 태깅',
-  purpose: 'Reference 아카이빙 시 preset 기반 5레이어 태그를 자동 부여',
+  name: '레퍼런스 추출 (T3 레벨)',
+  purpose: 'Reference 1장에서 관찰 가능한 디자인 값(palette/typography/layout/gradient)을 전부 추출. role/emphasis 는 프로젝트 단계로 미룸',
   stage: 'archive.upload',
   model: 'claude-haiku-4-5',
 
   input: {
     kind: 'image',
-    description: '단일 reference 이미지 (최대 ~5MB)',
+    description: '단일 reference 이미지 (512px 리사이즈 권장)',
     shape: '{ imageBase64: string, mediaType: "image/jpeg" | "image/png" }',
   },
 
   output: {
-    description: 'Reference.tags (레이어별 중첩) + dominantColors + title',
+    description: '레이어 태그 + dominantColors + title + extracted (palette/typography/layout/gradient)',
     shape: `{
-  tags: {
-    color: string[0..3],
-    typography: string[0..3],
-    layout: string[0..3],
-    gradient: string[0..3],
-    visualDirection: {
-      genre: string[0..2],
-      style: string[0..2],
-      subject: string[0..2],
-    }
-  },
+  tags: { color[], typography[], layout[], gradient[], visualDirection: {genre, style, subject} },
   dominantColors: string[3..5],
-  title: string
+  title: string,
+  extracted: {
+    palette: [{ hex, label, group? }],
+    typography: [{ hierarchy, fontFamily, fontWeight, fontSize, lineHeight, letterSpacing, sampleText? }],
+    layout: [{ kind, columns?, gap?, px?, ratio?, maxWidth? }],
+    gradient: [{ gradient, stops: [{offset, color}] }]
+  }
 }`,
   },
 
-  systemPrompt: `You are a design curation assistant for MUSE.
+  systemPrompt: `You are MUSE's per-reference design extractor.
 
-Given a single reference image, extract structured tags organized by layers.
-Each tag must come from the closed vocabulary below (descriptions provided for nuance).
+Given a single reference image, extract both:
+  (1) CLASSIFICATION — preset tags per layer (from the vocabulary below)
+  (2) OBSERVED VALUES — concrete design values visible in the image (palette, typography, layout, gradient)
 
 ${renderVocabularyPrompt([...TOKEN_LAYERS, 'visual_direction'])}
 
-Output rules:
-- For each of color / typography / layout / gradient: pick 0 to 3 tags from the respective vocabulary.
-- For visualDirection: pick 0 to 2 tags per sub-category (genre / style / subject).
-- Do NOT invent tags. Do NOT mix tags across layers (e.g. don't put "Muted" in typography).
-- dominantColors: 3 to 5 HEX colors (#RRGGBB) ordered from most prominent background to most prominent accent.
-- title: 2 to 5 word English title capturing the visual style (not literal subject).
-- Respond using the submit_tagging tool only. No prose.`,
+=== Classification rules (tags / dominantColors / title) ===
+- tags.color / typography / layout / gradient: 0 to 3 items from respective vocab
+- tags.visualDirection.{genre,style,subject}: 0 to 2 items each
+- dominantColors: 3 to 5 HEX (#RRGGBB) ordered from most prominent background to accent
+- title: 2-5 word English descriptor of visual tone (not literal subject)
+- Do NOT invent tags or mix across layers
 
-  userMessageTemplate: 'Analyze this reference image and submit the tagging.',
+=== Extraction rules (extracted.*) ===
+
+[extracted.palette] 3-6 items.
+- Each: { hex (#RRGGBB), label (1-2 word descriptor), group? ('Brand'|'Surface'|'Data'|'Neutral') }
+- group is a HINT only — role (primary/secondary/accent/neutral) is assigned at project time, NOT here
+- palette should align with dominantColors but adds label + group hint
+
+[extracted.typography] 1-4 items.
+- Each observed typographic tier (display / heading / body / caption — use as 'hierarchy')
+- fontFamily: best-guess CSS stack (e.g. 'Inter, sans-serif' or 'Playfair Display, serif')
+- fontWeight: 100-900 integer
+- fontSize: CSS value (e.g. '48px' or 'clamp(2rem, 5vw, 3.5rem)')
+- lineHeight: unitless number (e.g. 1.2)
+- letterSpacing: em value (e.g. '-0.02em')
+- sampleText: actual visible text snippet if readable (optional)
+- Do NOT assign variant (h1/h2/body1) — project step will
+
+[extracted.layout] 0-3 items.
+- Each: { kind: 'grid'|'spacing'|'container', columns?, gap?, px?, ratio?, maxWidth? }
+- columns/gap/px: integers estimated from visual proportions
+- ratio: float (for container aspect, e.g. 1.618)
+- maxWidth: CSS value (e.g. '1200px')
+- Provide only fields observable from the image
+
+[extracted.gradient] 0-2 items.
+- Each: { gradient: CSS string, stops: [{ offset: 0-1, color: '#RRGGBB' }, ...] }
+- Only if gradient is clearly visible in the image
+- Omit entirely (empty array) if no gradient
+
+=== IMPORTANT ===
+- Do NOT assign role (primary/secondary/accent/neutral).
+- Do NOT assign emphasis (0/1/2).
+- Those are project-level decisions based on intent.
+- Respond via the submit_tagging tool only. No prose.`,
+
+  userMessageTemplate: 'Analyze this reference image and submit both classification tags AND observed design values.',
 
   toolSchema: {
     name: TOOL_AUTO_TAG_NAME,
-    description: 'Submit layered tags, dominant colors, and title for a reference image.',
+    description: 'Submit classification tags, dominant colors, title, and per-image extracted design values.',
     input_schema: {
       type: 'object',
       properties: {
@@ -106,8 +137,82 @@ Output rules:
           minItems: 3, maxItems: 5,
         },
         title: { type: 'string', minLength: 3, maxLength: 40 },
+        extracted: {
+          type: 'object',
+          properties: {
+            palette: {
+              type: 'array',
+              minItems: 3, maxItems: 6,
+              items: {
+                type: 'object',
+                properties: {
+                  hex: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$' },
+                  label: { type: 'string', minLength: 1, maxLength: 30 },
+                  group: { type: 'string', enum: ['Brand', 'Surface', 'Data', 'Neutral'] },
+                },
+                required: ['hex', 'label'],
+              },
+            },
+            typography: {
+              type: 'array',
+              minItems: 1, maxItems: 4,
+              items: {
+                type: 'object',
+                properties: {
+                  hierarchy: { type: 'string', enum: ['display', 'heading', 'body', 'caption'] },
+                  fontFamily: { type: 'string', minLength: 1 },
+                  fontWeight: { type: 'integer', minimum: 100, maximum: 900 },
+                  fontSize: { type: 'string' },
+                  lineHeight: { type: 'number', minimum: 0.8, maximum: 2.5 },
+                  letterSpacing: { type: 'string' },
+                  sampleText: { type: 'string' },
+                },
+                required: ['hierarchy', 'fontFamily', 'fontWeight', 'fontSize', 'lineHeight'],
+              },
+            },
+            layout: {
+              type: 'array',
+              minItems: 0, maxItems: 3,
+              items: {
+                type: 'object',
+                properties: {
+                  kind: { type: 'string', enum: ['grid', 'spacing', 'container'] },
+                  columns: { type: 'integer', minimum: 1, maximum: 24 },
+                  gap: { type: 'integer', minimum: 0, maximum: 200 },
+                  px: { type: 'integer', minimum: 0, maximum: 200 },
+                  ratio: { type: 'number' },
+                  maxWidth: { type: 'string' },
+                },
+                required: ['kind'],
+              },
+            },
+            gradient: {
+              type: 'array',
+              minItems: 0, maxItems: 2,
+              items: {
+                type: 'object',
+                properties: {
+                  gradient: { type: 'string', minLength: 10 },
+                  stops: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        offset: { type: 'number', minimum: 0, maximum: 1 },
+                        color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$' },
+                      },
+                      required: ['offset', 'color'],
+                    },
+                  },
+                },
+                required: ['gradient', 'stops'],
+              },
+            },
+          },
+          required: ['palette', 'typography', 'layout', 'gradient'],
+        },
       },
-      required: ['tags', 'dominantColors', 'title'],
+      required: ['tags', 'dominantColors', 'title', 'extracted'],
     },
   },
 
@@ -126,32 +231,41 @@ Output rules:
         typography: ['Serif', 'Editorial'],
         layout: ['Asymmetric'],
         gradient: [],
-        visualDirection: {
-          genre: ['Retro'],
-          style: ['Magazine'],
-          subject: ['Portrait-Photo'],
-        },
+        visualDirection: { genre: ['Retro'], style: ['Magazine'], subject: ['Portrait-Photo'] },
       },
       dominantColors: ['#1A1A1F', '#8B7A6B', '#E8DCC4'],
       title: 'Muted Editorial Portrait',
+      extracted: {
+        palette: [
+          { hex: '#1A1A1F', label: 'Ink', group: 'Neutral' },
+          { hex: '#8B7A6B', label: 'Muted Brown', group: 'Surface' },
+          { hex: '#E8DCC4', label: 'Cream', group: 'Surface' },
+        ],
+        typography: [
+          { hierarchy: 'display', fontFamily: 'Playfair Display, serif', fontWeight: 700, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.1, letterSpacing: '-0.02em' },
+          { hierarchy: 'body', fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '1rem', lineHeight: 1.6 },
+        ],
+        layout: [
+          { kind: 'grid', columns: 12, gap: 24, px: 32 },
+        ],
+        gradient: [],
+      },
     },
   },
 
   workflow: [
-    '유저가 드래그앤드롭/URL로 이미지 업로드',
-    '클라이언트가 이미지를 base64 인코딩',
-    'Anthropic messages.create (system에 preset 어휘 삽입, tool_choice 강제)',
-    'Response의 tool_use 블록에서 input 객체 추출',
-    '자동 검증 (schema + 레이어별 enum + hex)',
-    '실패 시 1회 재시도 → 그래도 실패하면 수동 태깅 fallback',
-    'Reference 객체에 병합 후 아카이브에 저장',
+    '유저가 드래그앤드롭/URL로 이미지 업로드 (512px 리사이즈)',
+    'Anthropic messages.create (Haiku, 확장 tool schema)',
+    'Response 의 tool_use 블록에서 tags + dominantColors + title + extracted 전부 추출',
+    '자동 검증 (schema + enum + hex)',
+    'Reference 에 병합 후 DB insert (reference_items.extracted jsonb)',
   ],
 
   estCost: {
     model: 'Haiku 4.5',
-    tokensIn: '~1.8k (image + preset 어휘 포함 system)',
-    tokensOut: '~200',
-    note: 'prompt caching 시 system ~1.6k 캐시됨',
+    tokensIn: '~5k (image 512px + preset vocab + 확장 tool schema)',
+    tokensOut: '~500 (tags + extracted palette/typo/layout/gradient)',
+    note: 'T3 레벨 값 추출까지 포함. 확장 schema cache hit 로 Input cost 약 1.5배로 억제',
   },
 };
 
@@ -267,20 +381,19 @@ Select the best matches.`,
  * ========================================================= */
 export const TASK_ANALYZE_TOKENS = {
   id: 't3',
-  name: '토큰 분석 + 비주얼 디렉션',
-  purpose: '선택된 레퍼런스에서 4 토큰 레이어(JSON) + visualDirection(Markdown) 동시 산출',
+  name: '의도 기반 조합 분석',
+  purpose: '사전 추출된 N 장의 디자인 값을 의도에 맞게 조합·선별하고 role/emphasis 를 배정. 이미지 재분석 없음.',
   stage: 'project.create.step3',
-  model: 'claude-sonnet-4-6',
+  model: 'claude-haiku-4-5',
 
   input: {
-    kind: 'text+image(verify)',
-    description: 'T1 pre-analysis JSON (primary) + N장 512px 이미지(verification) + 의도 + 유형',
+    kind: 'text',
+    description: '선택된 N 장의 T1 pre-extracted 데이터 (tags + dominantColors + extracted{palette/typo/layout/gradient}) + 의도 + 유형',
     shape: `{
   intent: string,
   type: 'landing'|'dashboard'|'mobile'|'brand',
-  references: Array<{ id, imageBase64, mediaType, tags: ReferenceLayeredTags, dominantColors[] }>
-    // T1 tags + dominantColors are PRIMARY signal.
-    // Image is downscaled to 512px — used only for concrete value extraction + verification.
+  references: Array<{ id, title, tags, dominantColors[], extracted }>
+    // 전부 text. 이미지 없음. T1 이 이미 관찰 가능한 값들을 모두 뽑아놓은 상태.
 }`,
   },
 
@@ -300,67 +413,64 @@ export const TASK_ANALYZE_TOKENS = {
 }`,
   },
 
-  systemPrompt: `You are MUSE's design token + visual direction synthesizer.
+  systemPrompt: `You are MUSE's intent-driven token composer.
 
-=== INPUT SIGNAL PRIORITY (read this before anything else) ===
+You receive N pre-analyzed references AS TEXT ONLY (no images).
+Every reference has been processed by T1 at upload time, producing:
+  - tags (preset classification: color/typography/layout/gradient/visualDirection)
+  - dominantColors (HEX array)
+  - extracted: { palette[], typography[], layout[], gradient[] } — concrete observed values
+    (NO role, NO emphasis — those are YOUR job)
 
-You receive two signal tiers for every call:
+=== YOUR JOB ===
 
-1. PRIMARY — a T1 pre-analysis block, provided as a JSON summary at the top of the
-   user message. For each reference it contains preset-vocabulary tags
-   (color / typography / layout / gradient / visualDirection) AND extracted
-   dominantColors (HEX). This is the reliable classification signal. Base your
-   design direction decisions on it (palette family, hierarchy mood, layout
-   archetype, genre/style/subject mix).
+Given: the pre-extracted pool across N references + project intent + type.
 
-2. SECONDARY — reference images (downscaled to 512px for efficiency). Their role
-   is narrow:
-   - Extract CONCRETE values that T1 does NOT provide: fontFamily guess,
-     fontWeight, fontSize, lineHeight, layout columns/gap/px, gradient stops.
-   - Verify that T1's direction holds. Resolve ambiguity in edge cases.
-   - NOT for re-classifying what T1 already labeled. If T1 says "muted", do not
-     override to "saturated" based on pixel inspection unless the image clearly
-     contradicts T1 beyond doubt.
+Produce: a UNIFIED design system that reflects the intent strongly, by:
+  1. SELECTING from the pre-extracted pool (do not invent values not present in it)
+  2. CLUSTERING similar entries (hex close to each other, typography tiers that align)
+  3. ASSIGNING role / emphasis / variant (h1/h2/body1/...) based on intent
+  4. OVERRIDING when intent demands coherence (e.g. unifying fontSize scale across refs)
+  5. WRITING the VD markdown as an intent-driven narrative
 
-3. CONTEXT — project intent + type. Weight choices accordingly
-   (e.g. "dashboard" → data-dense typography; "brand" → saturated primary).
-
-When T1 tags and image seem to disagree, PREFER T1. Treat images as low-fidelity
-supporting evidence — at 512px you cannot and should not attempt pixel-perfect
-classification. T1 already handled that at the right resolution.
+Reference images are NOT provided. Do not ask for them. Do not pretend to "see" them.
+Trust the pre-extracted data. Your value is composition, not observation.
 
 === OUTPUT ===
 
-You MUST call BOTH of these tools in the same response:
-  1. submit_tokens — 4 token layers (color, typography, layout, gradient) as JSON
-  2. submit_visual_direction — Markdown document following the MUSE visual direction template
+Call BOTH tools in the same response:
+  1. submit_tokens — 4 token layers (color, typography, layout, gradient)
+  2. submit_visual_direction — Markdown document + aggregated tags
 
-Shared rules (apply to both tools):
-- Reflect the project intent strongly.
-- Color tokens: START from the UNION of dominantColors across selected references,
-  then cluster similar hex values and assign roles. Do not invent colors absent
-  from both T1 output and images.
-- visualDirection tags: AGGREGATE from T1's per-reference visualDirection tags —
-  prefer tags that appear across multiple refs; include singletons only if they
-  strongly match intent.
-- All HEX codes valid 6-digit.
-- Emphasis 2 is scarce. Use only for the single most important token per layer.
-- Do NOT fabricate reference ids — only ids present in the input.
+Shared rules:
+- Reflect project intent strongly. Two projects with same refs but different intents
+  should produce noticeably different role/emphasis/typography variant assignments.
+- All HEX codes 6-digit valid.
+- Emphasis 2 is scarce: exactly one per layer at most.
+- sourceReferenceIds[]: only IDs present in the input references.
+- Do NOT fabricate values outside the extracted pool (exception: typography
+  unification may require adjusted fontSize to form a coherent scale).
 
 === submit_tokens constraints ===
 
 [color] 4-6 tokens.
-- fields: id, label, hex, role (primary | secondary | accent | neutral), group (Brand | Surface | Data | Neutral), isEnabled (true), emphasis (0|1|2), sourceReferenceIds[]
-- exactly one primary.
+- Source: extracted.palette union across refs + dominantColors as fallback
+- Fields: id, label, hex, role (primary|secondary|accent|neutral), group (Brand|Surface|Data|Neutral), isEnabled (true), emphasis (0|1|2), sourceReferenceIds[]
+- Exactly one primary. Intent decides which hue becomes primary.
 
 [typography] 3-4 tokens.
-- fields: id, label, variant (h1|h2|h3|body1|body2|caption), fontFamily (CSS stack), fontWeight (100-900), fontSize (CSS; use clamp() for display), lineHeight (number), letterSpacing (em), isEnabled (true), emphasis
+- Source: extracted.typography entries across refs, clustered by hierarchy
+- Fields: id, label, variant (h1|h2|h3|body1|body2|caption), fontFamily (CSS stack), fontWeight (100-900), fontSize (CSS; use clamp() for display), lineHeight (number), letterSpacing (em), isEnabled (true), emphasis
+- Build a hierarchical scale (display → body → caption). Override sizes for coherence.
 
 [layout] 2-4 tokens.
-- kind in {grid, spacing, container}.
+- Source: extracted.layout entries
+- Fields: id, label, kind (grid|spacing|container), columns?, gap?, px?, ratio?, maxWidth?, isEnabled, emphasis
+- Intent can override (e.g. "dashboard" → columns: 12 regardless)
 
 [gradient] 1-3 tokens.
-- CSS gradient string, isEnabled, emphasis.
+- Source: extracted.gradient across refs (or synthesize from palette if needed)
+- Fields: id, label, gradient (CSS string), stops, isEnabled, emphasis
 
 === submit_visual_direction constraints ===
 
@@ -397,11 +507,9 @@ Respond via the two tools only. No prose outside of tools.`,
 Project type: {{type}}
 Reference count: {{count}} (ids = [{{ids}}])
 
-The T1 pre-analysis JSON above is your PRIMARY signal.
-The {{count}} images below (512px, ordered to match ids) are for concrete value
-extraction and verification only.
-
-Synthesize the token system AND the visual direction document now.`,
+Pre-extracted references (T1 output, full data) are provided above as JSON.
+No images will be provided. Compose the final token system + visual direction
+narrative from the pre-extracted pool, selecting and combining based on intent.`,
 
   toolSchemas: [
     {
@@ -465,21 +573,19 @@ Synthesize the token system AND the visual direction document now.`,
   },
 
   workflow: [
-    'Step 2에서 선택된 referenceIds + 각 Reference의 T1 tags + dominantColors 확보',
-    'T1 결과를 JSON 헤더 블록으로 content 상단에 배치 (PRIMARY signal)',
-    '각 이미지 512px 리사이즈 + 경량 id 앵커 텍스트 첨부 (SECONDARY signal)',
-    'Anthropic messages.create (Sonnet 4.6, tools: [submit_tokens, submit_visual_direction])',
-    '응답에서 두 tool의 input 모두 추출, 한쪽이라도 누락이면 재시도',
-    '자동 검증 (primary 유일, MD 섹션 존재, enum 준수 등)',
-    '검증 통과 시 ProjectDetailPage에 즉시 렌더 (visualDirection 탭에 MD 렌더러)',
-    '편집 후 ThemeExportDialog(tokens.js) + MD 다운로드',
+    'Step 2에서 선택된 referenceIds 에 해당하는 레퍼런스 전체 데이터(tags + dominantColors + extracted) 확보',
+    '이미지 첨부 없음 — 전부 텍스트 payload',
+    'Anthropic messages.create (Haiku 4.5, tools: [submit_tokens, submit_visual_direction])',
+    '응답에서 두 tool input 모두 추출, 한쪽 누락이면 재시도',
+    '자동 검증 (primary 유일, MD 섹션, enum, emphasis≤1 per layer)',
+    '검증 통과 시 ProjectDetailPage 에 렌더',
   ],
 
   estCost: {
-    model: 'Sonnet 4.6',
-    tokensIn: '~5k (이미지 4장 @ 512px + T1 JSON + preset + 템플릿)',
-    tokensOut: '~2k',
-    note: 'T1 primary + 512px 이미지 최적화 적용 후. 이전 (1024px): ~9k in → 약 45% input 절감. 초기 N≤4 제한 권장',
+    model: 'Haiku 4.5',
+    tokensIn: '~6k (N=4 refs extracted JSON + system + tool schemas)',
+    tokensOut: '~1.5k (tokens + VD markdown)',
+    note: '이미지 없음 → Haiku 로 충분. 이전 (Sonnet+이미지): ~$0.048 → 현재 ~$0.008 (6배 절감)',
   },
 };
 

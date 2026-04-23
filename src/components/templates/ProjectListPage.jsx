@@ -44,30 +44,31 @@ export function ProjectListPage({
   onEditProject,
   onDeleteProject,
   logo,
+  headerEnd,
   sx,
 }) {
   return (
     <AppShell
       logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
       headerPersistent={
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={ <AddIcon /> }
-          onClick={ onNewProject }
-        >
-          새 프로젝트
-        </Button>
+        <Box sx={ { display: 'flex', alignItems: 'center', gap: 1.5 } }>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={ <AddIcon /> }
+            onClick={ onNewProject }
+          >
+            새 프로젝트
+          </Button>
+          { headerEnd }
+        </Box>
       }
       sx={ sx }
     >
       <PageContainer>
         {/* Hero */}
-        <Box sx={ { py: { xs: 4, md: 8 } } }>
-          <Typography variant="h2" sx={ { mb: 1 } }>Projects</Typography>
-          <Typography variant="body1" color="text.secondary" sx={ { maxWidth: 640 } }>
-            의도에 따라 큐레이션된 레퍼런스 묶음과 토큰 분석 결과
-          </Typography>
+        <Box sx={ { py: { xs: 3, md: 5 } } }>
+          <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Projects</Typography>
         </Box>
 
         {/* Grid */}

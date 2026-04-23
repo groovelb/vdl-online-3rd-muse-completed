@@ -102,8 +102,27 @@ const SUBJECT_TAGS = getVisualDirectionTags('subject');
 const tagCountForIndex = (i, base = 2, range = 2) =>
   ((i % range) + base); // 2~3개
 
+const FONT_FAMILY_POOL = [
+  'Inter, sans-serif',
+  'Playfair Display, serif',
+  'Space Grotesk, sans-serif',
+  'DM Serif Display, serif',
+  'IBM Plex Sans, sans-serif',
+  'Crimson Pro, serif',
+];
+
+const PROJECT_GROUPS = ['Brand', 'Surface', 'Data', 'Neutral'];
+
 export const references = IMAGES.map((url, i) => {
   const id = `ref-${pad(i + 1)}`;
+  const dominantColors = [
+    COLOR_POOL[i % COLOR_POOL.length],
+    COLOR_POOL[(i * 3) % COLOR_POOL.length],
+    COLOR_POOL[(i * 5 + 1) % COLOR_POOL.length],
+  ];
+  const fontA = FONT_FAMILY_POOL[i % FONT_FAMILY_POOL.length];
+  const fontB = FONT_FAMILY_POOL[(i + 2) % FONT_FAMILY_POOL.length];
+  const hasGradient = i % 2 === 0;
   return {
     id,
     source: i % 5 === 0 ? 'url' : 'file',
@@ -112,17 +131,37 @@ export const references = IMAGES.map((url, i) => {
       color: pickDeterministic(COLOR_TAGS, i, tagCountForIndex(i), 3),
       typography: pickDeterministic(TYPO_TAGS, i, 1 + (i % 2), 5),
       layout: pickDeterministic(LAYOUT_TAGS, i, 1 + (i % 2), 4),
-      gradient: pickDeterministic(GRADIENT_TAGS, i, i % 2, 2), // 0~1개 (그라디언트 없는 이미지도 많음)
+      gradient: pickDeterministic(GRADIENT_TAGS, i, i % 2, 2),
       visualDirection: {
         genre: pickDeterministic(GENRE_TAGS, i, 1, 3),
         style: pickDeterministic(STYLE_TAGS, i, 1, 5),
         subject: pickDeterministic(SUBJECT_TAGS, i, 1, 2),
       },
     },
-    dominantColors: [
-      COLOR_POOL[i % COLOR_POOL.length],
-      COLOR_POOL[(i * 3) % COLOR_POOL.length],
-    ],
+    dominantColors,
+    extracted: {
+      palette: dominantColors.map((hex, idx) => ({
+        hex,
+        label: ['Ink', 'Surface', 'Accent'][idx] || `Color-${idx + 1}`,
+        group: PROJECT_GROUPS[(i + idx) % PROJECT_GROUPS.length],
+      })),
+      typography: [
+        { hierarchy: 'display', fontFamily: fontA, fontWeight: 700, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1.1, letterSpacing: '-0.02em' },
+        { hierarchy: 'body', fontFamily: fontB, fontWeight: 400, fontSize: '1rem', lineHeight: 1.6, letterSpacing: '0em' },
+      ],
+      layout: [
+        { kind: 'grid', columns: 12, gap: 16 + (i % 3) * 8, px: 24 + (i % 2) * 8 },
+      ],
+      gradient: hasGradient
+        ? [{
+          gradient: `linear-gradient(135deg, ${dominantColors[0]} 0%, ${dominantColors[1]} 100%)`,
+          stops: [
+            { offset: 0, color: dominantColors[0] },
+            { offset: 1, color: dominantColors[1] },
+          ],
+        }]
+        : [],
+    },
     createdAt: makeDate(i),
     title: TITLE_POOL[i % TITLE_POOL.length],
   };

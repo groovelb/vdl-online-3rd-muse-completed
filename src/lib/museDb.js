@@ -29,6 +29,7 @@ export async function mapReferenceFromDb(row) {
     title: row.title || '',
     tags: row.tags || {},
     dominantColors: row.dominant_colors || [],
+    extracted: row.extracted || {},
     createdAt: row.created_at,
   };
 }
@@ -43,6 +44,7 @@ export function mapReferenceToDb(ref, userId) {
     title: ref.title || null,
     tags: ref.tags || {},
     dominant_colors: ref.dominantColors || [],
+    extracted: ref.extracted || {},
   };
 }
 

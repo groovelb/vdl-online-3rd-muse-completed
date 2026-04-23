@@ -110,7 +110,7 @@ export function SearchBar({
           backgroundColor: 'background.paper',
           border: '1px solid',
           borderColor: isFocused ? 'primary.main' : 'divider',
-          boxShadow: isFocused ? '0 0 0 3px rgba(0, 0, 255, 0.1)' : 'none',
+          boxShadow: 'none',
           '&:hover': {
             borderColor: isFocused ? 'primary.main' : 'text.secondary',
           },

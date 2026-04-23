@@ -43,8 +43,17 @@ function AuthPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', px: 2 }}>
-      <Box sx={{ width: '100%', maxWidth: 400 }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        px: 2,
+        background: 'radial-gradient(1200px 600px at 20% 10%, rgba(79, 70, 229, 0.06) 0%, transparent 60%), radial-gradient(900px 500px at 80% 90%, rgba(20, 19, 43, 0.05) 0%, transparent 55%), linear-gradient(180deg, #FCFCFF 0%, #F5F4FB 100%)',
+      }}
+    >
+      <Box sx={{ width: '100%', maxWidth: 420 }}>
         <Stack spacing={3}>
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>MUSE</Typography>
@@ -62,7 +71,7 @@ function AuthPage() {
             <Stack spacing={2}>
               <TextField
                 type="email"
-                label="이메일"
+                placeholder="이메일"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -71,13 +80,12 @@ function AuthPage() {
               />
               <TextField
                 type="password"
-                label="비밀번호"
+                placeholder={mode === 'signup' ? '비밀번호 (6자 이상)' : '비밀번호'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 fullWidth
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                helperText={mode === 'signup' ? '6자 이상' : ''}
               />
 
               {error && <Alert severity="error">{error}</Alert>}

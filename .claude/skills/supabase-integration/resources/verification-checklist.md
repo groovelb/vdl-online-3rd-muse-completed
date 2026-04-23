@@ -1,6 +1,8 @@
 # Verification Checklist
 
-Phase 3 끝(RLS 검증)과 Phase 5(최종 검증)에서 실행.
+Phase 3(RLS 검증), Phase 5(최종 검증), Phase 6(Edge Functions)에서 실행.
+
+> **게이트 원칙**: 이 체크리스트의 **필수 항목은 전부 SQL/CLI/파일로 프로그래밍적 검증 가능**한 것만 포함. Dashboard UI 기반 항목은 UI 개편에 취약하므로 **필수 게이트로 두지 않음**. 이 프로젝트는 마이그레이션 전용이라 Studio UI로 테이블을 만들지 않으며, 따라서 "Dashboard 신규 테이블 RLS 기본값" 같은 UI 설정에 의존하지 않는다.
 
 ---
 
@@ -91,11 +93,18 @@ UPDATE public.posts SET title = 'hacked' WHERE user_id = 'user-B-uuid';
 - [ ] 조회/조인에 쓰이는 FK 컬럼에 인덱스
 - [ ] `supabase db reset`이 에러 없이 완료
 
-### RLS
+### RLS (프로그래밍적 게이트)
 
-- [ ] 모든 public 테이블 RLS 활성화
-- [ ] 모든 테이블에 의도된 정책 존재
+- [ ] 모든 public 테이블 RLS 활성화 (`pg_tables.rowsecurity=true`)
+- [ ] 모든 RLS 활성 테이블에 정책 존재 (`pg_policies` 조인 검증)
 - [ ] B, C, D 테스트 전부 PASS
+
+### RLS (보조·UI 확인, 선택)
+
+Dashboard UI는 개편 주기가 짧다. 아래는 **찾을 수 있으면 참고용**이며 필수 게이트 아님. 못 찾으면 skip하고 위 SQL 결과를 최종 진실로 삼는다.
+
+- [ ] (선택) Supabase Advisor 패널에서 RLS 관련 경고 0건
+  - 위치가 바뀔 수 있으므로 좌측 메뉴에서 "Advisor" 라벨 탐색. 없으면 skip
 
 ### 클라이언트 코드
 

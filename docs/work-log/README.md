@@ -21,3 +21,4 @@
 | 015 | MUSE — 문서 동기화 + 상태 관리 레이어 + ArchivePage 업로드→T1 실연결 | 2026-04-22 | [015-MUSE-상태관리-레이어-및-ArchivePage-T1-연결.md](./015-MUSE-상태관리-레이어-및-ArchivePage-T1-연결.md) |
 | 016 | MUSE — dev 라우터 + Wizard T2/T3 실연결 + ZIP 번들/범용 JSON Export 전환 | 2026-04-22 | [016-MUSE-dev-라우터-Wizard-실연결-ZIP-범용JSON-Export.md](./016-MUSE-dev-라우터-Wizard-실연결-ZIP-범용JSON-Export.md) |
 | 017 | MUSE — Store seed 분기 (Dev는 empty, Storybook은 fixtures) | 2026-04-22 | [017-MUSE-Store-seed-분기-Dev-empty-Storybook-fixtures.md](./017-MUSE-Store-seed-분기-Dev-empty-Storybook-fixtures.md) |
+| 018 | MUSE — 02-ux-flow 데이터 모델 동기화 + Supabase 백엔드 연동 계획·튜토리얼 작성 | 2026-04-23 | [018-MUSE-UX-Flow-데이터모델-동기화-및-Supabase-백엔드-계획.md](./018-MUSE-UX-Flow-데이터모델-동기화-및-Supabase-백엔드-계획.md) |

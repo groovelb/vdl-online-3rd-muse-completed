@@ -50,10 +50,57 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 7. **Storybook 호환** — 모든 데이터 훅은 `{ client }` 파라미터 주입 가능하도록 설계.
 8. **인증 UI는 component-work에 위임** — 이 스킬은 훅만 만들고, UI 생성은 `component-work` 스킬 호출.
 9. **비밀키는 절대 프론트에 두지 않는다** — 외부 API 키(OpenAI, Stripe, SMS 등)는 `VITE_*`로 노출 금지. Vite env는 번들에 평문으로 박힘. 로컬 검증(Stage A)은 제한적으로 허용하되 Stage C에서 반드시 Edge Function으로 이전 + 키 revoke.
+10. **모든 Phase는 "설명 → 질문 → 실행" 순서** — 사용자가 학습 중이라는 전제. 작업만 하지 말고 각 Phase 진입 시 개념·이유·위험을 먼저 설명. 명령어·SQL을 실행하기 전에 "이게 왜 필요한가"를 1~3줄로 풀어 전달.
+11. **프로그래밍적으로 검증 못 하는 건 게이트가 될 수 없다** (CRITICAL) — Dashboard UI·외부 서비스 콘솔 등 **LLM이 직접 관측 못 하는 상태**는 필수 체크리스트로 두지 않는다. 필요하면 SQL/CLI/파일 검사로 **등가 검증**을 만들어 게이트화한다. UI 언급은 고수준 라벨(예: "Advisor 패널")까지만. 절대 경로(`Settings → Database → X`)를 단언하지 않는다. Supabase Dashboard는 자주 개편되며 LLM은 최신 상태를 모른다.
+12. **사용자가 "없음/못 찾음" 보고 시 flip 금지** (CRITICAL) — UI가 바뀌었을 가능성을 인정하되, **원래 스킬이 주장한 사실을 부정하지 않는다**. 대신 다음 순서로 대응: (a) "UI 개편으로 위치가 바뀌었을 수 있음" 한 줄 인정 → (b) 프로그래밍적 등가 검증 경로 제시 → (c) 그 체크가 필수/보조인지 재확인, 보조면 skip 허용. 사용자 한 마디에 스킬 내용을 "제가 틀렸네요"로 뒤집는 행동 = 환각의 역방향, 더 큰 신뢰 손상.
+
+---
+
+## Phase 진입 설명 포맷 (모든 Phase 공통)
+
+각 Phase를 시작할 때 **반드시 아래 구조로 먼저 메시지를 출력**한 뒤 작업에 들어간다.
+
+```
+## Phase N — {이름}
+
+### 📘 이 단계가 하는 일
+{1~2줄: 목적}
+
+### 🧠 알아야 할 개념
+- {개념1}: {왜 중요한지 1줄}
+- {개념2}: {왜 중요한지 1줄}
+
+### ❓ 왜 이 단계가 필요한가
+{건너뛰거나 잘못하면 어떤 문제가 생기는지 2~3줄}
+
+### ⚠️ 주의할 점
+- {흔한 실수 / 되돌리기 어려운 작업 / 위험 신호}
+
+### ▶ 지금부터 할 일
+1. {사용자에게 물어볼 것}
+2. {읽을 문서/파일}
+3. {생성할 파일·실행할 명령}
+```
+
+이 포맷은 **사용자의 이해를 워크플로우의 일부**로 만드는 게 목적. 건너뛰지 말 것.
+
+질문-답 이후 **실제 명령 실행 직전**에도 "이 명령은 X를 Y하기 때문에 필요합니다" 한 줄을 덧붙인다 (특히 `supabase db reset`, `db push`, `secrets set`, `functions deploy`처럼 상태 변경이 일어나는 명령).
 
 ---
 
 ## Phase 0 — Prerequisites Check (자동, 승인 불필요)
+
+### 📘 이 단계가 하는 일
+후속 Phase가 안전하게 동작할 환경인지 자동 점검.
+
+### 🧠 알아야 할 개념
+- **Supabase CLI**: 로컬 개발·마이그레이션·타입 생성·함수 배포를 담당. Dashboard가 "GUI"라면 CLI는 "재현 가능한 스크립트"
+- **`.env.local`**: Vite가 로컬 개발에서만 읽는 환경 변수. `.gitignore`에 들어가야 커밋 사고 방지
+- **anon key vs service_role key**: anon은 프론트 공개용 (RLS로 보호), service_role은 DB 전권 (서버·MCP 전용)
+- **Supabase MCP**: 탐색·검증 전용 read 도구. 상태 변경은 하지 않는 게 원칙 (이유: 재현성)
+
+### ❓ 왜 필요한가
+CLI·env·디렉터리가 준비 안 된 상태로 Phase 1~6을 돌리면 "왜 안 되지?"로 시간 낭비 + secret이 잘못된 곳에 저장되는 사고 위험.
 
 **목적**: 후속 Phase가 안전하게 동작할 환경인지 자동 점검.
 
@@ -86,6 +133,11 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
    - Supabase MCP 서버 응답 확인 (탐색용)
    - 없어도 진행 가능 (CLI로 대체)
 
+6. ~~Dashboard 보안 기본값 확인~~ — **삭제됨**
+   - 이유: 이 프로젝트는 마이그레이션 전용 정책이라 Dashboard/Studio UI로 테이블을 만들지 않음 → 해당 토글이 보호해줄 경로 자체가 없음
+   - 진짜 방어선은 **Phase 3 자동 검증 SQL**(`pg_tables.rowsecurity`) — 이쪽이 프로그래밍적 게이트
+   - Dashboard UI 경로 단언은 원칙 11 위반 소지 → 체크리스트에서 제외
+
 ### 산출
 
 사용자에게 체크 결과 표로 제시:
@@ -107,6 +159,22 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 ## Phase 1 — Schema Design (DB 스키마 설계)
 
 **목적**: 데이터 모델을 PostgreSQL 스키마로 변환.
+
+### 🧠 알아야 할 개념
+- **테이블 vs 엔티티**: UX의 "Post/User/Comment"는 DB에선 각각 테이블. 관계(1:N, N:M)는 FK/junction 테이블로 표현
+- **Primary key로 UUID 쓰는 이유**: 자동증가 정수는 총 개수가 노출되고 분산 환경에서 충돌 → `gen_random_uuid()` 기본값 사용
+- **`created_at` / `updated_at`**: 감사·디버깅·캐시 무효화에 필수. `updated_at`은 **트리거**로 자동 갱신
+- **Soft delete vs Hard delete**: `deleted_at` 컬럼 방식 vs `DELETE`. 삭제 복구·감사 필요하면 soft
+- **FK의 `on delete` 정책**: `cascade`(연쇄 삭제) / `set null`(FK만 초기화) / `restrict`(삭제 차단). 선택에 따라 운영 사고 달라짐
+- **마이그레이션 파일**: 스키마 변경을 **재현 가능한 SQL 스크립트**로 저장. 팀·프로덕션 간 일관성 확보
+
+### ❓ 왜 이 단계가 필요한가
+DB 스키마는 한 번 박히면 바꾸기 어려운 "뼈대". UX에서 드러나지 않은 관계(예: 좋아요가 사용자와 포스트 둘 다에 엮임)를 이 단계에서 정리하지 않으면 RLS·쿼리·인덱스 설계가 무너진다.
+
+### ⚠️ 주의할 점
+- `on delete` 미지정하면 기본값 `no action` → 운영에서 "사용자 삭제하려는데 FK 때문에 막힘" 발생
+- `updated_at` 트리거 빠뜨리면 **영원히 생성 시각만 기록됨** (자동 안 채워짐)
+- 엔티티 "소유자"가 누구인지 이 단계에서 결정 안 하면 Phase 3 RLS에서 되돌아와야 함
 
 ### 작업 순서
 
@@ -146,6 +214,22 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 
 **목적**: 안정적인 Email+Password 인증 체계 구축.
 
+### 🧠 알아야 할 개념
+- **`auth.users` vs `public.profiles`**: Supabase는 인증 정보를 `auth` 스키마에 격리. 프로필(닉네임·아바타)은 별도 `profiles` 테이블에 두고 `id`로 FK 연결
+- **`handle_new_user` 트리거**: `auth.users`에 row가 생길 때 `profiles`에 자동으로 row를 만들어주는 트리거. 없으면 "회원가입은 됐는데 프로필이 없음" 상태 발생
+- **`security definer`**: 트리거 함수가 **함수 소유자 권한으로** 실행되게 함. `search_path`를 `public`으로 고정하지 않으면 권한 탈취 경로가 됨
+- **JWT / access_token / refresh_token**: 로그인 시 두 토큰 발급. access는 짧게(1시간), refresh는 길게(주 단위). Supabase SDK가 자동 갱신
+- **Email Confirmation**: 이메일 인증 ON이면 `email_confirmed_at`이 채워져야 로그인 가능. OFF면 즉시 로그인 가능하지만 스팸 가입 위험
+- **Redirect URL**: OAuth·이메일 링크가 돌아올 허용 URL 목록. 등록 안 하면 링크 클릭 후 404
+
+### ❓ 왜 이 단계가 필요한가
+인증은 **거의 모든 RLS 정책의 전제**(`auth.uid()`로 소유자 판단). 여기서 `profiles` 자동 생성·이메일 인증·Redirect URL을 안 잡으면 Phase 3 RLS가 동작해도 실제 사용자 플로우가 깨짐.
+
+### ⚠️ 주의할 점
+- `handle_new_user`에 `security definer + set search_path = public` 빠뜨리면 보안 경고 + 권한 문제
+- Dashboard의 **Site URL**과 **Redirect URLs** 설정이 env와 다르면 이메일 인증 링크가 엉뚱한 곳으로 감
+- 비밀번호 정책은 Dashboard Auth 설정이 **권한**. 마이그레이션으론 못 바꿈
+
 ### 작업 순서
 
 1. `resources/auth-flows.md` Read → Email+Password 표준 플로우 확인
@@ -182,6 +266,24 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 
 **목적**: 각 테이블에 최소 권한 원칙으로 정책 부여.
 
+### 🧠 알아야 할 개념
+- **RLS (Row Level Security)**: PostgreSQL이 제공하는 "행 단위 권한 제어". DB 엔진이 쿼리마다 "이 사용자가 이 row를 볼 수 있나?"를 검사
+- **`auth.uid()`**: 현재 요청의 JWT에서 추출한 사용자 UUID. 정책의 핵심 조건
+- **DENY by default**: RLS 활성화 + 정책 없음 = **아무도 못 읽음**. 정책은 "허용 조건"을 명시적으로 푸는 역할
+- **`anon` role vs `authenticated` role**: 비로그인 요청은 `anon`, 로그인 요청은 `authenticated`. 정책에서 `to authenticated` 식으로 대상 지정
+- **USING vs WITH CHECK**: `USING`은 "읽을 수 있는 행 조건", `WITH CHECK`는 "쓸 때 허용할 행 조건". 둘 다 필요한 경우가 많음
+- **정책 조합**: 같은 테이블에 여러 정책 = **OR 조합** (하나라도 허용이면 통과). 주의 필요
+- **`security definer` 헬퍼 함수**: 복잡한 권한 체크(팀 멤버십 등)는 함수로 분리해 RLS에서 재사용
+
+### ❓ 왜 이 단계가 필요한가
+**RLS 없이 프론트에 anon key를 노출하는 순간 DB 전체가 공개 API가 된다.** anon key 자체는 비밀이 아니라 "어느 프로젝트인가"만 알려주는 라벨. 진짜 경계선은 RLS. 여기를 부실하게 하면 Phase 5에서 사용자가 다른 사용자 데이터를 읽는다.
+
+### ⚠️ 주의할 점
+- `enable row level security`만 하고 정책을 안 쓰면 **정상 사용자도 차단** → 500 에러 양산
+- 반대로 정책 `using (true)`는 **전체 공개**와 같음 → 의도한 경우에만
+- `auth.uid()`를 JWT claim과 직접 비교하는 정책은 캐시 미스로 느릴 수 있음 → `security definer + stable` 함수로 래핑
+- 테이블별 `FOR SELECT/INSERT/UPDATE/DELETE` 각각에 정책이 필요. `FOR ALL`은 편해도 의도 불명확해짐
+
 ### 작업 순서
 
 1. `resources/rls-patterns.md` Read → 정책 카탈로그 확인
@@ -217,6 +319,22 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 ## Phase 4 — Client Integration (프론트 연동 코드)
 
 **목적**: 프론트엔드에서 안전하고 일관되게 Supabase를 사용하는 코드 생성.
+
+### 🧠 알아야 할 개념
+- **Singleton client**: `createClient()`를 앱 전체에서 1개만 만들어 세션·캐시·실시간 구독을 공유. 훅마다 새로 만들면 인증이 꼬임
+- **React 훅 패턴**: `useAuth` / `useSignIn` / `use{Entity}` — UI 상태(loading/error/data)와 Supabase 호출을 캡슐화. 컴포넌트는 비즈니스 로직 모르게 유지
+- **`{ client }` 주입**: 모든 데이터 훅이 기본값으로 싱글톤을 쓰되, 파라미터로 교체 가능 → Storybook·테스트에서 mock 주입
+- **에러 정규화**: Supabase 에러 코드(`23505`, `42501` 등)를 한국어 메시지로 변환하는 레이어. UI마다 분기하지 않게
+- **JSDoc typedef**: TS 대신 `@typedef`로 DB row 타입 정의. `supabase gen types typescript` → `ts-to-jsdoc.mjs` 스크립트로 자동 변환
+- **Vite env**: `import.meta.env.VITE_*`만 번들에 노출. 즉 **여기에 secret을 넣으면 안 됨** (원칙 9)
+
+### ❓ 왜 이 단계가 필요한가
+훅으로 감싸지 않으면 모든 컴포넌트가 Supabase client를 직접 import → 에러 처리·로딩 스피너 로직이 50군데에 중복. 또 Storybook에서 실제 API를 치면 디자인 리뷰가 느려지고 비용이 든다.
+
+### ⚠️ 주의할 점
+- **Auth UI 컴포넌트는 직접 만들지 말 것** — `component-work` 스킬에 위임 (카테고리·스토리 규칙 자동 준수)
+- 훅 안에서 `useEffect` 없이 top-level await 쓰면 React가 무한 렌더 → 반드시 effect/콜백 안에서
+- 훅 시그니처(`{ data, loading, error, ... }`)를 **Phase 4에서 확정**해야 나중에 Phase 6(Edge Function 이전)에서 컴포넌트 수정 없이 교체 가능
 
 ### 작업 순서
 
@@ -267,6 +385,21 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 
 **목적**: 마이그레이션 적용 + 전체 시스템 스모크 테스트.
 
+### 🧠 알아야 할 개념
+- **`supabase db reset`**: 로컬 DB를 비우고 **모든 마이그레이션을 순서대로 재적용**. 마이그레이션이 처음부터 돌아가는지 확인하는 유일한 방법
+- **`supabase db push`**: 로컬에서 작성한 마이그레이션을 **원격 프로젝트에 적용**. 되돌리기 어려우므로 로컬 `reset`으로 검증 후 실행
+- **Seed 데이터**: `supabase/seed.sql`에 개발용 기본 데이터(admin 계정·샘플 row). `db reset` 시 자동 실행
+- **Smoke test**: "타는 연기 확인" — 핵심 플로우가 최소한 **죽지 않는지** 빠르게 검사. 회원가입→로그인→데이터 CRUD→RLS 차단
+- **Supabase Advisor**: Dashboard가 제공하는 자동 점검. 플랫폼 관점에서 RLS·인덱스·보안 문제를 탐지
+
+### ❓ 왜 이 단계가 필요한가
+앞 Phase들은 각자 자기 영역만 검증했다. 여기서 처음으로 **전체 시스템을 연결**해본다. 마이그레이션 순서 문제, 트리거 누락, 정책 충돌 같은 **교차 영역 버그**는 이 단계에서만 드러남.
+
+### ⚠️ 주의할 점
+- **`supabase db reset`을 프로덕션에 실행하면 데이터 전부 삭제됨** — 로컬 전용
+- `db push`는 한번 나간 마이그레이션을 삭제하지 않음. 되돌리려면 새 "역방향 마이그레이션"을 작성해야 함
+- 실제 이메일 인증은 Supabase 기본 SMTP라 받는 편에서 스팸함 갈 수 있음 — 체크 시 확인
+
 ### 작업 순서
 
 1. **마이그레이션 적용**:
@@ -291,6 +424,17 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
    - [ ] `updated_at` 트리거 동작
    - [ ] `handle_new_user` 트리거 → profiles 자동 생성
    - [ ] Storybook에서 데이터 훅 mock 동작
+   - [ ] **SQL 기반 RLS 완전성 검증** (프로그래밍적 게이트):
+     ```sql
+     -- RLS 미활성 public 테이블 0건
+     SELECT tablename FROM pg_tables
+     WHERE schemaname='public' AND rowsecurity=false;
+     -- 정책 없는 RLS 활성 테이블 0건
+     SELECT c.relname FROM pg_class c LEFT JOIN pg_policy p ON p.polrelid=c.oid
+     WHERE c.relnamespace='public'::regnamespace AND c.relkind='r'
+       AND c.relrowsecurity=true AND p.polname IS NULL;
+     ```
+   - [ ] (선택·보조) Supabase Advisor 패널 확인 — 위치는 UI 개편으로 바뀔 수 있음. 보이면 경고 0건, 못 찾으면 **skip**. 필수 방어선은 위 SQL임
 
 4. `docs/{project}/07-api-integration.md` 작성:
    - 훅 사용 예시 (각 `use{Entity}`)
@@ -312,6 +456,23 @@ Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Ve
 **목적**: 외부 API(OpenAI, Stripe, SMS, 카카오 OAuth 등) 호출을 **프론트 → Edge Function**으로 안전하게 이전. 비밀키를 번들에서 완전히 제거.
 
 **핵심 철학**: 로컬에서 **기능을 먼저 검증**(Stage A) → 검증 통과하면 **서버로 이전**(Stage C). 기능 검증과 보안 검증을 분리해야 디버깅 가능.
+
+### 🧠 알아야 할 개념
+- **Edge Function**: Supabase가 Deno 런타임으로 실행하는 서버리스 함수. HTTP endpoint 형태로 퍼블릭 노출
+- **Vite env는 번들에 박힌다**: `VITE_*` 값은 빌드 시 JS에 평문으로 포함. 브라우저에서 그대로 보임 → **절대 secret 저장 금지**
+- **Supabase secrets**: `supabase secrets set`으로 등록한 값. 함수 런타임의 `Deno.env.get()`으로만 접근. 프론트 번들엔 존재하지 않음
+- **JWT forwarding**: `supabase.functions.invoke()`는 현재 사용자 JWT를 `Authorization` 헤더로 자동 전달 → 함수에서 `auth.getUser()`로 호출자 식별 가능
+- **Stage A / B / C**: 로컬 프론트 직접 호출(기능 검증) → 이전 체크리스트 → Edge Function 이전(보안 검증). 이유는 디버깅 영역 분리
+- **Rate limit**: RLS는 DB row 접근만 막음. 외부 API 호출량 제한은 **Edge Function 안에서 직접** 구현해야
+
+### ❓ 왜 이 단계가 필요한가
+OpenAI 같은 유료 API 키가 프론트 번들에 박히면 **사용자가 키를 뽑아서 직접 호출 가능** → 과금 공격·데이터 유출. Edge Function으로 감싸면 키는 서버에만 존재하고, 요금 민감 로직(플랜별 쿼터)도 서버에서 강제할 수 있다.
+
+### ⚠️ 주의할 점
+- Stage A 키를 **Stage C 완료 후 반드시 revoke** — git 히스토리·구 빌드에 남아있을 수 있음
+- 함수 배포 후 `pnpm build && grep -r "sk-" dist/`로 **번들 유출 재확인**
+- 함수 최상단에 **JWT 검증을 넣지 않으면 익명 호출 허용** = 공개 과금 API가 됨
+- CORS `*` 그대로 프로덕션에 올리면 타 사이트에서도 호출 가능 → Origin 좁히기
 
 ### 언제 이 Phase를 진행하는가
 

@@ -119,3 +119,40 @@ export async function imageUrlToBase64DataUrl(url) {
     reader.readAsDataURL(blob);
   });
 }
+
+/**
+ * File 객체 → base64 data URL 변환 (업로드 flow 전용)
+ */
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Canvas 리사이즈 — 긴 변을 maxDim 이하로 (AI payload 절감).
+ * @param {string} dataUrl - data:image/...;base64,...
+ * @param {number} maxDim - 기본 1024
+ * @returns {Promise<string>} 리사이즈된 JPEG data URL (품질 0.85)
+ */
+export function resizeDataUrl(dataUrl, maxDim = 1024) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+

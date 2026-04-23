@@ -29,7 +29,7 @@ export const Default = {
         <ProjectCreateWizard
           recommended={ RECOMMENDED }
           archive={ ARCHIVE }
-          onComplete={ (p) => setResult(p) }
+          onComplete={ (payload) => setResult(payload) }
           onCancel={ () => setResult({ cancelled: true }) }
         />
         { result && (

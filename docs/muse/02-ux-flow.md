@@ -105,7 +105,7 @@ MUSE
 |--------|----------|------|
 | `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags[]`, `dominantColors[]`, `createdAt` | 1:N Project (via projectReferences) |
 | `Project` | `id`, `name`, `intent`, `type` (landing/dashboard/mobile/brand), `referenceIds[]`, `createdAt` | N:M Reference |
-| `AnalysisResult` | `id`, `projectId`, `layers` ({color, typography, layout, gradient, keyVisual}), `status`, `updatedAt` | 1:1 Project |
+| `AnalysisResult` | `id`, `projectId`, `layers` ({color, typography, layout, gradient, visualDirection}), `status`, `updatedAt` | 1:1 Project |
 | `Token` | `id`, `layer`, `key`, `value`, `isEnabled`, `emphasis` (0–2), `sourceReferenceIds[]` | N:1 AnalysisResult |
 | `UserSettings` | `aiModel`, `storageMode`, `themeMode` | singleton |
 
@@ -121,7 +121,7 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 |----|--------|-------------|------|------|---------|
 | **T1** | 자동 태깅 | `archive.upload` | 이미지 1장 | `{ tags[2..4], dominantColors[3..5], title }` | Claude Haiku 4.5 |
 | **T2** | 레퍼런스 추천 | `project.create.step2` | 의도 문장 + 아카이브 메타 (이미지 없음) | `{ recommendedIds[5..10], reasons[] }` | Claude Haiku 4.5 |
-| **T3** | 토큰 분석 | `project.create.step3` | 선택 이미지 N장 + 의도 + 유형 | `AnalysisLayers` (color/typography/layout/gradient/keyVisual) | Claude Sonnet 4.6 |
+| **T3** | 토큰 분석 + VD | `project.create.step3` | 선택 이미지 N장 + 의도 + 유형 | 단일 호출 2 tool: `submit_tokens` (color/typography/layout/gradient) + `submit_visual_direction` (Markdown + 집계 태그) | Claude Sonnet 4.6 |
 
 ### 시나리오 ↔ 태스크 매핑
 
@@ -145,9 +145,9 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 | 축 | 적용 범위 | 방식 |
 |----|----------|------|
 | 스키마 준수 | T1 / T2 / T3 | 자동 (JSON Schema 검증) |
-| 어휘 준수 (TAG_VOCABULARY) | T1 | 자동 |
+| 레이어별 어휘 준수 (preset enum) | T1 | 자동 |
 | HEX 형식 | T1 / T3 | 자동 |
-| ID 유효성 (keyVisual / recommendedIds) | T2 / T3 | 자동 |
+| ID 유효성 (recommendedIds / sourceReferenceIds) | T2 / T3 | 자동 |
 | Primary 유일성 | T3 | 자동 (role=primary 개수 = 1) |
 | 타이포 위계 정합성 | T3 | 자동 (h1 > h2 > body1) |
 | 의도 반영도 | T2 / T3 | 수동 (pairwise A/B) |
@@ -155,8 +155,9 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 
 ### 참조
 
-- **데이터**: `src/data/muse/aiTasks.js` — `TASK_AUTO_TAG`, `TASK_RECOMMEND`, `TASK_ANALYZE_TOKENS`, `TAG_VOCABULARY`, `AI_TASKS`, `AI_WORKFLOW_DIAGRAM`
-- **Storybook**: `MUSE/AI Tasks/Overview` · `T1 · Auto Tag` · `T2 · Recommend` · `T3 · Analyze Tokens` · `Workflow`
+- **데이터**: `src/data/muse/aiTasks.js` — `TASK_AUTO_TAG`, `TASK_RECOMMEND`, `TASK_ANALYZE_TOKENS`, `AI_TASKS`, `AI_WORKFLOW_DIAGRAM`. 어휘는 `src/data/muse/tag/index.js` helper (`getLayerTags`, `getVisualDirectionTags`, `renderVocabularyPrompt`)
+- **Storybook**: `MUSE/AI Tasks/*` 문서 스토리 · `MUSE/AI Playground/Health Check · T1 Auto Tag · T2 Recommend · T3 Analyze Tokens + VD` 라이브 호출
+- **프록시 레이어**: `.storybook/museApiPlugin.js` (`/api/anthropic/*`) · `src/utils/museAi.js` (클라이언트 헬퍼)
 - **실행 레이어(예정)**: `scripts/muse-ai/*` — CLI 실행, 평가, 골든셋 관리
 
 ---
@@ -216,7 +217,7 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 
 | 컴포넌트 | 용도 | 구분 | 기존 경로 / 비고 |
 |----------|------|------|-----------------|
-| `CategoryTab` | 레이어 탭 (컬러/타이포/레이아웃/그라디언트/키비주얼) | 재활용 | `components/in-page-navigation/CategoryTab.jsx` |
+| `CategoryTab` | 레이어 탭 (컬러/타이포/레이아웃/그라디언트/비주얼 디렉션) | 재활용 | `components/in-page-navigation/CategoryTab.jsx` |
 | `SplitScreen` | 토큰 편집 패널 + 프리뷰 좌우 분할 | 재활용 | `components/layout/SplitScreen.jsx` |
 | `Switch` | 토큰 on/off 토글 | 재활용 | MUI |
 | `TokenListItem` | 레이어 공통 토큰 행 (on/off + emphasis 슬라이더) | 신규 | 카테고리: `data-display` |

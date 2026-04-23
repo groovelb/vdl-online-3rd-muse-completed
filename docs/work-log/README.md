@@ -18,3 +18,4 @@
 | 012 | MUSE — 태그 프리셋 JSON 통합 + 5레이어 구조 재설계 계획 (visualDirection MD 출력) | 2026-04-22 | [012-MUSE-태그-프리셋-통합-재설계-계획.md](./012-MUSE-태그-프리셋-통합-재설계-계획.md) |
 | 013 | MUSE — 프리셋 JSON 통합 + keyVisual 레이어 제거 + visualDirection(MD) 도입 (Phase 1~3 실행) | 2026-04-22 | [013-MUSE-프리셋-통합-keyVisual-제거-Phase1-3.md](./013-MUSE-프리셋-통합-keyVisual-제거-Phase1-3.md) |
 | 014 | MUSE — AI Flow 완성 (T2 Recommend + T3 Analyze 2-tool Playground + TAG_VOCABULARY 잔존 버그 수정) | 2026-04-22 | [014-MUSE-AI-Flow-T2-T3-Playground-완성.md](./014-MUSE-AI-Flow-T2-T3-Playground-완성.md) |
+| 015 | MUSE — 문서 동기화 + 상태 관리 레이어 + ArchivePage 업로드→T1 실연결 | 2026-04-22 | [015-MUSE-상태관리-레이어-및-ArchivePage-T1-연결.md](./015-MUSE-상태관리-레이어-및-ArchivePage-T1-연결.md) |

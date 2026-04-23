@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FolderZipIcon from '@mui/icons-material/FolderZip';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
 import { AppShell } from '../layout/AppShell.jsx';
@@ -24,49 +24,15 @@ const LAYERS = [
 ];
 
 /**
- * 토큰 상태를 `createTheme` 입력용 오브젝트로 조립.
- * 활성(enabled) 토큰만 포함하며, emphasis는 MUI theme에 직접 매핑되지 않으므로 무시.
- */
-function buildThemeObject(analysis) {
-  const enabledColors = (analysis.color || []).filter((t) => t.isEnabled);
-  const enabledTypo = (analysis.typography || []).filter((t) => t.isEnabled);
-
-  const primary = enabledColors.find((t) => t.role === 'primary' || t.emphasis === 2) || enabledColors[0];
-  const secondary = enabledColors.find((t) => t.role === 'secondary') || enabledColors[1];
-  const accent = enabledColors.find((t) => t.role === 'accent');
-
-  const palette = {};
-  if (primary) palette.primary = { main: primary.hex };
-  if (secondary) palette.secondary = { main: secondary.hex };
-  if (accent) palette.info = { main: accent.hex };
-
-  const typography = {};
-  enabledTypo.forEach((t) => {
-    const key = t.variant || t.id;
-    typography[key] = {
-      fontFamily: t.fontFamily,
-      fontWeight: t.fontWeight,
-      fontSize: t.fontSize,
-      lineHeight: t.lineHeight,
-      letterSpacing: t.letterSpacing,
-    };
-  });
-
-  return {
-    palette: Object.keys(palette).length ? palette : undefined,
-    typography: Object.keys(typography).length ? typography : undefined,
-  };
-}
-
-/**
  * ProjectDetailPage 템플릿
  *
- * MUSE 프로젝트 상세 화면. 좌측: 레이어 탭 + 토큰 편집 리스트 / 우측: 토큰 요약 프리뷰.
- * 상단에 Export 버튼을 통해 MUI theme 코드로 내보내기 가능.
+ * MUSE 프로젝트 상세 화면. 좌측: 레이어 탭 + 토큰 편집 / 우측: 토큰 요약 프리뷰.
+ * 상단 "Export"는 범용 JSON + ZIP 번들 다이얼로그를 연다.
  *
  * Props:
- * @param {object} project - { id, name, intent, type } [Required]
+ * @param {object} project - { id, name, intent, type, referenceIds } [Required]
  * @param {object} analysis - 레이어별 토큰 {color, typography, layout, gradient, visualDirection} [Required]
+ * @param {array}  [references] - 전체 store references — ZIP 이미지 번들링용 [Optional]
  * @param {function} onUpdateToken - (layerKey, tokenId, patch) => void [Required]
  * @param {function} onBack - 뒤로가기 [Optional]
  * @param {node} logo - AppShell 로고 [Optional]
@@ -82,6 +48,7 @@ function buildThemeObject(analysis) {
 export function ProjectDetailPage({
   project,
   analysis,
+  references = [],
   onUpdateToken,
   onBack,
   logo,
@@ -89,8 +56,6 @@ export function ProjectDetailPage({
 }) {
   const [activeLayer, setActiveLayer] = useState('color');
   const [isExportOpen, setExportOpen] = useState(false);
-
-  const themeObject = useMemo(() => buildThemeObject(analysis), [analysis]);
 
   const handleChange = (layerKey) => (id, patch) => {
     onUpdateToken?.(layerKey, id, patch);
@@ -251,7 +216,7 @@ export function ProjectDetailPage({
         <Button
           variant="contained"
           color="primary"
-          startIcon={ <FileDownloadIcon /> }
+          startIcon={ <FolderZipIcon /> }
           onClick={ () => setExportOpen(true) }
         >
           Export
@@ -305,8 +270,9 @@ export function ProjectDetailPage({
       <ThemeExportDialog
         open={ isExportOpen }
         onClose={ () => setExportOpen(false) }
-        themeObject={ themeObject }
-        fileName={ `${project?.name?.toLowerCase().replace(/\s+/g, '-') || 'muse'}-theme.js` }
+        project={ project }
+        analysis={ analysis }
+        references={ references }
       />
     </AppShell>
   );

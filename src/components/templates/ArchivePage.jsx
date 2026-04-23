@@ -3,6 +3,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import AddIcon from '@mui/icons-material/Add';
 import { AppShell } from '../layout/AppShell.jsx';
 import { PageContainer } from '../layout/PageContainer.jsx';
@@ -11,37 +13,34 @@ import { ImageCard } from '../card/ImageCard.jsx';
 import { SearchBar } from '../input/SearchBar.jsx';
 import { FileDropzone } from '../input/FileDropzone.jsx';
 import { flattenTags } from '../../data/muse';
+import { fileToDataUrl, resizeDataUrl } from '../../utils/museAi';
+import { runAutoTag } from '../../utils/museAiTasks';
+import { useReferencesSlice } from '../../store';
+
+const makeId = () => `ref-u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
 /**
  * ArchivePage 템플릿
  *
- * MUSE 아카이브 화면. AppShell + 업로드 영역(FileDropzone) + 검색/태그 필터 + InfiniteMasonry 조립.
- * 외부에서 `references` 데이터와 동작 콜백만 주입하면 동작하는 페이지 템플릿.
+ * MUSE 아카이브 화면. `references` prop이 전달되면 외부 데이터를 표시하고,
+ * `onUploadFile`가 기본 구현이 아니라면 그쪽에 위임. `useStoreMode=true`면
+ * 내부에서 직접 store를 읽고 업로드 파일을 T1 자동 태깅 후 store에 추가.
  *
  * Props:
- * @param {array} references - 레퍼런스 배열 [{ id, src, title?, tags? }] [Required]
- * @param {function} onUploadFile - 파일 업로드 (file) => void [Optional]
- * @param {function} onUploadUrl - URL 붙여넣기 업로드 (url) => void [Optional]
- * @param {function} onLoadMore - 추가 로드 [Optional]
- * @param {boolean} hasMore - 추가 로드 가능 여부 [Optional, 기본값: false]
- * @param {boolean} isLoading - 로딩 중 [Optional, 기본값: false]
- * @param {function} onNewProject - "새 프로젝트" 버튼 클릭 [Optional]
- * @param {node} logo - AppShell 로고 영역 [Optional]
- * @param {object} sx - 추가 스타일 [Optional]
- *
- * Example usage:
- * <ArchivePage
- *   references={ refs }
- *   onUploadFile={ handleUpload }
- *   onLoadMore={ loadMore }
- *   hasMore={ hasMore }
- *   isLoading={ isLoading }
- * />
+ * @param {array}   [references]  - 외부 주입 시 store 미사용 모드
+ * @param {boolean} [useStoreMode] - store 직접 사용 여부 (앱 통합 시 true)
+ * @param {function} [onUploadFile] - (file) => void, 외부 처리 시만
+ * @param {function} [onLoadMore]
+ * @param {boolean} [hasMore]
+ * @param {boolean} [isLoading]
+ * @param {function} [onNewProject]
+ * @param {node}    [logo]
+ * @param {object}  [sx]
  */
 export function ArchivePage({
-  references,
+  references: externalReferences,
+  useStoreMode = false,
   onUploadFile,
-  onUploadUrl,
   onLoadMore,
   hasMore = false,
   isLoading = false,
@@ -51,6 +50,61 @@ export function ArchivePage({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTags, setActiveTags] = useState([]);
+  const [uploadState, setUploadState] = useState({ isUploading: false, error: null, lastId: null });
+
+  // 항상 hook 호출 (rules of hooks). 값은 useStoreMode일 때만 소비.
+  const storeSlice = useReferencesSlice();
+  const references = useStoreMode ? storeSlice.references : (externalReferences || []);
+
+  /** 업로드: 즉시 pending Reference를 store에 추가 → T1 호출 → tags 채워 updateReference */
+  const handleUploadFile = async (file) => {
+    if (!file) return;
+    // 외부 업로드 핸들러가 있으면 우선
+    if (onUploadFile && !useStoreMode) {
+      onUploadFile(file);
+      return;
+    }
+    if (!useStoreMode) return;
+
+    const id = makeId();
+    setUploadState({ isUploading: true, error: null, lastId: id });
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const thumbnail = await resizeDataUrl(dataUrl, 512);
+
+      // Pending 상태로 먼저 store에 추가 (썸네일 즉시 노출)
+      storeSlice.addReference({
+        id,
+        source: 'file',
+        thumbnailUrl: thumbnail,
+        tags: { color: [], typography: [], layout: [], gradient: [], visualDirection: { genre: [], style: [], subject: [] } },
+        dominantColors: [],
+        createdAt: new Date().toISOString().slice(0, 10),
+        title: file.name?.replace(/\.[^.]+$/, '') || 'Untitled',
+        _pending: true,
+      });
+
+      // 백그라운드 T1 태깅
+      try {
+        const result = await runAutoTag({ imageUrl: thumbnail });
+        storeSlice.updateReference(id, {
+          tags: result.tags,
+          dominantColors: result.dominantColors,
+          title: result.title,
+          _pending: false,
+        });
+      } catch (tagError) {
+        // 태깅 실패 — pending 해제만, 수동 태그 가능
+        storeSlice.updateReference(id, { _pending: false, _tagError: tagError?.message || String(tagError) });
+      }
+    } catch (e) {
+      setUploadState({ isUploading: false, error: e?.message || String(e), lastId: id });
+      return;
+    }
+
+    setUploadState({ isUploading: false, error: null, lastId: id });
+  };
 
   const allTags = useMemo(() => {
     const set = new Set();
@@ -93,7 +147,7 @@ export function ArchivePage({
       sx={ sx }
     >
       <PageContainer>
-        {/* Hero — 페이지 타이틀 + 설명 */}
+        {/* Hero */}
         <Box sx={ { py: { xs: 4, md: 8 } } }>
           <Typography variant="h2" sx={ { mb: 1 } }>Archive</Typography>
           <Typography variant="body1" color="text.secondary" sx={ { maxWidth: 640 } }>
@@ -102,21 +156,26 @@ export function ArchivePage({
         </Box>
 
         {/* Upload dropzone */}
-        <Box sx={ { mb: 6 } }>
+        <Box sx={ { mb: 2 } }>
           <FileDropzone
-            onFileSelect={ onUploadFile }
+            onFileSelect={ handleUploadFile }
             variant="compact"
+            isUploading={ uploadState.isUploading }
           />
-          { onUploadUrl && (
-            <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, mt: 2 } }>
+          { uploadState.error && (
+            <Alert severity="error" sx={ { mt: 1 } }>{ uploadState.error }</Alert>
+          ) }
+          { useStoreMode && uploadState.lastId && !uploadState.isUploading && (
+            <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, mt: 1 } }>
+              <CircularProgress size={ 12 } />
               <Typography variant="caption" color="text.secondary">
-                또는 이미지 URL을 붙여넣기
+                T1 태깅 진행 중 (백그라운드)… 완료되면 태그가 자동으로 채워집니다
               </Typography>
             </Box>
           ) }
         </Box>
 
-        {/* Search + tag filter bar */}
+        {/* Sticky 필터 바 */}
         <Box
           sx={ {
             position: 'sticky',
@@ -162,7 +221,7 @@ export function ArchivePage({
           </Typography>
         </Box>
 
-        {/* Infinite grid */}
+        {/* Grid */}
         <InfiniteMasonry
           items={ filtered }
           hasMore={ hasMore && !searchTerm && !activeTags.length }
@@ -176,11 +235,53 @@ export function ArchivePage({
               : '아직 수집된 레퍼런스가 없습니다. 이미지를 드래그해서 추가해보세요.'
           }
           renderItem={ (item) => (
-            <ImageCard
-              src={ item.src }
-              title={ item.title }
-              tags={ flattenTags(item).slice(0, 3) }
-            />
+            <Box sx={ { position: 'relative' } }>
+              <ImageCard
+                src={ item.thumbnailUrl || item.src }
+                title={ item.title }
+                tags={ flattenTags(item).slice(0, 3) }
+              />
+              { item._pending && (
+                <Box
+                  sx={ {
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    bgcolor: 'rgba(252,252,255,0.9)',
+                    borderRadius: 999,
+                    px: 1,
+                    py: 0.25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    backdropFilter: 'blur(6px)',
+                  } }
+                >
+                  <CircularProgress size={ 10 } thickness={ 5 } />
+                  <Typography variant="caption" sx={ { fontSize: 10, color: 'text.secondary' } }>
+                    태깅 중
+                  </Typography>
+                </Box>
+              ) }
+              { item._tagError && (
+                <Box
+                  sx={ {
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    bgcolor: 'error.main',
+                    color: 'white',
+                    borderRadius: 999,
+                    px: 1,
+                    py: 0.25,
+                    fontSize: 10,
+                  } }
+                  title={ item._tagError }
+                >
+                  태깅 실패
+                </Box>
+              ) }
+            </Box>
           ) }
         />
 

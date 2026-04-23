@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { ProjectDetailPage } from './ProjectDetailPage';
-import { projectsWithThumbnails, getAnalysisResult } from '../../data/muse';
+import {
+  projectsWithThumbnails,
+  getAnalysisResult,
+  references as allReferences,
+} from '../../data/muse';
 
 export default {
   title: 'Page/ProjectDetailPage',
@@ -29,6 +33,7 @@ export const Default = {
       <ProjectDetailPage
         project={ PROJECT }
         analysis={ analysis }
+        references={ allReferences }
         onUpdateToken={ handleUpdate }
         onBack={ () => {} }
       />
@@ -46,6 +51,7 @@ export const DashboardProject = {
       <ProjectDetailPage
         project={ project }
         analysis={ analysis }
+        references={ allReferences }
         onUpdateToken={ (layer, id, patch) =>
           setAnalysis((prev) => ({
             ...prev,
@@ -72,8 +78,9 @@ export const Minimal = {
 
     return (
       <ProjectDetailPage
-        project={ { id: 'p-min', name: 'Minimal Project', intent: '단일 컬러만 추출', type: 'brand' } }
+        project={ { id: 'p-min', name: 'Minimal Project', intent: '단일 컬러만 추출', type: 'brand', referenceIds: [] } }
         analysis={ analysis }
+        references={ [] }
         onUpdateToken={ (layer, id, patch) =>
           setAnalysis((prev) => ({
             ...prev,

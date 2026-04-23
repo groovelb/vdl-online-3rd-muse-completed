@@ -2,6 +2,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 import { defaultTheme } from '../src/styles/themes';
+import { MuseStoreProvider } from '../src/store';
 
 // Google Fonts 로드 (Material Symbols + 기본 폰트)
 const googleFonts = [
@@ -66,12 +67,14 @@ const preview = {
   },
   decorators: [
     (Story) => (
-      <ThemeProvider theme={defaultTheme}>
-        <CssBaseline />
-        <div style={{ width: '100%', paddingTop: '40px' }}>
-          <Story />
-        </div>
-      </ThemeProvider>
+      <MuseStoreProvider>
+        <ThemeProvider theme={defaultTheme}>
+          <CssBaseline />
+          <div style={{ width: '100%', paddingTop: '40px' }}>
+            <Story />
+          </div>
+        </ThemeProvider>
+      </MuseStoreProvider>
     ),
   ],
 };

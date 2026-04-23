@@ -1,4 +1,5 @@
-import { useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
@@ -103,12 +104,29 @@ function reducer(state, action) {
 export function ProjectCreateWizard({
   archive,
   recommended = [],
+  recommendedLoader,
   onAnalyze,
   onComplete,
   onCancel,
   sx,
 }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Step 2 진입 시 recommendedLoader가 있으면 T2 자동 호출
+  const [loadedRecommended, setLoadedRecommended] = useState(null);
+  const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
+
+  useEffect(() => {
+    if (state.step === 1 && recommendedLoader && !loadedRecommended && !isLoadingRecommended) {
+      setIsLoadingRecommended(true);
+      Promise.resolve(recommendedLoader({ ...state.form }))
+        .then((list) => setLoadedRecommended(Array.isArray(list) ? list : []))
+        .catch(() => setLoadedRecommended([]))
+        .finally(() => setIsLoadingRecommended(false));
+    }
+  }, [state.step, recommendedLoader, loadedRecommended, isLoadingRecommended, state.form]);
+
+  const effectiveRecommended = loadedRecommended || recommended || [];
 
   const isStep1Valid = state.form.name.trim().length > 0 && state.form.intent.trim().length > 0;
   const isStep2Valid = state.selectedIds.length > 0;
@@ -122,9 +140,10 @@ export function ProjectCreateWizard({
       selectedIds: state.selectedIds,
     };
 
+    let analysisResult = null;
     try {
       if (onAnalyze) {
-        await onAnalyze(payload, (layers) =>
+        analysisResult = await onAnalyze(payload, (layers) =>
           dispatch({ type: 'ANALYSIS_UPDATE', payload: layers }),
         );
       } else {
@@ -148,7 +167,12 @@ export function ProjectCreateWizard({
         });
       }
       dispatch({ type: 'ANALYSIS_DONE' });
-      onComplete?.({ ...state.form, referenceIds: state.selectedIds });
+      // analysisResult(= onAnalyze 반환값)을 onComplete에 함께 전달
+      onComplete?.({
+        form: state.form,
+        referenceIds: state.selectedIds,
+        analysis: analysisResult, // { tokens, visualDirection } or null
+      });
     } catch {
       dispatch({ type: 'ANALYSIS_ERROR' });
     }
@@ -193,14 +217,24 @@ export function ProjectCreateWizard({
 
     if (state.step === 1) {
       return (
-        <ReferencePicker
-          recommended={ recommended }
-          archive={ archive }
-          selectedIds={ state.selectedIds }
-          onChange={ (ids) => dispatch({ type: 'SET_SELECTED', payload: ids }) }
-          tagFilter={ state.tagFilter }
-          onTagFilterChange={ (tags) => dispatch({ type: 'SET_TAG_FILTER', payload: tags }) }
-        />
+        <Box>
+          { isLoadingRecommended && (
+            <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, mb: 2 } }>
+              <CircularProgress size={ 14 } />
+              <Typography variant="caption" color="text.secondary">
+                의도에 맞는 레퍼런스를 추천하는 중…
+              </Typography>
+            </Box>
+          ) }
+          <ReferencePicker
+            recommended={ effectiveRecommended }
+            archive={ archive }
+            selectedIds={ state.selectedIds }
+            onChange={ (ids) => dispatch({ type: 'SET_SELECTED', payload: ids }) }
+            tagFilter={ state.tagFilter }
+            onTagFilterChange={ (tags) => dispatch({ type: 'SET_TAG_FILTER', payload: tags }) }
+          />
+        </Box>
       );
     }
 
@@ -282,7 +316,7 @@ export function ProjectCreateWizard({
           <Button
             variant="contained"
             color="primary"
-            onClick={ () => onComplete?.({ ...state.form, referenceIds: state.selectedIds }) }
+            onClick={ () => onComplete?.({ form: state.form, referenceIds: state.selectedIds, analysis: null }) }
           >
             프로젝트 열기
           </Button>

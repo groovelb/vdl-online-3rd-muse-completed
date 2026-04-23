@@ -5,5 +5,4 @@ export {
   useProjectsSlice,
   useAnalysesSlice,
   useSettingsSlice,
-  resetMuseStore,
 } from './museStore.jsx';

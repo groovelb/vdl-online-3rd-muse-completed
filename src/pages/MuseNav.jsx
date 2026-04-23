@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import { useAuth, useSignOut } from '../hooks/auth';
 
 const NAV_ITEMS = [
   { to: '/archive', label: 'Archive' },
@@ -9,8 +11,11 @@ const NAV_ITEMS = [
 ];
 
 export function MuseNav() {
+  const { user } = useAuth();
+  const { signOut } = useSignOut();
+
   return (
-    <Box sx={ { display: 'flex', alignItems: 'center', gap: 3 } }>
+    <Box sx={ { display: 'flex', alignItems: 'center', gap: 3, width: '100%' } }>
       <NavLink to="/archive" style={ { textDecoration: 'none' } }>
         <Typography variant="h6" sx={ { fontWeight: 700, color: 'text.primary' } }>
           MUSE
@@ -38,6 +43,16 @@ export function MuseNav() {
           </NavLink>
         )) }
       </Box>
+      { user && (
+        <Box sx={ { ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 } }>
+          <Typography variant="body2" color="text.secondary">
+            { user.email }
+          </Typography>
+          <Button size="small" variant="text" onClick={ signOut }>
+            로그아웃
+          </Button>
+        </Box>
+      ) }
     </Box>
   );
 }

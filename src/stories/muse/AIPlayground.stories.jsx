@@ -561,8 +561,8 @@ export const T2Recommend = {
  * T3 · Analyze Tokens + Visual Direction (2 tool 패턴)
  * ============================================ */
 
-const resizeDataUrl = async (dataUrl, maxDim = 1024) => {
-  // 간단 리사이즈 — payload 줄이기 위해 긴 변 1024px 제한
+const resizeDataUrl = async (dataUrl, maxDim = 512) => {
+  // T3 입력용 리사이즈. 기본 512px (T1 이 primary signal, 이미지는 verification)
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -615,7 +615,7 @@ export const T3AnalyzeTokens = {
         const selectedRefs = references.filter((r) => selectedIds.has(r.id));
         if (!selectedRefs.length) throw new Error('최소 1장 이상 선택 필요');
 
-        // 각 이미지 base64 변환 + 리사이즈
+        // 512px 리사이즈
         const imageBlocks = [];
         for (const ref of selectedRefs) {
           const dataUrl = await imageUrlToBase64DataUrl(ref.thumbnailUrl);
@@ -623,14 +623,26 @@ export const T3AnalyzeTokens = {
           imageBlocks.push({ ref, block: toImageBlock(resized) });
         }
 
-        // user message: [이미지+레이어태그힌트] 반복 + 최종 지시
+        // T1 분석 결과를 PRIMARY signal JSON 헤더로 상단 배치
+        const t1Summary = selectedRefs.map((ref) => ({
+          id: ref.id,
+          tags: ref.tags || {},
+          dominantColors: ref.dominantColors || [],
+          title: ref.title || null,
+        }));
+
         const content = [];
+        content.push({
+          type: 'text',
+          text: `=== PRIMARY SIGNAL: T1 pre-analysis (${selectedRefs.length} references) ===
+
+${JSON.stringify(t1Summary, null, 2)}
+
+=== SECONDARY: images below (512px, same order as ids above) ===`,
+        });
         imageBlocks.forEach(({ ref, block }) => {
           content.push(block);
-          content.push({
-            type: 'text',
-            text: `id: ${ref.id} · T1 tags: ${JSON.stringify(ref.tags)} · dominantColors: ${(ref.dominantColors || []).join(', ')}`,
-          });
+          content.push({ type: 'text', text: `↑ image for id: ${ref.id}` });
         });
         content.push({
           type: 'text',
@@ -681,7 +693,7 @@ export const T3AnalyzeTokens = {
             T3 · Analyze Tokens + VD
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={ { mb: 3 } }>
-            { TASK_ANALYZE_TOKENS.purpose } · 최대 4장 이미지 + 2 tool 단일 호출
+            { TASK_ANALYZE_TOKENS.purpose } · T1 primary + 512px 이미지 verify · 최대 4장 · 2 tool 단일 호출
           </Typography>
 
           {/* Controls */}

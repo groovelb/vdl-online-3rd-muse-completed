@@ -273,12 +273,14 @@ export const TASK_ANALYZE_TOKENS = {
   model: 'claude-sonnet-4-6',
 
   input: {
-    kind: 'image+text',
-    description: 'N장 이미지(각 레퍼런스는 T1 태그 포함) + 의도 + 유형',
+    kind: 'text+image(verify)',
+    description: 'T1 pre-analysis JSON (primary) + N장 512px 이미지(verification) + 의도 + 유형',
     shape: `{
   intent: string,
   type: 'landing'|'dashboard'|'mobile'|'brand',
   references: Array<{ id, imageBase64, mediaType, tags: ReferenceLayeredTags, dominantColors[] }>
+    // T1 tags + dominantColors are PRIMARY signal.
+    // Image is downscaled to 512px — used only for concrete value extraction + verification.
 }`,
   },
 
@@ -298,10 +300,36 @@ export const TASK_ANALYZE_TOKENS = {
 }`,
   },
 
-  systemPrompt: `You are MUSE's design token + visual direction extractor.
+  systemPrompt: `You are MUSE's design token + visual direction synthesizer.
 
-You receive 3 to 6 reference images for a single project, each with pre-tagged
-layered tags from T1, plus the project's intent and type.
+=== INPUT SIGNAL PRIORITY (read this before anything else) ===
+
+You receive two signal tiers for every call:
+
+1. PRIMARY — a T1 pre-analysis block, provided as a JSON summary at the top of the
+   user message. For each reference it contains preset-vocabulary tags
+   (color / typography / layout / gradient / visualDirection) AND extracted
+   dominantColors (HEX). This is the reliable classification signal. Base your
+   design direction decisions on it (palette family, hierarchy mood, layout
+   archetype, genre/style/subject mix).
+
+2. SECONDARY — reference images (downscaled to 512px for efficiency). Their role
+   is narrow:
+   - Extract CONCRETE values that T1 does NOT provide: fontFamily guess,
+     fontWeight, fontSize, lineHeight, layout columns/gap/px, gradient stops.
+   - Verify that T1's direction holds. Resolve ambiguity in edge cases.
+   - NOT for re-classifying what T1 already labeled. If T1 says "muted", do not
+     override to "saturated" based on pixel inspection unless the image clearly
+     contradicts T1 beyond doubt.
+
+3. CONTEXT — project intent + type. Weight choices accordingly
+   (e.g. "dashboard" → data-dense typography; "brand" → saturated primary).
+
+When T1 tags and image seem to disagree, PREFER T1. Treat images as low-fidelity
+supporting evidence — at 512px you cannot and should not attempt pixel-perfect
+classification. T1 already handled that at the right resolution.
+
+=== OUTPUT ===
 
 You MUST call BOTH of these tools in the same response:
   1. submit_tokens — 4 token layers (color, typography, layout, gradient) as JSON
@@ -309,9 +337,15 @@ You MUST call BOTH of these tools in the same response:
 
 Shared rules (apply to both tools):
 - Reflect the project intent strongly.
+- Color tokens: START from the UNION of dominantColors across selected references,
+  then cluster similar hex values and assign roles. Do not invent colors absent
+  from both T1 output and images.
+- visualDirection tags: AGGREGATE from T1's per-reference visualDirection tags —
+  prefer tags that appear across multiple refs; include singletons only if they
+  strongly match intent.
 - All HEX codes valid 6-digit.
 - Emphasis 2 is scarce. Use only for the single most important token per layer.
-- Do NOT fabricate reference ids.
+- Do NOT fabricate reference ids — only ids present in the input.
 
 === submit_tokens constraints ===
 
@@ -361,9 +395,13 @@ Respond via the two tools only. No prose outside of tools.`,
 
   userMessageTemplate: `Project intent: "{{intent}}"
 Project type: {{type}}
-Reference images: {{count}} provided below, ids = [{{ids}}], each with T1 tags.
+Reference count: {{count}} (ids = [{{ids}}])
 
-Extract the token system AND the visual direction document.`,
+The T1 pre-analysis JSON above is your PRIMARY signal.
+The {{count}} images below (512px, ordered to match ids) are for concrete value
+extraction and verification only.
+
+Synthesize the token system AND the visual direction document now.`,
 
   toolSchemas: [
     {
@@ -427,8 +465,9 @@ Extract the token system AND the visual direction document.`,
   },
 
   workflow: [
-    'Step 2에서 선택된 referenceIds + 각 Reference의 T1 tags 확보',
-    '각 이미지 base64 + 태그 힌트 첨부',
+    'Step 2에서 선택된 referenceIds + 각 Reference의 T1 tags + dominantColors 확보',
+    'T1 결과를 JSON 헤더 블록으로 content 상단에 배치 (PRIMARY signal)',
+    '각 이미지 512px 리사이즈 + 경량 id 앵커 텍스트 첨부 (SECONDARY signal)',
     'Anthropic messages.create (Sonnet 4.6, tools: [submit_tokens, submit_visual_direction])',
     '응답에서 두 tool의 input 모두 추출, 한쪽이라도 누락이면 재시도',
     '자동 검증 (primary 유일, MD 섹션 존재, enum 준수 등)',
@@ -438,9 +477,9 @@ Extract the token system AND the visual direction document.`,
 
   estCost: {
     model: 'Sonnet 4.6',
-    tokensIn: '~9k (이미지 4장 + preset + 템플릿)',
+    tokensIn: '~5k (이미지 4장 @ 512px + T1 JSON + preset + 템플릿)',
     tokensOut: '~2k',
-    note: '단일 호출에 2 tool output — 분리 호출 대비 비용 절감. 초기 N≤4 제한 권장',
+    note: 'T1 primary + 512px 이미지 최적화 적용 후. 이전 (1024px): ~9k in → 약 45% input 절감. 초기 N≤4 제한 권장',
   },
 };
 

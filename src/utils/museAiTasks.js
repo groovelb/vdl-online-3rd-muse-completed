@@ -104,24 +104,40 @@ export async function runRecommend({ intent, type, archive, n = 6, model }) {
 export async function runAnalyzeTokens({ intent, type, selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
-  // 모든 이미지 리사이즈 + blocks 준비
+  // 이미지 512px 리사이즈 (T1 primary signal + image verification 역할 분담)
   const imageBlocks = [];
   for (const ref of selectedRefs) {
     const dataUrl = ref.thumbnailUrl.startsWith('data:')
       ? ref.thumbnailUrl
       : await imageUrlToBase64DataUrl(ref.thumbnailUrl);
-    const resized = await resizeDataUrl(dataUrl, 1024);
+    const resized = await resizeDataUrl(dataUrl, 512);
     imageBlocks.push({ ref, block: toImageBlock(resized) });
   }
 
-  // content: [img, metaHint, img, metaHint, ..., finalInstruction]
+  // T1 분석 결과를 JSON 헤더로 상단 배치 (PRIMARY signal)
+  const t1Summary = selectedRefs.map((ref) => ({
+    id: ref.id,
+    tags: ref.tags || {},
+    dominantColors: ref.dominantColors || [],
+    title: ref.title || null,
+  }));
+
+  // content 구성:
+  //   1) T1 JSON 헤더 (primary classification signal)
+  //   2) 이미지들 + 각각의 경량 id 앵커 (secondary, concrete value 추출용)
+  //   3) 최종 지시 (intent/type/count)
   const content = [];
+  content.push({
+    type: 'text',
+    text: `=== PRIMARY SIGNAL: T1 pre-analysis (${selectedRefs.length} references) ===
+
+${JSON.stringify(t1Summary, null, 2)}
+
+=== SECONDARY: images below (512px, same order as ids above) ===`,
+  });
   imageBlocks.forEach(({ ref, block }) => {
     content.push(block);
-    content.push({
-      type: 'text',
-      text: `id: ${ref.id} · T1 tags: ${JSON.stringify(ref.tags || {})} · dominantColors: ${(ref.dominantColors || []).join(', ')}`,
-    });
+    content.push({ type: 'text', text: `↑ image for id: ${ref.id}` });
   });
   content.push({
     type: 'text',

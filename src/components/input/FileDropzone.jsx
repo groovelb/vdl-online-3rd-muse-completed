@@ -44,6 +44,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
  */
 export function FileDropzone({
   onFileSelect,
+  onFilesSelect,
   onFileRemove,
   selectedFile,
   previewUrl,
@@ -52,6 +53,7 @@ export function FileDropzone({
   isComplete = false,
   accept = 'image/*,video/*',
   maxSize = 50 * 1024 * 1024,
+  multiple = false,
   variant = 'default',
   sx,
 }) {
@@ -109,6 +111,22 @@ export function FileDropzone({
     e.stopPropagation();
   }, []);
 
+  const handleFiles = useCallback(
+    (files) => {
+      const list = Array.from(files || []);
+      if (!list.length) return;
+      // 크기 검증
+      for (const f of list) {
+        const err = validateFile(f);
+        if (err) { setError(err); return; }
+      }
+      setError(null);
+      if (multiple && onFilesSelect) onFilesSelect(list);
+      else onFileSelect?.(list[0]);
+    },
+    [validateFile, multiple, onFilesSelect, onFileSelect]
+  );
+
   const handleDrop = useCallback(
     (e) => {
       e.preventDefault();
@@ -117,10 +135,11 @@ export function FileDropzone({
 
       const files = e.dataTransfer.files;
       if (files && files.length > 0) {
-        handleFile(files[0]);
+        if (multiple) handleFiles(files);
+        else handleFile(files[0]);
       }
     },
-    [handleFile]
+    [handleFile, handleFiles, multiple]
   );
 
   /**
@@ -139,11 +158,12 @@ export function FileDropzone({
     (e) => {
       const files = e.target.files;
       if (files && files.length > 0) {
-        handleFile(files[0]);
+        if (multiple) handleFiles(files);
+        else handleFile(files[0]);
       }
       e.target.value = '';
     },
-    [handleFile]
+    [handleFile, handleFiles, multiple]
   );
 
   /**
@@ -342,6 +362,7 @@ export function FileDropzone({
         ref={fileInputRef}
         type="file"
         accept={accept}
+        multiple={multiple}
         onChange={handleInputChange}
         style={{ display: 'none' }}
       />

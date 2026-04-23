@@ -1,8 +1,6 @@
 import { useCallback, useState } from 'react';
-import Button from '@mui/material/Button';
 import { ArchivePage } from './ArchivePage';
 import { references as allReferences } from '../../data/muse';
-import { resetMuseStore } from '../../store';
 
 export default {
   title: 'Page/ArchivePage',
@@ -11,28 +9,13 @@ export default {
   parameters: { layout: 'fullscreen' },
 };
 
-/** Store Mode: 업로드 → 실제 T1 호출 → store 반영. 새로고침해도 localStorage에 유지 */
+/** Store Mode: fixtures 기반 쇼케이스. 업로드 버튼은 로컬 dispatch only (Supabase 호출 없음, Storybook 전용) */
 export const StoreMode = {
   render: () => (
-    <div>
-      <div style={ { position: 'fixed', bottom: 16, right: 16, zIndex: 2000 } }>
-        <Button
-          size="small"
-          variant="outlined"
-          color="inherit"
-          onClick={ () => {
-            resetMuseStore();
-            window.location.reload();
-          } }
-        >
-          Store 초기화 + 새로고침
-        </Button>
-      </div>
-      <ArchivePage
-        useStoreMode
-        onNewProject={ () => {} }
-      />
-    </div>
+    <ArchivePage
+      useStoreMode
+      onNewProject={ () => {} }
+    />
   ),
 };
 

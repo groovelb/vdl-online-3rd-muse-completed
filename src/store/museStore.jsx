@@ -1,85 +1,47 @@
 /**
- * MUSE Store — Context + useReducer + localStorage persist
+ * MUSE Store — Context + useReducer + Supabase 영속화
  *
- * 프론트엔드 전용 상태 레이어. DB 연동 전 단계에서 런타임 상태를
- * 단일 Provider로 관리하고 localStorage에 자동 persist.
+ * seed='supabase' (기본): 로그인 사용자의 DB 데이터 하이드레이션. 모든 CRUD 는 Supabase 경유 후 로컬 dispatch
+ * seed='fixtures':         Storybook 쇼케이스. 정적 27 레퍼런스 + 4 프로젝트 + 4 분석. 모든 CRUD 는 로컬 dispatch only
  *
- * 사용 슬라이스:
- *   - references: 아카이브 레퍼런스 (T1 태깅 결과 반영)
- *   - projects:   프로젝트 목록
- *   - analyses:   프로젝트별 AnalysisResult (T3 결과)
- *   - settings:   UserSettings
- *
- * 초기 하이드레이션:
- *   1. localStorage에 저장된 스냅샷 있으면 로드 + 버전 체크
- *   2. 없거나 버전 불일치면 src/data/muse/*.js 더미로 초기화
- *
- * 버전 변경 시 STORAGE_VERSION을 bump해 구버전 캐시 무효화.
+ * 슬라이스 훅 시그니처는 localStorage 시절과 동일하게 유지. 내부 구현만 교체.
  */
 
 import { createContext, useContext, useEffect, useReducer } from 'react';
 import {
-  references as initialReferences,
-  projects as initialProjects,
-  analysisResultsByProjectId as initialAnalyses,
+  references as fixtureReferences,
+  projects as fixtureProjects,
+  analysisResultsByProjectId as fixtureAnalyses,
   defaultUserSettings,
 } from '../data/muse';
-
-const STORAGE_KEY = 'muse_store_v4';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/auth';
+import {
+  mapReferenceFromDb, mapReferenceToDb,
+  mapProjectFromDb, mapProjectToDb,
+  mapAnalysisFromDb, mapAnalysisToDb,
+  mapSettingsFromDb, mapSettingsToDb,
+  uploadReferenceImage, deleteReferenceImage, getSignedUrl,
+} from '../lib/museDb';
 
 const MuseContext = createContext(null);
 
-/* ============================================
- * Initial state
- *
- * seed='empty'    : dev/프로덕션 기본 — 실제 유저처럼 빈 상태에서 시작
- * seed='fixtures' : Storybook 등 쇼케이스 — 27 레퍼런스 + 4 프로젝트 + 4 분석
- * ============================================ */
-
-const buildInitialState = (seed = 'empty') => {
-  if (seed === 'fixtures') {
-    return {
-      references: initialReferences,
-      projects: initialProjects,
-      analyses: initialAnalyses,
-      settings: { ...defaultUserSettings },
-    };
-  }
-  return {
-    references: [],
-    projects: [],
-    analyses: {},
-    settings: { ...defaultUserSettings },
-  };
+const EMPTY_STATE = {
+  references: [],
+  projects: [],
+  analyses: {},
+  settings: { ...defaultUserSettings },
+  loading: false,
+  hydrated: false,
 };
 
-/* ============================================
- * Persist
- * ============================================ */
-
-const loadFromStorage = () => {
-  if (typeof window === 'undefined' || !window.localStorage) return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || parsed.version !== STORAGE_KEY) return null;
-    return parsed.state;
-  } catch {
-    return null;
-  }
-};
-
-const saveToStorage = (state) => {
-  if (typeof window === 'undefined' || !window.localStorage) return;
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ version: STORAGE_KEY, state }),
-    );
-  } catch {
-    // 용량 초과 등은 조용히 무시 (더미 이미지 thumbnailUrl이 Vite bundle URL이라 용량 큼)
-  }
+const FIXTURES_STATE = {
+  references: fixtureReferences,
+  projects: fixtureProjects,
+  analyses: fixtureAnalyses,
+  settings: { ...defaultUserSettings },
+  loading: false,
+  hydrated: true,
 };
 
 /* ============================================
@@ -88,7 +50,15 @@ const saveToStorage = (state) => {
 
 function reducer(state, action) {
   switch (action.type) {
-    /* references */
+    case 'HYDRATE_START':
+      return { ...state, loading: true };
+
+    case 'HYDRATE':
+      return { ...state, ...action.payload, loading: false, hydrated: true };
+
+    case 'RESET':
+      return { ...EMPTY_STATE };
+
     case 'ADD_REFERENCE':
       return { ...state, references: [action.payload, ...state.references] };
 
@@ -103,7 +73,6 @@ function reducer(state, action) {
     case 'REMOVE_REFERENCE':
       return { ...state, references: state.references.filter((r) => r.id !== action.payload) };
 
-    /* projects */
     case 'ADD_PROJECT':
       return { ...state, projects: [action.payload, ...state.projects] };
 
@@ -125,7 +94,6 @@ function reducer(state, action) {
       };
     }
 
-    /* analyses */
     case 'SET_ANALYSIS':
       return {
         ...state,
@@ -144,7 +112,6 @@ function reducer(state, action) {
           .map((t) => (t.id === tokenId ? { ...t, ...patch } : t))
           .filter((t) => !t._removed);
       } else {
-        // visualDirection 같은 객체 레이어는 patch 통째로 병합
         nextLayer = { ...layer, ...patch };
       }
       return {
@@ -159,18 +126,17 @@ function reducer(state, action) {
       };
     }
 
-    /* settings */
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.payload } };
-
-    /* reset */
-    case 'RESET_STORE':
-      return buildInitialState(action.payload || 'empty');
 
     default:
       return state;
   }
 }
+
+const genId = () => (typeof crypto !== 'undefined' && crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
 /* ============================================
  * Provider
@@ -178,23 +144,72 @@ function reducer(state, action) {
 
 /**
  * @param {object} props
- * @param {node}    props.children
- * @param {'empty'|'fixtures'} [props.seed='empty'] - 초기 상태. 기본값 empty는 실제 유저 환경.
- *                                                     Storybook 등 쇼케이스에선 'fixtures' 지정.
+ * @param {'supabase'|'fixtures'} [props.seed='supabase']
  */
-export function MuseStoreProvider({ children, seed = 'empty' }) {
-  const [state, dispatch] = useReducer(
-    reducer,
-    null,
-    () => loadFromStorage() || buildInitialState(seed),
-  );
+export function MuseStoreProvider({ children, seed = 'supabase' }) {
+  const isFixtures = seed === 'fixtures';
+  const [state, dispatch] = useReducer(reducer, isFixtures ? FIXTURES_STATE : EMPTY_STATE);
+  const auth = useAuth();
+  const user = auth.user;
+  const authLoading = auth.loading;
+  const isAuthenticated = auth.isAuthenticated;
 
   useEffect(() => {
-    saveToStorage(state);
-  }, [state]);
+    if (isFixtures) return;
+    if (authLoading) return;
+    if (!isAuthenticated || !user) {
+      dispatch({ type: 'RESET' });
+      return;
+    }
+
+    let canceled = false;
+    (async () => {
+      dispatch({ type: 'HYDRATE_START' });
+
+      // eslint-disable-next-line no-console
+      console.log('[museStore] hydrate start. user.id =', user.id);
+
+      const [refsRes, projsRes, analsRes, setsRes] = await Promise.all([
+        supabase.from('reference_items').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('projects')
+          .select('*, project_references(reference_id)')
+          .order('created_at', { ascending: false }),
+        supabase.from('analysis_results').select('*'),
+        supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
+      ]);
+
+      if (canceled) return;
+
+      // eslint-disable-next-line no-console
+      console.log('[museStore] hydrate result', {
+        refs: { count: refsRes.data?.length, error: refsRes.error },
+        projects: { count: projsRes.data?.length, error: projsRes.error },
+        analyses: { count: analsRes.data?.length, error: analsRes.error },
+        settings: { has: !!setsRes.data, error: setsRes.error },
+      });
+
+      const references = await Promise.all((refsRes.data || []).map(mapReferenceFromDb));
+      const projects = (projsRes.data || []).map(mapProjectFromDb);
+      const analyses = Object.fromEntries(
+        (analsRes.data || []).map((row) => {
+          const a = mapAnalysisFromDb(row);
+          return [a.projectId, a];
+        })
+      );
+      const settings = mapSettingsFromDb(setsRes.data);
+
+      dispatch({
+        type: 'HYDRATE',
+        payload: { references, projects, analyses, settings },
+      });
+    })();
+
+    return () => { canceled = true; };
+  }, [isFixtures, authLoading, isAuthenticated, user?.id]);
 
   return (
-    <MuseContext.Provider value={ { state, dispatch } }>
+    <MuseContext.Provider value={ { state, dispatch, seed, user } }>
       { children }
     </MuseContext.Provider>
   );
@@ -204,57 +219,231 @@ export function MuseStoreProvider({ children, seed = 'empty' }) {
  * Hooks
  * ============================================ */
 
-const useMuseContext = () => {
+function useCtx() {
   const ctx = useContext(MuseContext);
   if (!ctx) throw new Error('useMuseStore must be used inside <MuseStoreProvider>');
   return ctx;
-};
+}
 
 export function useReferencesSlice() {
-  const { state, dispatch } = useMuseContext();
+  const { state, dispatch, seed, user } = useCtx();
+  const remote = seed !== 'fixtures';
+
+  const addReference = async (payload = {}) => {
+    const { file, ...fields } = payload;
+    const id = fields.id || genId();
+    // fields 먼저 스프레드 → UI 플래그(_pending 등)도 살아있게. 이어서 정규화된 값으로 override
+    const reference = {
+      ...fields,
+      id,
+      source: fields.source || (file ? 'file' : 'url'),
+      storagePath: fields.storagePath || null,
+      thumbnailUrl: fields.thumbnailUrl || null,
+      title: fields.title || '',
+      tags: fields.tags || {},
+      dominantColors: fields.dominantColors || [],
+      createdAt: fields.createdAt || new Date().toISOString(),
+    };
+
+    if (remote && user) {
+      if (file) {
+        reference.storagePath = await uploadReferenceImage(file, user.id, id);
+        reference.thumbnailUrl = await getSignedUrl(reference.storagePath);
+      }
+      const { error } = await supabase.from('reference_items').insert(mapReferenceToDb(reference, user.id));
+      if (error) throw error;
+    }
+
+    dispatch({ type: 'ADD_REFERENCE', payload: reference });
+    return reference;
+  };
+
+  const updateReference = async (id, patch) => {
+    if (remote && user) {
+      const dbPatch = {};
+      if ('title' in patch) dbPatch.title = patch.title;
+      if ('tags' in patch) dbPatch.tags = patch.tags;
+      if ('dominantColors' in patch) dbPatch.dominant_colors = patch.dominantColors;
+      if (Object.keys(dbPatch).length > 0) {
+        const { error } = await supabase.from('reference_items').update(dbPatch).eq('id', id);
+        if (error) throw error;
+      }
+    }
+    dispatch({ type: 'UPDATE_REFERENCE', payload: { id, patch } });
+  };
+
+  const removeReference = async (id) => {
+    if (remote && user) {
+      const target = state.references.find((r) => r.id === id);
+      if (target?.storagePath) await deleteReferenceImage(target.storagePath);
+      const { error } = await supabase.from('reference_items').delete().eq('id', id);
+      if (error) throw error;
+    }
+    dispatch({ type: 'REMOVE_REFERENCE', payload: id });
+  };
+
   return {
     references: state.references,
-    addReference: (ref) => dispatch({ type: 'ADD_REFERENCE', payload: ref }),
-    updateReference: (id, patch) => dispatch({ type: 'UPDATE_REFERENCE', payload: { id, patch } }),
-    removeReference: (id) => dispatch({ type: 'REMOVE_REFERENCE', payload: id }),
+    loading: state.loading,
+    hydrated: state.hydrated,
+    addReference,
+    updateReference,
+    removeReference,
   };
 }
 
 export function useProjectsSlice() {
-  const { state, dispatch } = useMuseContext();
+  const { state, dispatch, seed, user } = useCtx();
+  const remote = seed !== 'fixtures';
+
+  const addProject = async (project) => {
+    const id = project.id || genId();
+    const full = {
+      id,
+      name: project.name,
+      intent: project.intent || '',
+      type: project.type,
+      referenceIds: project.referenceIds || [],
+      createdAt: project.createdAt || new Date().toISOString(),
+    };
+
+    if (remote && user) {
+      const { error } = await supabase.from('projects').insert(mapProjectToDb(full, user.id));
+      if (error) throw error;
+      if (full.referenceIds.length > 0) {
+        const { error: e2 } = await supabase
+          .from('project_references')
+          .insert(full.referenceIds.map((rid) => ({ project_id: id, reference_id: rid })));
+        if (e2) throw e2;
+      }
+    }
+    dispatch({ type: 'ADD_PROJECT', payload: full });
+    return full;
+  };
+
+  const updateProject = async (id, patch) => {
+    if (remote && user) {
+      const dbPatch = {};
+      if ('name' in patch) dbPatch.name = patch.name;
+      if ('intent' in patch) dbPatch.intent = patch.intent;
+      if ('type' in patch) dbPatch.type = patch.type;
+      if (Object.keys(dbPatch).length > 0) {
+        const { error } = await supabase.from('projects').update(dbPatch).eq('id', id);
+        if (error) throw error;
+      }
+      if ('referenceIds' in patch) {
+        await supabase.from('project_references').delete().eq('project_id', id);
+        if (patch.referenceIds.length > 0) {
+          const { error: e3 } = await supabase
+            .from('project_references')
+            .insert(patch.referenceIds.map((rid) => ({ project_id: id, reference_id: rid })));
+          if (e3) throw e3;
+        }
+      }
+    }
+    dispatch({ type: 'UPDATE_PROJECT', payload: { id, patch } });
+  };
+
+  const removeProject = async (id) => {
+    if (remote && user) {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) throw error;
+    }
+    dispatch({ type: 'REMOVE_PROJECT', payload: id });
+  };
+
   return {
     projects: state.projects,
-    addProject: (project) => dispatch({ type: 'ADD_PROJECT', payload: project }),
-    updateProject: (id, patch) => dispatch({ type: 'UPDATE_PROJECT', payload: { id, patch } }),
-    removeProject: (id) => dispatch({ type: 'REMOVE_PROJECT', payload: id }),
+    loading: state.loading,
+    hydrated: state.hydrated,
+    addProject,
+    updateProject,
+    removeProject,
   };
 }
 
 export function useAnalysesSlice() {
-  const { state, dispatch } = useMuseContext();
+  const { state, dispatch, seed, user } = useCtx();
+  const remote = seed !== 'fixtures';
+
+  const setAnalysis = async (analysis) => {
+    const full = {
+      id: analysis.id || genId(),
+      projectId: analysis.projectId,
+      layers: analysis.layers || {},
+      status: analysis.status || 'done',
+      updatedAt: new Date().toISOString(),
+    };
+    if (remote && user) {
+      const { error } = await supabase
+        .from('analysis_results')
+        .upsert(mapAnalysisToDb(full), { onConflict: 'project_id' });
+      if (error) throw error;
+    }
+    dispatch({ type: 'SET_ANALYSIS', payload: full });
+    return full;
+  };
+
+  const updateLayer = async (projectId, layerKey, tokenId, patch) => {
+    const current = state.analyses[projectId];
+    if (!current) return;
+
+    const layer = current.layers[layerKey];
+    let nextLayer;
+    if (Array.isArray(layer)) {
+      nextLayer = layer
+        .map((t) => (t.id === tokenId ? { ...t, ...patch } : t))
+        .filter((t) => !t._removed);
+    } else {
+      nextLayer = { ...layer, ...patch };
+    }
+    const nextLayers = { ...current.layers, [layerKey]: nextLayer };
+
+    dispatch({ type: 'UPDATE_ANALYSIS_LAYER', payload: { projectId, layerKey, tokenId, patch } });
+
+    if (remote && user) {
+      const { error } = await supabase
+        .from('analysis_results')
+        .update({ layers: nextLayers })
+        .eq('project_id', projectId);
+      if (error) throw error;
+    }
+  };
+
   return {
     analyses: state.analyses,
+    loading: state.loading,
+    hydrated: state.hydrated,
     getAnalysis: (projectId) => state.analyses[projectId],
-    setAnalysis: (analysis) => dispatch({ type: 'SET_ANALYSIS', payload: analysis }),
-    updateLayer: (projectId, layerKey, tokenId, patch) =>
-      dispatch({ type: 'UPDATE_ANALYSIS_LAYER', payload: { projectId, layerKey, tokenId, patch } }),
+    setAnalysis,
+    updateLayer,
   };
 }
 
 export function useSettingsSlice() {
-  const { state, dispatch } = useMuseContext();
+  const { state, dispatch, seed, user } = useCtx();
+  const remote = seed !== 'fixtures';
+
+  const updateSettings = async (patch) => {
+    if (remote && user) {
+      const dbPatch = mapSettingsToDb(patch);
+      if (Object.keys(dbPatch).length > 0) {
+        const { error } = await supabase
+          .from('user_settings')
+          .update(dbPatch)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      }
+    }
+    dispatch({ type: 'UPDATE_SETTINGS', payload: patch });
+  };
+
   return {
     settings: state.settings,
-    updateSettings: (patch) => dispatch({ type: 'UPDATE_SETTINGS', payload: patch }),
+    updateSettings,
   };
 }
 
 export function useMuseStore() {
-  return useMuseContext();
-}
-
-export function resetMuseStore() {
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(STORAGE_KEY);
-  }
+  return useCtx();
 }

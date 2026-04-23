@@ -20,7 +20,7 @@ const MUSE_LAYERS = [
   { key: 'typography', label: '타이포그래피' },
   { key: 'layout', label: '레이아웃' },
   { key: 'gradient', label: '그라디언트' },
-  { key: 'keyVisual', label: '키비주얼' },
+  { key: 'visualDirection', label: '비주얼 디렉션' },
 ];
 
 /** 대기 상태 — 전부 pending */

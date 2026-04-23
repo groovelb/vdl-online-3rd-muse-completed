@@ -58,7 +58,7 @@ export const Docs = {
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>layers.typography</TableCell><TableCell>TypographyToken[]</TableCell><TableCell>타이포 토큰 목록</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>layers.layout</TableCell><TableCell>LayoutToken[]</TableCell><TableCell>레이아웃 토큰 (grid/spacing/container)</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>layers.gradient</TableCell><TableCell>GradientToken[]</TableCell><TableCell>그라디언트 토큰</TableCell></TableRow>
-              <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>layers.keyVisual</TableCell><TableCell>KeyVisualItem[]</TableCell><TableCell>키비주얼 이미지 (references에서 파생)</TableCell></TableRow>
+              <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>layers.visualDirection</TableCell><TableCell>{ '{ markdown: string, tags: {genre[],style[],subject[]} }' }</TableCell><TableCell>T3 산출물 중 MD 서술 문서 + 집계 태그</TableCell></TableRow>
             </TableBody>
           </Table>
         </TableContainer>
@@ -68,12 +68,13 @@ export const Docs = {
           const analysis = getAnalysisResult(project.id);
           if (!analysis) return null;
 
+          const vd = analysis.layers.visualDirection || { markdown: '', tags: {} };
           const counts = {
             color: analysis.layers.color.length,
             typography: analysis.layers.typography.length,
             layout: analysis.layers.layout.length,
             gradient: analysis.layers.gradient.length,
-            keyVisual: analysis.layers.keyVisual.length,
+            visualDirection: vd.markdown ? 1 : 0,
           };
 
           return (
@@ -143,27 +144,40 @@ export const Docs = {
                 </Box>
               ) }
 
-              {/* KeyVisual row */}
-              { analysis.layers.keyVisual.length > 0 && (
-                <Box sx={ { display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' } }>
-                  <Typography variant="caption" color="text.secondary" sx={ { minWidth: 80 } }>키비주얼</Typography>
-                  { analysis.layers.keyVisual.map((kv) => (
+              {/* Visual Direction row — MD 프리뷰 + 태그 집계 */}
+              { vd.markdown && (
+                <Box sx={ { display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 } }>
+                  <Typography variant="caption" color="text.secondary" sx={ { minWidth: 80, pt: 0.5 } }>비주얼 디렉션</Typography>
+                  <Box sx={ { flex: 1 } }>
+                    { vd.tags && (
+                      <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 } }>
+                        { Object.entries(vd.tags).flatMap(([cat, list]) =>
+                          (list || []).map((t) => (
+                            <Chip key={ `${cat}-${t}` } size="small" label={ `${cat}:${t}` } variant="outlined" sx={ { fontSize: 10, height: 20 } } />
+                          )),
+                        ) }
+                      </Box>
+                    ) }
                     <Box
-                      key={ kv.id }
-                      component="img"
-                      src={ kv.thumbnailUrl }
-                      alt={ kv.caption || '' }
+                      component="pre"
                       sx={ {
-                        width: 56,
-                        height: 56,
-                        objectFit: 'cover',
+                        m: 0,
+                        p: 1.5,
+                        bgcolor: 'grey.50',
                         borderRadius: 1.5,
                         border: '1px solid',
-                        borderColor: kv.emphasis === 2 ? 'info.main' : 'divider',
-                        opacity: kv.isEnabled ? 1 : 0.35,
+                        borderColor: 'divider',
+                        fontSize: 11,
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-wrap',
+                        maxHeight: 180,
+                        overflow: 'auto',
+                        fontFamily: 'inherit',
                       } }
-                    />
-                  )) }
+                    >
+                      { vd.markdown.slice(0, 400) }{ vd.markdown.length > 400 ? '…' : '' }
+                    </Box>
+                  </Box>
                 </Box>
               ) }
             </Box>

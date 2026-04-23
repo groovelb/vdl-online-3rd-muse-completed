@@ -68,6 +68,24 @@ export function extractText(response) {
 }
 
 /**
+ * 모든 tool_use 블록의 input을 이름별 map으로 추출.
+ * T3처럼 단일 호출에 2 tool이 오는 경우에 사용.
+ * @param {object} response
+ * @returns {Record<string, object>} { [toolName]: inputObject }
+ */
+export function extractAllToolInputs(response) {
+  const blocks = response?.content;
+  if (!Array.isArray(blocks)) return {};
+  const result = {};
+  for (const b of blocks) {
+    if (b.type === 'tool_use' && b.name) {
+      result[b.name] = b.input;
+    }
+  }
+  return result;
+}
+
+/**
  * 이미지 URL(dataURL 또는 http)을 Anthropic messages content의 image block으로 변환.
  * - data URL이면 base64 + media_type 추출
  * - http URL이면 { type: 'image', source: { type: 'url', url } } 사용 (2025+ 지원)

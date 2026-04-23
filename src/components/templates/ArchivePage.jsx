@@ -10,6 +10,7 @@ import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
 import { ImageCard } from '../card/ImageCard.jsx';
 import { SearchBar } from '../input/SearchBar.jsx';
 import { FileDropzone } from '../input/FileDropzone.jsx';
+import { flattenTags } from '../../data/muse';
 
 /**
  * ArchivePage 템플릿
@@ -53,18 +54,19 @@ export function ArchivePage({
 
   const allTags = useMemo(() => {
     const set = new Set();
-    references.forEach((r) => (r.tags || []).forEach((t) => set.add(t)));
+    references.forEach((r) => flattenTags(r).forEach((t) => set.add(t)));
     return [...set];
   }, [references]);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return references.filter((r) => {
+      const refTags = flattenTags(r);
       const matchesTerm = !term
         || (r.title && r.title.toLowerCase().includes(term))
-        || (r.tags || []).some((t) => t.toLowerCase().includes(term));
+        || refTags.some((t) => t.toLowerCase().includes(term));
       const matchesTags = !activeTags.length
-        || activeTags.every((t) => (r.tags || []).includes(t));
+        || activeTags.every((t) => refTags.includes(t));
       return matchesTerm && matchesTags;
     });
   }, [references, searchTerm, activeTags]);
@@ -177,7 +179,7 @@ export function ArchivePage({
             <ImageCard
               src={ item.src }
               title={ item.title }
-              tags={ item.tags }
+              tags={ flattenTags(item).slice(0, 3) }
             />
           ) }
         />

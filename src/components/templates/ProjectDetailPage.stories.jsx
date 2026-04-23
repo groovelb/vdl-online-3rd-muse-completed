@@ -67,7 +67,7 @@ export const Minimal = {
       typography: [],
       layout: [],
       gradient: [],
-      keyVisual: [],
+      visualDirection: { markdown: '# Minimal Project\n\n(간단한 샘플)', tags: { genre: [], style: [], subject: [] } },
     });
 
     return (

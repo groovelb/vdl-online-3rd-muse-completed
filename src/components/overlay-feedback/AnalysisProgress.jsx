@@ -33,7 +33,7 @@ const StatusIcon = ({ status }) => {
  * AnalysisProgress 컴포넌트
  *
  * MUSE 프로젝트 생성 시 자동 토큰 분석 진행 상태를 보여주는 카드.
- * 레이어(color/typography/layout/gradient/keyVisual)별로 단계 상태를 표시하고,
+ * 레이어(color/typography/layout/gradient/visualDirection)별로 단계 상태를 표시하고,
  * 전체 진행률을 상단에 Linear bar로 집계한다.
  *
  * Props:

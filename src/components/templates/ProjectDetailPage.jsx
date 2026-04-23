@@ -13,7 +13,6 @@ import { ColorSwatchList } from '../data-display/ColorSwatchList.jsx';
 import { TypographyPreview } from '../data-display/TypographyPreview.jsx';
 import { LayoutTokenPreview } from '../data-display/LayoutTokenPreview.jsx';
 import { GradientPreview } from '../data-display/GradientPreview.jsx';
-import { KeyVisualBoard } from '../data-display/KeyVisualBoard.jsx';
 import { ThemeExportDialog } from '../overlay-feedback/ThemeExportDialog.jsx';
 
 const LAYERS = [
@@ -21,7 +20,7 @@ const LAYERS = [
   { id: 'typography', label: '타이포' },
   { id: 'layout', label: '레이아웃' },
   { id: 'gradient', label: '그라디언트' },
-  { id: 'keyVisual', label: '키비주얼' },
+  { id: 'visualDirection', label: '비주얼 디렉션' },
 ];
 
 /**
@@ -67,7 +66,7 @@ function buildThemeObject(analysis) {
  *
  * Props:
  * @param {object} project - { id, name, intent, type } [Required]
- * @param {object} analysis - 레이어별 토큰 {color, typography, layout, gradient, keyVisual} [Required]
+ * @param {object} analysis - 레이어별 토큰 {color, typography, layout, gradient, visualDirection} [Required]
  * @param {function} onUpdateToken - (layerKey, tokenId, patch) => void [Required]
  * @param {function} onBack - 뒤로가기 [Optional]
  * @param {node} logo - AppShell 로고 [Optional]
@@ -127,14 +126,53 @@ export function ProjectDetailPage({
             onChange={ handleChange('gradient') }
           />
         );
-      case 'keyVisual':
+      case 'visualDirection': {
+        const vd = analysis.visualDirection || { markdown: '', tags: { genre: [], style: [], subject: [] } };
         return (
-          <KeyVisualBoard
-            items={ analysis.keyVisual || [] }
-            onChange={ handleChange('keyVisual') }
-            onRemove={ (id) => onUpdateToken?.('keyVisual', id, { _removed: true }) }
-          />
+          <Box sx={ { bgcolor: 'background.paper', borderRadius: 3, p: 4 } }>
+            {/* 태그 칩 */}
+            { vd.tags && (
+              <Box sx={ { display: 'flex', flexDirection: 'column', gap: 1, mb: 3 } }>
+                { Object.entries(vd.tags).map(([category, list]) => (
+                  list?.length > 0 && (
+                    <Box key={ category } sx={ { display: 'flex', alignItems: 'center', gap: 1 } }>
+                      <Typography variant="caption" color="text.secondary" sx={ { minWidth: 64, textTransform: 'uppercase', letterSpacing: '0.08em' } }>
+                        { category }
+                      </Typography>
+                      <Box sx={ { display: 'flex', gap: 0.75, flexWrap: 'wrap' } }>
+                        { list.map((t) => (
+                          <Box key={ t } sx={ { px: 1, py: 0.25, borderRadius: 999, border: '1px solid', borderColor: 'divider', fontSize: 12 } }>{ t }</Box>
+                        )) }
+                      </Box>
+                    </Box>
+                  )
+                )) }
+              </Box>
+            ) }
+            {/* Markdown 본문 — 단순 pre 렌더 (추후 react-markdown 도입 가능) */}
+            <Box
+              component="pre"
+              sx={ {
+                m: 0,
+                p: 2.5,
+                bgcolor: 'grey.50',
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                fontSize: 13,
+                lineHeight: 1.7,
+                fontFamily: 'inherit',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                maxHeight: '60vh',
+                overflow: 'auto',
+              } }
+            >
+              { vd.markdown || '# Visual Direction\n\n(아직 생성되지 않았습니다)' }
+            </Box>
+          </Box>
         );
+      }
       default:
         return null;
     }

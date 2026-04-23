@@ -89,7 +89,7 @@ MUSE
 │   ├── Step 2. 레퍼런스 선택 (추천 + 아카이브)
 │   └── Step 3. 분석 진행 화면
 ├── 프로젝트 상세 (/projects/:id)
-│   ├── 레이어 탭 (컬러 / 타이포 / 레이아웃 / 그라디언트 / 키비주얼)
+│   ├── 레이어 탭 (컬러 / 타이포 / 레이아웃 / 그라디언트 / 비주얼 디렉션(MD))
 │   ├── 토큰 목록 + 편집 패널
 │   ├── 실시간 프리뷰 영역
 │   └── Export 액션
@@ -231,7 +231,7 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 | `TypographyPreview` | 타이포 샘플 텍스트 + 속성 미리보기 | 신규 | 카테고리: `data-display` |
 | `LayoutTokenPreview` | 그리드/스페이싱 다이어그램 | 신규 | 카테고리: `data-display` |
 | `GradientPreview` | 그라디언트 토큰 스와치 | 신규 | 카테고리: `data-display` |
-| `KeyVisualBoard` | 키비주얼 이미지 보드 | 신규 | 카테고리: `data-display` |
+| `visualDirection` 렌더러 | Markdown 서술 + 태그 칩 표시 (ProjectDetailPage에 내장) | 신규(내장) | `pre`+Chip 기반 (추후 react-markdown 가능) |
 
 ### G. Export — 산출물 내보내기
 

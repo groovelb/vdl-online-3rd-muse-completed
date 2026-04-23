@@ -7,7 +7,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
-import { references, referencesById } from '../../data/muse';
+import { references, referencesById, flattenTags } from '../../data/muse';
 import {
   DocumentTitle,
   PageContainer,
@@ -54,7 +54,7 @@ export const Docs = {
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>id</TableCell><TableCell>string</TableCell><TableCell>고유 식별자 (ref-001 ~ ref-028)</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>source</TableCell><TableCell>'file' | 'url'</TableCell><TableCell>입력 소스 유형</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>thumbnailUrl</TableCell><TableCell>string</TableCell><TableCell>번들된 이미지 URL (Vite import)</TableCell></TableRow>
-              <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>tags</TableCell><TableCell>string[]</TableCell><TableCell>AI 자동/수동 태그 3개</TableCell></TableRow>
+              <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>tags</TableCell><TableCell>ReferenceLayeredTags</TableCell><TableCell>{ '{ color[], typography[], layout[], gradient[], visualDirection: {genre[],style[],subject[]} }' }</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>dominantColors</TableCell><TableCell>string[]</TableCell><TableCell>대표 색 HEX 2개</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>createdAt</TableCell><TableCell>string (YYYY-MM-DD)</TableCell><TableCell>생성일</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>title</TableCell><TableCell>string</TableCell><TableCell>제목</TableCell></TableRow>
@@ -111,7 +111,7 @@ getReferenceThumbnails(['ref-001','ref-002','ref-003'], 4);` }
                   <TableCell>{ ref.title }</TableCell>
                   <TableCell>
                     <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap' } }>
-                      { ref.tags.map((t) => <Chip key={ t } size="small" label={ t } />) }
+                      { flattenTags(ref).map((t) => <Chip key={ t } size="small" label={ t } />) }
                     </Box>
                   </TableCell>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ ref.source }</TableCell>
@@ -168,7 +168,7 @@ export const Grid = {
                 { ref.title }
               </Typography>
               <Box sx={ { display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' } }>
-                { ref.tags.slice(0, 2).map((t) => (
+                { flattenTags(ref).slice(0, 3).map((t) => (
                   <Chip key={ t } size="small" label={ t } sx={ { height: 18, fontSize: 10 } } />
                 )) }
               </Box>

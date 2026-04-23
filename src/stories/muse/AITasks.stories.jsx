@@ -11,10 +11,13 @@ import TableRow from '@mui/material/TableRow';
 import {
   AI_TASKS,
   AI_WORKFLOW_DIAGRAM,
-  TAG_VOCABULARY,
   TASK_AUTO_TAG,
   TASK_RECOMMEND,
   TASK_ANALYZE_TOKENS,
+  TOKEN_LAYERS,
+  VISUAL_DIRECTION_CATEGORIES,
+  getLayerTags,
+  getVisualDirectionTags,
 } from '../../data/muse';
 import {
   DocumentTitle,
@@ -234,10 +237,31 @@ export const Overview = {
           </Table>
         </TableContainer>
 
-        <SectionTitle title="공유 어휘 (Tag Vocabulary)" description="T1 자동 태깅에서 이 외 단어 사용 금지" />
-        <Box sx={ { display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 4 } }>
-          { TAG_VOCABULARY.map((t) => (
-            <Chip key={ t } label={ t } size="small" variant="outlined" />
+        <SectionTitle title="레이어별 태그 어휘 (Preset)" description="T1 자동 태깅에서 각 레이어 enum으로 강제됨. preset 외 단어 금지" />
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 2, mb: 4 } }>
+          { TOKEN_LAYERS.map((layer) => (
+            <Box key={ layer }>
+              <Typography variant="caption" color="text.secondary" sx={ { display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'monospace' } }>
+                { layer }
+              </Typography>
+              <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap' } }>
+                { getLayerTags(layer).map((t) => (
+                  <Chip key={ t } label={ t } size="small" variant="outlined" />
+                )) }
+              </Box>
+            </Box>
+          )) }
+          { VISUAL_DIRECTION_CATEGORIES.map((cat) => (
+            <Box key={ cat }>
+              <Typography variant="caption" color="text.secondary" sx={ { display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'monospace' } }>
+                visualDirection · { cat }
+              </Typography>
+              <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap' } }>
+                { getVisualDirectionTags(cat).map((t) => (
+                  <Chip key={ t } label={ t } size="small" color="secondary" variant="outlined" />
+                )) }
+              </Box>
+            </Box>
           )) }
         </Box>
 

@@ -1,10 +1,9 @@
-import { getReferenceThumbnails, referencesById } from './references.js';
 import { projects } from './projects.js';
 
 /**
  * MUSE — 프로젝트별 분석 결과 더미
  *
- * 실제 AI 분석 결과를 흉내낸 형태. projectId로 조회.
+ * 2026-04-22 v2: keyVisual 레이어 제거, visualDirection(Markdown) 레이어 추가.
  *
  * @type {Record<string, import('./schemas.js').AnalysisResult>}
  */
@@ -63,7 +62,6 @@ const TYPO_PRESETS = {
   ],
 };
 
-/** 공통 레이아웃 프리셋 */
 const LAYOUT_PRESETS = {
   landing: [
     { id: 'lay-grid-12', label: '12 Column Grid', kind: 'grid', columns: 12, gap: 24, isEnabled: true, emphasis: 2 },
@@ -87,7 +85,6 @@ const LAYOUT_PRESETS = {
   ],
 };
 
-/** 프로젝트별 맞춤 컬러 시드 */
 const COLOR_PRESETS = {
   'proj-001': [
     { id: 'col-ink', label: 'Primary Ink', hex: '#14132B', role: 'primary', group: 'Brand', isEnabled: true, emphasis: 2 },
@@ -118,7 +115,6 @@ const COLOR_PRESETS = {
   ],
 };
 
-/** 프로젝트별 그라디언트 */
 const GRADIENT_PRESETS = {
   'proj-001': [
     { id: 'grad-indigo-dusk', label: 'Indigo Dusk', gradient: 'linear-gradient(180deg, #1E1B4B, #4F46E5)', isEnabled: true, emphasis: 2 },
@@ -136,15 +132,138 @@ const GRADIENT_PRESETS = {
   ],
 };
 
-/** 키비주얼은 연결된 reference 썸네일 중 일부 선택 */
-const buildKeyVisuals = (project) =>
-  getReferenceThumbnails(project.referenceIds, 6).map((url, i) => ({
-    id: `kv-${project.id}-${i + 1}`,
-    thumbnailUrl: url,
-    caption: referencesById[project.referenceIds[i]]?.title,
-    isEnabled: i < 4,
-    emphasis: i === 0 ? 2 : i < 3 ? 1 : 0,
-  }));
+/** Visual Direction MD — visual_direction_template.md 형식으로 프로젝트별 채워둔 샘플 */
+const VISUAL_DIRECTION_MD = {
+  'proj-001': {
+    markdown: `# Editorial Minimal — Visual Direction
+
+> MUSE 레퍼런스 분석의 산출물 중 **맥락 기반 비주얼 디렉션**.
+> 토큰 수치는 별도 \`tokens.json\` 참조.
+
+---
+
+## 1. 프로젝트 개요
+- **프로젝트명**: Editorial Minimal
+- **프로젝트 유형**: landing
+- **한 문장 의도**: 흑백 대비 · 라지 타이포 · 넉넉한 여백의 매거진 톤
+- **분석 레퍼런스 수**: 6장
+
+## 2. 전체 방향성
+Magazine과 Swiss 편집 전통을 기반으로, 절제된 무채 팔레트 위에 대형 세리프 헤드라인을 얹어 정적인 긴장감을 만든다.
+
+## 3. Visual Direction 태그
+- **장르**: Retro
+- **스타일**: Magazine, Swiss
+- **비주얼 주인공**: Typography-Hero, Editorial-Collage
+
+## 4. 톤 & 무드 서술
+- 흑백을 기본으로 바이올렛 틴트를 아주 은은하게만 섞어 차가운 중립을 유지
+- 세리프 디스플레이로 대문자 헤드라인, 본문은 고밀도 Pretendard 조판
+- 섹션 간 여백은 과장되게, 내부는 촘촘하게 — 리듬 대비
+- 이미지는 grayscale + 입자감으로 인쇄물 감성 보강
+
+## 5. 구현 가이드라인
+- 버튼·카드 모서리는 최소 rounding (클리커블만 pill)
+- 그림자는 평평한 오프셋 블러만, 컬러는 near-black 틴트
+- 그리드는 12컬럼 고정, Gap은 24px
+- h1/h2는 \`clamp()\` 기반 fluid 타이포
+
+## 6. 피해야 할 요소
+- 네온·비비드 컬러 전면 금지
+- 3D 렌더링 일러스트 배제
+- 글래스모피즘·뉴모피즘 스타일 배제
+`,
+    tags: {
+      genre: ['Retro'],
+      style: ['Magazine', 'Swiss'],
+      subject: ['Typography-Hero', 'Editorial-Collage'],
+    },
+  },
+  'proj-002': {
+    markdown: `# Fintech Dashboard — Visual Direction
+
+## 1. 프로젝트 개요
+- **프로젝트명**: Fintech Dashboard
+- **프로젝트 유형**: dashboard
+- **한 문장 의도**: 데이터 밀도 높은 대시보드, 차분한 블루 기조
+
+## 2. 전체 방향성
+Swiss 정보 밀도 전통을 따르되 다크 톤 위에 Signal Blue 한 점만 남겨 데이터 하이라이트에 집중.
+
+## 3. Visual Direction 태그
+- **장르**: (없음)
+- **스타일**: Swiss, Glassmorphic
+- **비주얼 주인공**: UI-Mockup, Dense-Dashboard-Visual
+
+## 4. 톤 & 무드 서술
+- Deep Navy 바탕에 패널은 살짝 투명한 글래스 톤
+- Signal Blue는 핵심 지표에만, 보조 데이터는 저채도
+- 16컬럼 좁은 그리드, 패널 간 갭 16px로 밀도 극대화
+- 글로우·그림자 최소화, 정보 밀도가 장식을 대체
+`,
+    tags: {
+      genre: [],
+      style: ['Swiss', 'Glassmorphic'],
+      subject: ['UI-Mockup'],
+    },
+  },
+  'proj-003': {
+    markdown: `# Lifestyle App — Visual Direction
+
+## 1. 프로젝트 개요
+- **프로젝트명**: Lifestyle App
+- **프로젝트 유형**: mobile
+- **한 문장 의도**: 따뜻한 톤 모바일 앱, 일상적인 질감
+
+## 2. 전체 방향성
+Earth 팔레트와 Hand-Drawn 일러스트를 중심으로 일상의 따뜻한 공기감 전달.
+
+## 3. Visual Direction 태그
+- **장르**: Retro
+- **스타일**: Claymorphic
+- **비주얼 주인공**: Hand-Drawn, Portrait-Photo
+
+## 4. 톤 & 무드 서술
+- Warm Beige 바탕에 Terracotta로 포인트
+- 카드·버튼은 Claymorphic 느낌의 soft rounded, 매트한 그림자
+- 이미지는 Grainy-Visual 필터로 아날로그 감
+- 타이포는 Humanist Sans, 본문 line-height 1.7 이상
+`,
+    tags: {
+      genre: ['Retro'],
+      style: ['Claymorphic'],
+      subject: ['Hand-Drawn', 'Portrait-Photo'],
+    },
+  },
+  'proj-004': {
+    markdown: `# Studio Brand — Visual Direction
+
+## 1. 프로젝트 개요
+- **프로젝트명**: Studio Brand
+- **프로젝트 유형**: brand
+- **한 문장 의도**: 브랜딩 · 대담한 컬러 · 한정된 타이포
+
+## 2. 전체 방향성
+Neubrutalism × Risograph 교차점. 강한 블록 컬러와 거친 인쇄 질감으로 기억에 남는 인상.
+
+## 3. Visual Direction 태그
+- **장르**: Risograph
+- **스타일**: Neubrutalism
+- **비주얼 주인공**: Typography-Hero, Abstract-Shape
+
+## 4. 톤 & 무드 서술
+- Vivid Red × Mustard의 원색 면 분할
+- 두꺼운 검정 아웃라인, 평평한 오프셋 그림자
+- 단일 Display 세리프로 브랜드 워드마크 고정
+- 거친 종이 노이즈를 전역 배경에 얹음
+`,
+    tags: {
+      genre: ['Risograph'],
+      style: ['Neubrutalism'],
+      subject: ['Typography-Hero', 'Abstract-Shape'],
+    },
+  },
+};
 
 export const analysisResultsByProjectId = projects.reduce((acc, project) => {
   acc[project.id] = {
@@ -154,10 +273,13 @@ export const analysisResultsByProjectId = projects.reduce((acc, project) => {
     updatedAt: project.createdAt,
     layers: {
       color: COLOR_PRESETS[project.id] || [],
-      typography: TYPO_PRESETS.editorial, // 공통 — 프로젝트별 베리에이션은 추후 확장
+      typography: TYPO_PRESETS.editorial,
       layout: LAYOUT_PRESETS[project.type] || [],
       gradient: GRADIENT_PRESETS[project.id] || [],
-      keyVisual: buildKeyVisuals(project),
+      visualDirection: VISUAL_DIRECTION_MD[project.id] || {
+        markdown: '# Visual Direction\n\n(not yet generated)',
+        tags: { genre: [], style: [], subject: [] },
+      },
     },
   };
   return acc;

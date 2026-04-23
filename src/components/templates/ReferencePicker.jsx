@@ -7,6 +7,7 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import { ImageCard } from '../card/ImageCard.jsx';
 import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
+import { flattenTags } from '../../data/muse';
 
 /**
  * ReferencePicker 컴포넌트
@@ -60,15 +61,16 @@ export function ReferencePicker({
 
   const allTags = useMemo(() => {
     const set = new Set();
-    archive.forEach((ref) => (ref.tags || []).forEach((t) => set.add(t)));
+    archive.forEach((ref) => flattenTags(ref).forEach((t) => set.add(t)));
     return [...set];
   }, [archive]);
 
   const visibleArchive = useMemo(() => {
     if (!tagFilter.length) return archive;
-    return archive.filter((ref) =>
-      tagFilter.every((t) => (ref.tags || []).includes(t)),
-    );
+    return archive.filter((ref) => {
+      const refTags = flattenTags(ref);
+      return tagFilter.every((t) => refTags.includes(t));
+    });
   }, [archive, tagFilter]);
 
   const toggleTag = (tag) => {
@@ -169,7 +171,7 @@ export function ReferencePicker({
           <ImageCard
             src={ item.src }
             title={ item.title }
-            tags={ item.tags }
+            tags={ flattenTags(item).slice(0, 3) }
             isSelectable
             isSelected={ selectedSet.has(item.id) }
             onToggleSelect={ (next) => toggleId(item.id, next) }

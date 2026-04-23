@@ -13,4 +13,3 @@ export { ColorSwatchList } from './ColorSwatchList.jsx';
 export { TypographyPreview } from './TypographyPreview.jsx';
 export { LayoutTokenPreview } from './LayoutTokenPreview.jsx';
 export { GradientPreview } from './GradientPreview.jsx';
-export { KeyVisualBoard } from './KeyVisualBoard.jsx';

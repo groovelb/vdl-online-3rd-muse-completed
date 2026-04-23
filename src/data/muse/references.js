@@ -1,18 +1,23 @@
 /**
  * MUSE — References 더미 데이터
  *
- * `src/data/muse/dummyImage/` 아래의 실제 이미지(reference1~28)를 정적 import해서 연결.
- * Vite가 각 import를 번들 URL로 변환하므로 개발/빌드 모두에서 안전하게 로드된다.
+ * `dummyImage/reference{N}.jpg|jpeg` 27장을 정적 import해 thumbnailUrl로 연결.
+ * tags는 preset(muse_tags_preset.json) 기반 레이어별 중첩 구조.
+ * 결정적(deterministic) 패턴으로 태그 배분 — seed 없이도 일관 재현.
  *
  * 이미지 교체:
- *   - 같은 파일명을 유지하면 코드 수정 불필요 (파일만 바꿔치기)
- *   - 파일 수가 늘어나면 아래 IMAGES 배열에 항목만 추가
+ *   - 같은 파일명으로 바꿔치기하면 코드 수정 불필요
+ *   - 파일 추가 시 IMAGES 배열에 import 한 줄 추가
  *
  * @type {import('./schemas.js').Reference[]}
  */
 
-// 정적 import — reference18~21만 .jpeg, 나머지는 .jpg
-// reference1.jpg 제거됨 (sess 009 이후), ref-001은 이제 reference2.jpg로 매핑
+import {
+  getLayerTags,
+  getVisualDirectionTags,
+} from './tag/index.js';
+
+// reference1.jpg 제거됨 (sess 010), ref-001은 reference2.jpg로 매핑
 import ref2 from './dummyImage/reference2.jpg';
 import ref3 from './dummyImage/reference3.jpg';
 import ref4 from './dummyImage/reference4.jpg';
@@ -47,12 +52,6 @@ const IMAGES = [
   ref21, ref22, ref23, ref24, ref25, ref26, ref27, ref28,
 ];
 
-const TAG_POOL = [
-  'Muted', 'Warm', 'Deep', 'Soft', 'Bold',
-  'Editorial', 'Minimal', 'Gradient', 'Brutal', 'Swiss',
-  'Mono', 'Pastel', 'Neon', 'Earth', 'Ocean',
-];
-
 const COLOR_POOL = [
   '#14132B', '#4F46E5', '#FCFCFF', '#5A586E', '#E0B5A3',
   '#FEE2F5', '#FEF9C3', '#1E1B4B', '#D6D5E0', '#6366F1',
@@ -66,12 +65,42 @@ const TITLE_POOL = [
 
 const pad = (n) => String(n).padStart(3, '0');
 
-/** 결정적 날짜 — index만으로 재현 */
 const makeDate = (idx) => {
   const base = new Date('2026-01-01').getTime();
-  const offset = idx * 24 * 60 * 60 * 1000 * 3; // 3일 간격
+  const offset = idx * 24 * 60 * 60 * 1000 * 3;
   return new Date(base + offset).toISOString().slice(0, 10);
 };
+
+/** 결정적 샘플링: pool에서 idx 기반으로 count개 뽑기 (중복 없음) */
+const pickDeterministic = (pool, idx, count, step = 1) => {
+  if (!pool.length || count <= 0) return [];
+  const out = [];
+  const seen = new Set();
+  let cursor = idx * step;
+  for (let i = 0; i < count && i < pool.length; i += 1) {
+    let k = (cursor + i * (step + 1)) % pool.length;
+    let guard = 0;
+    while (seen.has(k) && guard < pool.length) {
+      k = (k + 1) % pool.length;
+      guard += 1;
+    }
+    seen.add(k);
+    out.push(pool[k]);
+  }
+  return out;
+};
+
+const COLOR_TAGS = getLayerTags('color');
+const TYPO_TAGS = getLayerTags('typography');
+const LAYOUT_TAGS = getLayerTags('layout');
+const GRADIENT_TAGS = getLayerTags('gradient');
+const GENRE_TAGS = getVisualDirectionTags('genre');
+const STYLE_TAGS = getVisualDirectionTags('style');
+const SUBJECT_TAGS = getVisualDirectionTags('subject');
+
+/** 이미지 인덱스로부터 각 레이어에 몇 개의 태그를 줄지 결정 */
+const tagCountForIndex = (i, base = 2, range = 2) =>
+  ((i % range) + base); // 2~3개
 
 export const references = IMAGES.map((url, i) => {
   const id = `ref-${pad(i + 1)}`;
@@ -79,11 +108,17 @@ export const references = IMAGES.map((url, i) => {
     id,
     source: i % 5 === 0 ? 'url' : 'file',
     thumbnailUrl: url,
-    tags: [
-      TAG_POOL[i % TAG_POOL.length],
-      TAG_POOL[(i * 3) % TAG_POOL.length],
-      TAG_POOL[(i * 7) % TAG_POOL.length],
-    ],
+    tags: {
+      color: pickDeterministic(COLOR_TAGS, i, tagCountForIndex(i), 3),
+      typography: pickDeterministic(TYPO_TAGS, i, 1 + (i % 2), 5),
+      layout: pickDeterministic(LAYOUT_TAGS, i, 1 + (i % 2), 4),
+      gradient: pickDeterministic(GRADIENT_TAGS, i, i % 2, 2), // 0~1개 (그라디언트 없는 이미지도 많음)
+      visualDirection: {
+        genre: pickDeterministic(GENRE_TAGS, i, 1, 3),
+        style: pickDeterministic(STYLE_TAGS, i, 1, 5),
+        subject: pickDeterministic(SUBJECT_TAGS, i, 1, 2),
+      },
+    },
     dominantColors: [
       COLOR_POOL[i % COLOR_POOL.length],
       COLOR_POOL[(i * 3) % COLOR_POOL.length],
@@ -93,12 +128,31 @@ export const references = IMAGES.map((url, i) => {
   };
 });
 
-/** id로 빠르게 찾기 위한 map */
 export const referencesById = Object.fromEntries(references.map((r) => [r.id, r]));
 
-/** 특정 id 묶음의 thumbnail 배열만 뽑기 (프로젝트 카드 썸네일 등) */
 export const getReferenceThumbnails = (ids, maxCount = 4) =>
   ids
     .slice(0, maxCount)
     .map((id) => referencesById[id]?.thumbnailUrl)
     .filter(Boolean);
+
+/**
+ * 레이어별 중첩 tags를 flat string[] 로 변환.
+ * 기존 코드(필터·검색)에서 `ref.tags`가 배열이라고 가정한 곳에 어댑터로 사용.
+ * @param {import('./schemas.js').Reference} ref
+ * @returns {string[]}
+ */
+export function flattenTags(ref) {
+  const t = ref?.tags;
+  if (!t) return [];
+  if (Array.isArray(t)) return t; // 구버전 호환
+  return [
+    ...(t.color || []),
+    ...(t.typography || []),
+    ...(t.layout || []),
+    ...(t.gradient || []),
+    ...(t.visualDirection?.genre || []),
+    ...(t.visualDirection?.style || []),
+    ...(t.visualDirection?.subject || []),
+  ];
+}

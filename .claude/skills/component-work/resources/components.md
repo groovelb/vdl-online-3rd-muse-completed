@@ -49,7 +49,6 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - TypographyPreview: 타이포 레이어 토큰 목록. preview에 실제 폰트로 샘플 문자 렌더 (`components/data-display/TypographyPreview.jsx`)
 - LayoutTokenPreview: 레이아웃 레이어(grid/spacing/container) mini-diagram 프리뷰 (`components/data-display/LayoutTokenPreview.jsx`)
 - GradientPreview: 그라디언트 레이어 토큰 목록. preview에 실제 gradient 스와치 (`components/data-display/GradientPreview.jsx`)
-- KeyVisualBoard: 키비주얼 레이어. 토큰이 아닌 이미지 집합 — 카드 그리드 + 오버레이 컨트롤(emphasis 사이클/on-off/제거) (`components/data-display/KeyVisualBoard.jsx`)
 - Table: MUI Table 컴포넌트 [MUI]
 
 ## 6. In-page Navigation — 페이지 내 탐색

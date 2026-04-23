@@ -76,6 +76,21 @@
 | 기능별 smoke 테스트 | **MCP** (쿼리로 검증) |
 | 로컬 개발 서버 | **Bash/CLI** (`supabase start`) |
 
+### Phase 6 — Edge Functions
+
+| 작업 | 도구 |
+|------|------|
+| 함수 스켈레톤 생성 | **CLI** (`supabase functions new <name>`) |
+| 함수 코드 작성 | **파일 편집** (Write/Edit) |
+| secret 등록 | **CLI** (`supabase secrets set KEY=value`) |
+| secret 목록 확인 | **CLI** (`supabase secrets list`) |
+| 로컬 함수 실행 | **CLI** (`supabase functions serve <name> --env-file supabase/functions/.env.local`) |
+| 로컬 함수 호출 테스트 | **Bash** (`curl`) |
+| 배포 | **CLI** (`supabase functions deploy <name>`) |
+| 배포된 함수 로그 조회 | **MCP** 또는 Dashboard Logs |
+| 호출 카운트 집계 검증 | **MCP** (read-only 쿼리) |
+| 번들 키 유출 검증 | **Bash** (`pnpm build && grep -r "sk-" dist/`) |
+
 ---
 
 ## 자주 쓰는 CLI 명령
@@ -110,6 +125,25 @@ supabase status
 
 # 정지
 supabase stop
+
+# --- Edge Functions (Phase 6) ---
+
+# 함수 스켈레톤 생성
+supabase functions new <name>
+
+# secret 등록 / 삭제 / 조회
+supabase secrets set KEY=value
+supabase secrets unset KEY
+supabase secrets list
+
+# 로컬 실행 (hot reload)
+supabase functions serve <name> --env-file supabase/functions/.env.local
+
+# 배포
+supabase functions deploy <name>
+
+# 모든 함수 일괄 배포
+supabase functions deploy
 ```
 
 ---
@@ -151,6 +185,8 @@ FROM information_schema.triggers WHERE trigger_schema = 'public';
 - MCP로 `INSERT INTO auth.users` (auth.admin API 사용)
 - 프로덕션 DB에 `supabase db reset` (⚠️ 데이터 전부 삭제)
 - `supabase db push --linked`를 미검증 상태로 실행 — 반드시 먼저 로컬에서 `db reset`으로 검증
+- 외부 API 키를 `.env` / `.env.production` / 코드 리터럴에 저장 — Supabase secrets에만
+- `supabase secrets set`한 값을 로그/코드에 echo — secret은 한 번 쓰고 잊는다
 
 ---
 

@@ -186,3 +186,61 @@ begin
   end if;
 end $$;
 ```
+
+---
+
+## Phase 6 검증 — Edge Functions
+
+외부 API 연동이 포함된 경우에만 수행.
+
+### 번들 유출 검증 (CRITICAL)
+
+```bash
+# 프로덕션 빌드 후 비밀키 패턴 검색
+pnpm build
+grep -rcE "sk-[A-Za-z0-9]{20,}|sk_live|sk_test|AIza[0-9A-Za-z_-]{35}" dist/
+# 결과: 반드시 0
+```
+
+**0이 아니면**: 빌드 중단, 해당 키 즉시 revoke, Stage A 잔재 재확인.
+
+### 함수별 스모크 테스트
+
+각 Edge Function에 대해:
+
+- [ ] **미인증 호출**: Authorization 헤더 없이 호출 → 401 반환
+  ```bash
+  curl -i -X POST https://<project>.supabase.co/functions/v1/<name> \
+    -H "Content-Type: application/json" -d '{}'
+  # 기대: HTTP/2 401
+  ```
+- [ ] **인증 호출**: 유효한 JWT로 호출 → 200 + 정상 응답
+- [ ] **잘못된 입력**: 스키마 어긋나는 body → 400 반환
+- [ ] **Rate limit** (있다면): 한도 초과 시 429 반환
+- [ ] **권한 체크** (있다면): 권한 없는 사용자 호출 → 403 반환
+
+### Secret 관리 검증
+
+- [ ] `supabase secrets list` → 필요한 모든 키 존재
+- [ ] `.env` / `.env.production` → 외부 API 키 없음
+- [ ] 함수 코드 literal 검색: `grep -rE "sk-|sk_live|sk_test" supabase/functions/` → 0
+- [ ] Stage A에서 쓰던 개발 키가 외부 서비스 Dashboard에서 **revoke 완료**
+
+### 관찰성
+
+- [ ] 함수 로그 조회 가능 (Supabase Dashboard → Logs → Edge Functions)
+- [ ] 에러 응답 포맷이 `supabaseError.js`와 호환되는 `{ error: code }` 구조
+- [ ] PII(이메일, 토큰 등)가 로그에 평문 기록되지 않음
+
+### Storybook 호환
+
+- [ ] `functions.invoke`가 `createMockSupabase()`에 포함됨
+- [ ] 해당 훅을 쓰는 컴포넌트 스토리가 실제 API 없이 렌더됨
+- [ ] Success / UpstreamError / RateLimit 상태별 스토리 존재 (해당 시)
+
+### 정리 (Stage A → C 이전 완료 확인)
+
+- [ ] `grep -r "VITE_DEV_" src/` → 0
+- [ ] 구 Stage A 훅 파일 삭제됨
+- [ ] `supabase/functions/.env.local`이 `.gitignore`에 포함됨
+- [ ] `package.json`에 `functions:serve`, `functions:deploy` 스크립트 존재

@@ -101,13 +101,53 @@ MUSE
 
 ## 데이터 모델
 
+> **단일 진실 원천**: `src/data/muse/schemas.js` (JSDoc typedef). 아래 표와 불일치 발견 시 스키마 파일이 기준.
+> 더미 데이터: `src/data/muse/{references,projects,analysisResults,userSettings}.js`.
+
+### 엔티티 개요
+
 | 엔티티 | 주요 필드 | 관계 |
 |--------|----------|------|
-| `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags[]`, `dominantColors[]`, `createdAt` | 1:N Project (via projectReferences) |
+| `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags` (ReferenceLayeredTags), `dominantColors[]`, `title?`, `createdAt` | N:M Project (via `Project.referenceIds[]`) |
 | `Project` | `id`, `name`, `intent`, `type` (landing/dashboard/mobile/brand), `referenceIds[]`, `createdAt` | N:M Reference |
-| `AnalysisResult` | `id`, `projectId`, `layers` ({color, typography, layout, gradient, visualDirection}), `status`, `updatedAt` | 1:1 Project |
-| `Token` | `id`, `layer`, `key`, `value`, `isEnabled`, `emphasis` (0–2), `sourceReferenceIds[]` | N:1 AnalysisResult |
-| `UserSettings` | `aiModel`, `storageMode`, `themeMode` | singleton |
+| `AnalysisResult` | `id`, `projectId`, `layers` (AnalysisLayers), `status` (pending/running/done/error), `updatedAt` | 1:1 Project |
+| `UserSettings` | `aiModel`, `storageMode` (local/cloud), `themeMode` (light/dark/system), `isAutoTagEnabled` | singleton |
+
+### `ReferenceLayeredTags` (Reference.tags)
+
+preset(`src/data/muse/tag/muse_tags_preset.json`) 어휘에서만 선택. flat 배열 아님.
+
+```ts
+{
+  color:        string[]   // 0~3개
+  typography:   string[]   // 0~3개
+  layout:       string[]   // 0~3개
+  gradient:     string[]   // 0~3개
+  visualDirection: {
+    genre:   string[]     // 0~2개
+    style:   string[]     // 0~2개
+    subject: string[]     // 0~2개
+  }
+}
+```
+
+> **어댑터**: 기존 flat tag 전제 코드(검색/필터)는 `references.js` 의 `flattenTags(ref)` 헬퍼로 `string[]` 변환해서 호환.
+
+### `AnalysisLayers` (AnalysisResult.layers)
+
+레이어마다 **다른 shape**. 단일 제네릭 Token 으로 묶지 않음 — DB 설계 시 JSON blob vs. 레이어별 정규화 결정 포인트.
+
+| 레이어 | 타입 | 주요 필드 |
+|-------|------|----------|
+| `color` | `ColorToken[]` | `id, label, hex, role?(primary/secondary/accent/neutral), group?, isEnabled, emphasis(0-2), sourceReferenceIds?[]` |
+| `typography` | `TypographyToken[]` | `id, label, variant?, fontFamily, fontWeight, fontSize, lineHeight?, letterSpacing?, sampleText?, isEnabled, emphasis` |
+| `layout` | `LayoutToken[]` | `id, label, kind(grid/spacing/container), columns?, gap?, px?, ratio?, maxWidth?, isEnabled, emphasis` |
+| `gradient` | `GradientToken[]` | `id, label, gradient, stops?[{offset,color}], isEnabled, emphasis` |
+| `visualDirection` | `VisualDirectionLayer` (객체) | `markdown` (`visual_direction_template.md` 포맷으로 채워진 MD), `tags?` ({genre, style, subject}) |
+
+- `isEnabled`, `emphasis(0\|1\|2)` 는 color/typography/layout/gradient 공통. 토큰 on/off + 강조 편집 UX의 기반.
+- `sourceReferenceIds` 는 현재 ColorToken 에만 정의되어 있음 (다른 레이어로 확장 시 스키마 추가 필요).
+- `visualDirection` 은 토큰 배열이 아닌 단일 객체 — Export 시 `visual-direction.md` 파일로 별도 추출.
 
 ---
 

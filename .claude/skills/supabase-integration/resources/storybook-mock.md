@@ -54,8 +54,48 @@ export function createMockSupabase(mockData = {}) {
       signInWithPassword: async () => ({ data: { user: null }, error: null }),
       signOut: async () => ({ error: null }),
     },
+    functions: {
+      // Edge Function mock. 함수명별 오버라이드는 mockData.functions[name]으로.
+      invoke: async (name, { body } = {}) => {
+        const impl = mockData.functions?.[name];
+        if (typeof impl === 'function') return impl(body);
+        if (impl) return impl; // { data, error } 형태 직접 지정
+        return { data: null, error: null };
+      },
+    },
   };
 }
+```
+
+### Edge Function mock 사용 예시
+
+```jsx
+// 성공 케이스
+const mockClient = createMockSupabase({
+  functions: {
+    'chat-completion': {
+      data: { data: { choices: [{ message: { content: 'mock answer' } }] } },
+      error: null,
+    },
+  },
+});
+
+// 에러 케이스 (upstream 실패)
+const errorClient = createMockSupabase({
+  functions: {
+    'chat-completion': { data: null, error: { message: 'upstream_error' } },
+  },
+});
+
+// body에 따라 다른 응답
+const dynamicClient = createMockSupabase({
+  functions: {
+    'chat-completion': (body) => ({
+      data: { data: { echo: body.messages[0].content } },
+      error: null,
+    }),
+  },
+});
 ```
 
 ---

@@ -1,7 +1,7 @@
 ---
 name: supabase-integration
-description: Converts the data model in docs/{project}/02-ux-flow.md into a production-ready Supabase backend — schema, auth (email+password), RLS, and client hooks — so the user only has to think about UX and data.
-when_to_use: When user explicitly invokes /supabase-integration or asks to "connect supabase", "add backend", "set up auth", "create DB schema", "design RLS". Do not auto-activate.
+description: Converts the data model in docs/{project}/02-ux-flow.md into a production-ready Supabase backend — schema, auth (email+password), RLS, client hooks, and Edge Functions for external API integration — so the user only has to think about UX and data.
+when_to_use: When user explicitly invokes /supabase-integration or asks to "connect supabase", "add backend", "set up auth", "create DB schema", "design RLS", "hide API key", "move API call to server", "add edge function". Do not auto-activate.
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -18,6 +18,7 @@ disable-model-invocation: true
 | 스키마만 | "DB 스키마 만들어줘", "테이블 설계해줘" |
 | 인증만 | "회원가입/로그인 붙여줘", "auth 설정해줘" |
 | RLS만 | "RLS 정책 짜줘", "보안 정책 만들어줘" |
+| 외부 API 서버 이전 | "OpenAI 키 숨겨줘", "API 호출 서버로 옮겨줘", "edge function 만들어줘" |
 | 이어서 | "다음 Phase 진행", "Phase 3 이어서" |
 
 ---
@@ -25,14 +26,16 @@ disable-model-invocation: true
 ## 전체 워크플로우
 
 ```
-Phase 0           Phase 1         Phase 2          Phase 3        Phase 4              Phase 5
-Prereq Check →   Schema →        Auth Design →    RLS →          Client Code →        Verify
- (자동)           [승인]          [승인]           [승인]         [승인]               [최종]
+Phase 0         Phase 1     Phase 2        Phase 3   Phase 4         Phase 5    Phase 6
+Prereq Check → Schema →    Auth Design →  RLS →     Client Code →   Verify →   Edge Functions
+ (자동)         [승인]      [승인]         [승인]    [승인]          [최종]     [조건부·승인]
 ```
 
+**Phase 6는 조건부**: 외부 API(OpenAI/결제/SMS 등) 연동이 있을 때만 진행. 없으면 Phase 5에서 종료.
+
 **입력**: `docs/{project}/02-ux-flow.md`의 `## 데이터 모델` 섹션
-**산출 문서**: `04-db-schema.md` / `05-auth-design.md` / `06-rls-policies.md` / `07-api-integration.md`
-**산출 코드**: `supabase/migrations/*.sql`, `src/lib/supabase.js`, `src/hooks/data/`, `src/types/database.js`
+**산출 문서**: `04-db-schema.md` / `05-auth-design.md` / `06-rls-policies.md` / `07-api-integration.md` / `08-edge-functions.md`(Phase 6)
+**산출 코드**: `supabase/migrations/*.sql`, `supabase/functions/*/index.ts`(Phase 6), `src/lib/supabase.js`, `src/hooks/data/`, `src/types/database.js`
 
 ---
 
@@ -46,6 +49,7 @@ Prereq Check →   Schema →        Auth Design →    RLS →          Client 
 6. **JS 프로젝트 컨벤션 준수** — TS 대신 JSDoc typedef로 타입 제공 (`src/types/database.js`).
 7. **Storybook 호환** — 모든 데이터 훅은 `{ client }` 파라미터 주입 가능하도록 설계.
 8. **인증 UI는 component-work에 위임** — 이 스킬은 훅만 만들고, UI 생성은 `component-work` 스킬 호출.
+9. **비밀키는 절대 프론트에 두지 않는다** — 외부 API 키(OpenAI, Stripe, SMS 등)는 `VITE_*`로 노출 금지. Vite env는 번들에 평문으로 박힘. 로컬 검증(Stage A)은 제한적으로 허용하되 Stage C에서 반드시 Edge Function으로 이전 + 키 revoke.
 
 ---
 
@@ -299,6 +303,83 @@ Prereq Check →   Schema →        Auth Design →    RLS →          Client 
 - 체크리스트 결과 리포트
 - 문서 4종 경로 + 코드 파일 목록
 
+외부 API 연동이 필요하면 → Phase 6 진행 여부 질문. 필요 없으면 여기서 종료.
+
+---
+
+## Phase 6 — Edge Functions (외부 API 서버 이전, 조건부)
+
+**목적**: 외부 API(OpenAI, Stripe, SMS, 카카오 OAuth 등) 호출을 **프론트 → Edge Function**으로 안전하게 이전. 비밀키를 번들에서 완전히 제거.
+
+**핵심 철학**: 로컬에서 **기능을 먼저 검증**(Stage A) → 검증 통과하면 **서버로 이전**(Stage C). 기능 검증과 보안 검증을 분리해야 디버깅 가능.
+
+### 언제 이 Phase를 진행하는가
+
+아래 중 **하나라도** 해당하면 진행:
+- 외부 API를 호출해야 하며 그 호출에 **비밀키/토큰이 필요**
+- 호출량에 **과금**이 붙음 (OpenAI, SMS, 결제)
+- **써드파티 webhook**을 수신해야 함 (Stripe, 카카오)
+- **관리자 전용/복잡 집계** 로직을 서버에 두고 싶음
+
+단순 Supabase DB CRUD만이라면 Phase 6 **불필요** (RLS + 데이터 훅으로 충분).
+
+### 작업 순서
+
+1. `resources/edge-functions.md` Read → 전체 가이드 + 판단 기준 + 이유 확인
+2. **사용자 확인 질문**:
+   - 어떤 외부 API를 호출하는가? (목록)
+   - 각 API별 **호출자 제한** 기준 (비로그인 가능? 로그인 필수? 유료 플랜만?)
+   - 호출당 요금이 붙는가? (rate limit 필요 여부 판단)
+   - 지금 Stage A(로컬 프론트 직접 호출)로 **기능 검증이 이미 끝났는가**, 아니면 처음부터 시작하는가?
+
+3. **분기 진행**:
+
+   #### 3-A. Stage A부터 시작 (기능 미검증)
+   - `edge-functions.md`의 Stage A 규칙에 따라 `.env.local` + `VITE_DEV_*` 키로 로컬 훅 작성
+   - 허용 조건(DEV 전용 키, revoke 계획, 타임박스) 사용자에게 명시적 확인
+   - 기능 검증 완료 후 Stage B 체크리스트 → Stage C
+
+   #### 3-B. Stage C 바로 진행 (기능 검증 완료)
+   - Stage B 체크리스트 통과 확인
+   - 함수별 스켈레톤 생성: `supabase functions new {name}`
+   - `edge-functions.md`의 Step 2 템플릿으로 서버 로직 이식 (JWT 검증 → 입력 검증 → 권한 체크 → 외부 API 호출 → 로깅 구조 필수 포함)
+   - secret 등록: `supabase secrets set KEY=value`
+   - 로컬 테스트: `supabase functions serve {name} --env-file supabase/functions/.env.local`
+   - 프론트 훅 교체 (시그니처 유지 — 컴포넌트 수정 0)
+   - 배포: `supabase functions deploy {name}`
+   - **Stage A 잔재 정리**: VITE_DEV_* 삭제, 구 키 revoke, `pnpm build && grep -r "sk-" dist/` 검증
+
+4. `docs/{project}/08-edge-functions.md` 작성:
+   - 함수별 목적·입력·출력·인증 요구사항
+   - 필요한 secret 목록 (값 아닌 키명만)
+   - 호출 제한 정책
+   - 로컬 개발·배포 명령 요약
+
+5. `package.json` 스크립트 추가:
+   ```json
+   "functions:serve": "supabase functions serve --env-file supabase/functions/.env.local",
+   "functions:deploy": "supabase functions deploy"
+   ```
+
+6. `.gitignore`에 `supabase/functions/.env.local` 추가
+
+### 검증 (필수)
+
+- [ ] `pnpm build && grep -rcE "sk-[A-Za-z0-9]{20,}|sk_live|sk_test" dist/` → 0건
+- [ ] 로컬에서 비로그인 상태로 함수 호출 → 401
+- [ ] 로그인 상태로 함수 호출 → 정상 응답
+- [ ] rate limit이 있다면, 한도 초과 시 429 반환 확인
+- [ ] `supabase secrets list` 결과에 필요한 키 모두 존재
+- [ ] Stage A에서 쓰던 개발 키가 외부 서비스 Dashboard에서 **revoke됨**
+- [ ] Storybook 스토리가 `functions.invoke` mock으로 동작
+
+### 승인 게이트
+
+- 함수 목록 + 각 함수의 인증/권한/rate limit 요약
+- secret 등록 목록 (키명만)
+- 배포 결과 (URL)
+- Stage A 잔재 정리 완료 리포트
+
 ---
 
 ## MCP + CLI 사용 규칙 (요약)
@@ -326,4 +407,5 @@ Prereq Check →   Schema →        Auth Design →    RLS →          Client 
 | `storybook-mock.md` | 스토리 mock 주입 가이드 | Phase 4 |
 | `mcp-cli-playbook.md` | MCP/CLI 역할 분담 상세 | 전 Phase |
 | `verification-checklist.md` | 최종 검증 체크리스트 | Phase 3, 5 |
+| `edge-functions.md` | 외부 API 서버 이전 가이드 (Stage A/B/C, 이유 포함) | Phase 6 |
 | `scripts/ts-to-jsdoc.mjs` | TS 타입 → JSDoc 변환 | Phase 4 |

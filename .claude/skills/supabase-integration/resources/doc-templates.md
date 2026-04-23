@@ -241,3 +241,91 @@ A. 훅에 `{ client }` 파라미터로 mock 주입. `storybook-mock.md` 참조.
 
 현재는 Email+Password만. Google/GitHub 등 OAuth 추가는 `resources/auth-flows.md#oauth-확장`.
 ```
+
+---
+
+## `08-edge-functions.md` (Phase 6, 조건부)
+
+```markdown
+# Edge Functions — 외부 API 연동
+
+## 개요
+
+외부 API(OpenAI/결제/SMS 등)를 호출하는 모든 경로는 Edge Function으로 서버화되어 있다.
+비밀 키는 Supabase secrets에만 존재하며 프론트 번들에 노출되지 않는다.
+
+관련 가이드: `.claude/skills/supabase-integration/resources/edge-functions.md`
+
+## 함수 목록
+
+| 함수명 | 목적 | 호출 권한 | 외부 의존 | 필요 secret | Rate Limit |
+|-------|-----|---------|---------|-----------|-----------|
+| chat-completion | OpenAI 챗 응답 | 로그인 사용자 | api.openai.com | OPENAI_API_KEY | 100회/일 (free), 무제한 (paid) |
+| send-sms | 인증 문자 발송 | 로그인 사용자 | Twilio | TWILIO_SID, TWILIO_TOKEN | 5회/시간/user |
+| stripe-webhook | 결제 이벤트 수신 | 퍼블릭 (서명 검증) | Stripe | STRIPE_WEBHOOK_SECRET | N/A |
+
+## 함수별 계약
+
+### `chat-completion`
+
+**Method**: POST
+**Auth**: Supabase JWT 필수
+**입력**:
+\`\`\`json
+{ "messages": [{ "role": "user", "content": "..." }] }
+\`\`\`
+**출력 (성공)**:
+\`\`\`json
+{ "data": { "choices": [{ "message": { "content": "..." } }] } }
+\`\`\`
+**에러 코드**: `unauthorized` (401) / `invalid_input` (400) / `quota_exceeded` (429) / `upstream_error` (502)
+
+## 프론트 호출 패턴
+
+\`\`\`jsx
+import { useChatCompletion } from '@/hooks/data/useChatCompletion';
+
+const { send, data, loading, error } = useChatCompletion();
+await send([{ role: 'user', content: '...' }]);
+\`\`\`
+
+## 로컬 개발
+
+\`\`\`bash
+# 1. secret 로컬 env 파일 세팅 (.gitignore됨)
+echo "OPENAI_API_KEY=sk-..." > supabase/functions/.env.local
+
+# 2. 로컬 실행
+pnpm functions:serve
+
+# 3. 다른 터미널에서 테스트
+curl -X POST http://localhost:54321/functions/v1/chat-completion \
+  -H "Authorization: Bearer $(supabase status -o json | jq -r .anon_key)" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"hi"}]}'
+\`\`\`
+
+## 배포
+
+\`\`\`bash
+# secret 원격 등록 (최초 1회 + 변경 시)
+supabase secrets set OPENAI_API_KEY=sk-...
+
+# 함수 배포
+pnpm functions:deploy chat-completion
+\`\`\`
+
+## Stage A → C 이전 기록 (감사용)
+
+| 날짜 | 함수 | Stage A 키 revoke 여부 | 번들 검증 |
+|------|------|---------------------|----------|
+| YYYY-MM-DD | chat-completion | ✅ revoked | ✅ 0건 |
+
+## 운영 체크리스트
+
+- [ ] 모든 함수가 JWT 검증 (퍼블릭은 서명 검증)
+- [ ] Secret이 `.env*` 파일에 없음
+- [ ] `pnpm build && grep -r "sk-" dist/` → 0건
+- [ ] 함수 로그에서 PII 평문 미노출
+- [ ] Rate limit 정책 문서화
+```

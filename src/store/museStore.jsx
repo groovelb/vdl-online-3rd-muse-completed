@@ -25,20 +25,33 @@ import {
   defaultUserSettings,
 } from '../data/muse';
 
-const STORAGE_KEY = 'muse_store_v3';
+const STORAGE_KEY = 'muse_store_v4';
 
 const MuseContext = createContext(null);
 
 /* ============================================
  * Initial state
+ *
+ * seed='empty'    : dev/프로덕션 기본 — 실제 유저처럼 빈 상태에서 시작
+ * seed='fixtures' : Storybook 등 쇼케이스 — 27 레퍼런스 + 4 프로젝트 + 4 분석
  * ============================================ */
 
-const buildInitialState = () => ({
-  references: initialReferences,
-  projects: initialProjects,
-  analyses: initialAnalyses,
-  settings: { ...defaultUserSettings },
-});
+const buildInitialState = (seed = 'empty') => {
+  if (seed === 'fixtures') {
+    return {
+      references: initialReferences,
+      projects: initialProjects,
+      analyses: initialAnalyses,
+      settings: { ...defaultUserSettings },
+    };
+  }
+  return {
+    references: [],
+    projects: [],
+    analyses: {},
+    settings: { ...defaultUserSettings },
+  };
+};
 
 /* ============================================
  * Persist
@@ -152,7 +165,7 @@ function reducer(state, action) {
 
     /* reset */
     case 'RESET_STORE':
-      return buildInitialState();
+      return buildInitialState(action.payload || 'empty');
 
     default:
       return state;
@@ -163,11 +176,17 @@ function reducer(state, action) {
  * Provider
  * ============================================ */
 
-export function MuseStoreProvider({ children }) {
+/**
+ * @param {object} props
+ * @param {node}    props.children
+ * @param {'empty'|'fixtures'} [props.seed='empty'] - 초기 상태. 기본값 empty는 실제 유저 환경.
+ *                                                     Storybook 등 쇼케이스에선 'fixtures' 지정.
+ */
+export function MuseStoreProvider({ children, seed = 'empty' }) {
   const [state, dispatch] = useReducer(
     reducer,
     null,
-    () => loadFromStorage() || buildInitialState(),
+    () => loadFromStorage() || buildInitialState(seed),
   );
 
   useEffect(() => {

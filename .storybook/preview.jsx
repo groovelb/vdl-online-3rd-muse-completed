@@ -67,7 +67,7 @@ const preview = {
   },
   decorators: [
     (Story) => (
-      <MuseStoreProvider>
+      <MuseStoreProvider seed="fixtures">
         <ThemeProvider theme={defaultTheme}>
           <CssBaseline />
           <div style={{ width: '100%', paddingTop: '40px' }}>

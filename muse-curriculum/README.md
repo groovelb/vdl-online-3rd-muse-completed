@@ -2,6 +2,9 @@
 
 바이브 코딩으로 **MUSE 프로젝트(레퍼런스 기반 디자인 토큰 추출 도구)를 처음부터 끝까지 재현**하는 교육용 자료 묶음. 다른 프로젝트 환경으로 통째 복사해서 사용할 수 있게 구성되어 있다.
 
+- 완성본: https://vdl-online-3rd-muse-completed.vercel.app/
+- 완성본 스토리북: https://vdl-online-3rd-muse-completed-i7x9.vercel.app/?path=/story/overview-for-designers--doc
+
 ---
 
 ## 0. 왜 이 자료가 필요했나 (기획 배경)

@@ -2,12 +2,9 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { ProjectCreateWizard } from '../components/templates/ProjectCreateWizard.jsx';
-import { AppShell } from '../components/layout/AppShell.jsx';
 import { PageContainer } from '../components/layout/PageContainer.jsx';
 import { useProjectsSlice, useReferencesSlice, useAnalysesSlice } from '../store';
 import { runRecommend, runAnalyzeTokens } from '../utils/museAiTasks';
-import { MuseNav } from './MuseNav.jsx';
-import { UserMenu } from './UserMenu.jsx';
 
 /** Reference → ReferencePicker item 변환 */
 const toPickerItem = (r) => ({
@@ -29,22 +26,18 @@ export function ProjectCreateRoute() {
   const archive = useMemo(() => references.map(toPickerItem), [references]);
 
   return (
-    <AppShell
-      logo={ <MuseNav /> }
-      headerPersistent={ <UserMenu /> }
-    >
-      <PageContainer>
-        <Box
-          sx={ {
-            minHeight: 'calc(100vh - 64px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            py: { xs: 6, md: 10 },
-          } }
-        >
-          <Box sx={ { width: '100%', maxWidth: 860, mx: 'auto' } }>
+    <PageContainer>
+      <Box
+        sx={ {
+          minHeight: 'calc(100vh - 64px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          py: { xs: 6, md: 10 },
+        } }
+      >
+        <Box sx={ { width: '100%', maxWidth: 860, mx: 'auto' } }>
           <ProjectCreateWizard
             archive={ archive }
             recommendedLoader={ async ({ intent, type }) => {
@@ -109,9 +102,8 @@ export function ProjectCreateRoute() {
             } }
             onCancel={ () => navigate('/') }
           />
-          </Box>
         </Box>
-      </PageContainer>
-    </AppShell>
+      </Box>
+    </PageContainer>
   );
 }

@@ -58,61 +58,61 @@ export function ProjectListPage({
         </Button>
       </Box>
 
-        {/* Grid */}
-        {projects.length === 0 ? (
-          <Box
-            sx={{
-              py: 10,
-              textAlign: 'center',
-              bgcolor: 'background.paper',
-              borderRadius: 3,
-            }}
-          >
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-              아직 생성된 프로젝트가 없습니다
-            </Typography>
-            <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={onNewProject}>
-              첫 프로젝트 만들기
-            </Button>
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {projects.map((project) => (
-              <Grid key={project.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                <Box sx={{ position: 'relative' }}>
-                  <MoodboardCard
-                    id={project.id}
-                    name={project.name}
-                    description={project.intent}
-                    items={(project.thumbnails || []).map((url, i) => ({
-                      id: `${project.id}-thumb-${i}`,
-                      // MoodboardCard는 image.thumbnail 또는 image.src.medium을 읽음
-                      thumbnail: url,
-                    }))}
-                    createdAt={project.createdAt}
-                    onClick={() => onSelectProject?.(project.id)}
-                    onEdit={onEditProject ? () => onEditProject(project.id) : undefined}
-                    onDelete={onDeleteProject ? () => onDeleteProject(project.id) : undefined}
+      {/* Grid */}
+      {projects.length === 0 ? (
+        <Box
+          sx={{
+            py: 10,
+            textAlign: 'center',
+            bgcolor: 'background.paper',
+            borderRadius: 3,
+          }}
+        >
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            아직 생성된 프로젝트가 없습니다
+          </Typography>
+          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={onNewProject}>
+            첫 프로젝트 만들기
+          </Button>
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {projects.map((project) => (
+            <Grid key={project.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <Box sx={{ position: 'relative' }}>
+                <MoodboardCard
+                  id={project.id}
+                  name={project.name}
+                  description={project.intent}
+                  items={(project.thumbnails || []).map((url, i) => ({
+                    id: `${project.id}-thumb-${i}`,
+                    // MoodboardCard는 image.thumbnail 또는 image.src.medium을 읽음
+                    thumbnail: url,
+                  }))}
+                  createdAt={project.createdAt}
+                  onClick={() => onSelectProject?.(project.id)}
+                  onEdit={onEditProject ? () => onEditProject(project.id) : undefined}
+                  onDelete={onDeleteProject ? () => onDeleteProject(project.id) : undefined}
+                />
+                {project.type && (
+                  <Chip
+                    label={TYPE_LABEL[project.type] || project.type}
+                    size="small"
+                    color="primary"
+                    variant="filled"
+                    sx={{
+                      position: 'absolute',
+                      top: 12,
+                      left: 12,
+                      pointerEvents: 'none',
+                    }}
                   />
-                  {project.type && (
-                    <Chip
-                      label={TYPE_LABEL[project.type] || project.type}
-                      size="small"
-                      color="primary"
-                      variant="filled"
-                      sx={{
-                        position: 'absolute',
-                        top: 12,
-                        left: 12,
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  )}
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        )}
+                )}
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       <Box sx={{ height: 64 }} />
     </PageContainer>

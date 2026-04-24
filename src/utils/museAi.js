@@ -1,21 +1,50 @@
 /**
  * MUSE AI 클라이언트 헬퍼
  *
- * 브라우저(Storybook)에서 Anthropic을 직접 호출하지 않고, 로컬 Vite middleware
- * `/api/anthropic/messages` 를 경유한다. API 키는 Node 프로세스에만 머물고
+ * 브라우저에서 Anthropic을 직접 호출하지 않고, Supabase Edge Function
+ * `anthropic-messages` 를 경유한다. API 키는 Supabase secrets 에만 존재하며
  * 클라이언트 번들에는 포함되지 않는다.
+ *
+ * 인증: supabase 세션이 있어야 호출 가능 (Edge Function이 JWT 검증).
  */
 
-const PROXY_BASE = '/api/anthropic';
+import { supabase } from '../lib/supabase';
 
-/** 헬스 체크 — 키 로드 여부 확인 */
+const FUNCTION_NAME = 'anthropic-messages';
+
+function getFunctionUrl() {
+  const base = import.meta.env.VITE_SUPABASE_URL;
+  if (!base) throw new Error('VITE_SUPABASE_URL 이 설정되지 않았습니다.');
+  return `${base}/functions/v1/${FUNCTION_NAME}`;
+}
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const err = new Error('로그인이 필요합니다. (Anthropic 프록시는 인증 사용자 전용)');
+    err.status = 401;
+    throw err;
+  }
+  return {
+    Authorization: `Bearer ${session.access_token}`,
+    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    'content-type': 'application/json',
+  };
+}
+
+/** 헬스 체크 — 세션 유무만 확인. (Edge Function 자체 health 엔드포인트는 없음) */
 export async function checkAnthropicHealth() {
-  const res = await fetch(`${PROXY_BASE}/health`);
-  return res.json();
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    ok: Boolean(session),
+    hasSession: Boolean(session),
+    userId: session?.user?.id ?? null,
+    endpoint: getFunctionUrl(),
+  };
 }
 
 /**
- * Anthropic messages.create 호출 (로컬 프록시 경유).
+ * Anthropic messages.create 호출 (Supabase Edge Function 경유).
  *
  * @param {object} params
  * @param {string} params.model - 예: 'claude-haiku-4-5-20251001'
@@ -28,14 +57,17 @@ export async function checkAnthropicHealth() {
  * @returns {Promise<object>} Anthropic API 응답 원본
  */
 export async function callAnthropic(params) {
-  const res = await fetch(`${PROXY_BASE}/messages`, {
+  const headers = await getAuthHeaders();
+  const res = await fetch(getFunctionUrl(), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify(params),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(`Anthropic error ${res.status}: ${data?.error?.message || data?.error || 'unknown'}`);
+    const err = new Error(
+      `Anthropic error ${res.status}: ${data?.error?.message || data?.error || data?.message || 'unknown'}`,
+    );
     err.status = res.status;
     err.detail = data;
     throw err;
@@ -155,4 +187,3 @@ export function resizeDataUrl(dataUrl, maxDim = 1024) {
     img.src = dataUrl;
   });
 }
-

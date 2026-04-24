@@ -95,7 +95,7 @@ export const HealthCheck = {
         <DocumentTitle
           title="AI Health Check"
           status="Playground"
-          note="Verifies /api/anthropic middleware is up"
+          note="Verifies Supabase Edge Function session is ready"
           brandName="MUSE"
           systemName="AI Playground"
           version="0.1"
@@ -105,9 +105,9 @@ export const HealthCheck = {
             Health Check
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={ { mb: 3 } }>
-            Storybook Vite dev 서버의 <code>/api/anthropic/health</code> 프록시 엔드포인트 응답을 확인한다.
+            Supabase Edge Function <code>anthropic-messages</code> 를 호출할 수 있는 세션 상태를 확인한다.
             <br />
-            키는 서버에만 있고, 응답에는 앞 12자 prefix만 반환되어 브라우저에 절대 노출되지 않는다.
+            실제 Anthropic 키는 Supabase secrets 에만 존재하며 브라우저에 노출되지 않는다.
           </Typography>
 
           <Box sx={ { display: 'flex', gap: 1, mb: 2 } }>

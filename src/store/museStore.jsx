@@ -260,6 +260,9 @@ export function useReferencesSlice() {
   };
 
   const updateReference = async (id, patch) => {
+    // Optimistic: UI 먼저 갱신. Supabase 지연/실패와 무관하게 태깅 결과가 즉시 보이도록.
+    dispatch({ type: 'UPDATE_REFERENCE', payload: { id, patch } });
+
     if (remote && user) {
       const dbPatch = {};
       if ('title' in patch) dbPatch.title = patch.title;
@@ -268,20 +271,29 @@ export function useReferencesSlice() {
       if ('extracted' in patch) dbPatch.extracted = patch.extracted;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from('reference_items').update(dbPatch).eq('id', id);
-        if (error) throw error;
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error('[updateReference] Supabase update 실패', { id, patch: Object.keys(dbPatch), error });
+          throw error;
+        }
       }
     }
-    dispatch({ type: 'UPDATE_REFERENCE', payload: { id, patch } });
   };
 
   const removeReference = async (id) => {
+    const target = state.references.find((r) => r.id === id);
+    // Optimistic: UI 먼저 제거
+    dispatch({ type: 'REMOVE_REFERENCE', payload: id });
+
     if (remote && user) {
-      const target = state.references.find((r) => r.id === id);
       if (target?.storagePath) await deleteReferenceImage(target.storagePath);
       const { error } = await supabase.from('reference_items').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error('[removeReference] Supabase delete 실패', { id, error });
+        throw error;
+      }
     }
-    dispatch({ type: 'REMOVE_REFERENCE', payload: id });
   };
 
   return {

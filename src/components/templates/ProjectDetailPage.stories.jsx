@@ -5,12 +5,14 @@ import {
   getAnalysisResult,
   references as allReferences,
 } from '../../data/muse';
+import { withAppShell } from './_appShellDecorator.jsx';
 
 export default {
   title: 'Page/ProjectDetailPage',
   component: ProjectDetailPage,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },
+  decorators: [withAppShell],
 };
 
 const PROJECT = projectsWithThumbnails[0];

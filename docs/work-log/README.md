@@ -1,16 +1,39 @@
 # Work Log
 
-실습 교육용 작업 로그 인덱스. 번호 순서대로 따라가면 프로젝트 진화 과정을 재현할 수 있다.
+MUSE 프로젝트 실습 교육 자료. **바이브 코딩으로 동일한 프로젝트를 재현**할 수 있도록 구성.
 
-## 재현 가이드 (먼저 읽기)
+---
 
-| 문서 | 용도 |
+## ⭐ 메인 교재 — 여기서 시작하기
+
+**[curriculum/ — 5 Stage 재구성 커리큘럼](./curriculum/00-OVERVIEW.md)**
+
+원본 로그(001~024)를 **학습 순서로 재배치**한 프레젠테이션용 커리큘럼. "나중에 한 작업이라도 같이 했으면 좋았을 것"은 해당 Stage로 당겨서, 재설계 이력을 숨기고 **최종 모습만 가르친다**.
+
+| Stage | 주제 |
 |---|---|
-| [ANALYSIS.md](./ANALYSIS.md) | 24개 로그 교차 분석 — Timeline / Spec Ledger / Data Schema Diff / Branching Hotspots |
-| [PHASE-CARDS.md](./PHASE-CARDS.md) | 10 Phase로 묶은 카드 — 진입조건 / 핵심결정 / 산출물 / 검증기준 |
-| [REPRODUCE-FAQ.md](./REPRODUCE-FAQ.md) | 바이브 코딩 중 AI가 다른 제안 시 즉답용 35문항 Q&A |
+| [1](./curriculum/01-planning-and-design-system.md) | 기획 점검 + 디자인 시스템 세팅 |
+| [2](./curriculum/02-ux-flow-and-components.md) | UX flow + 컴포넌트 만들기 |
+| [3](./curriculum/03-data-assembly.md) | 더미 데이터로 조립하기 |
+| [4](./curriculum/04-local-ai-simulation.md) | 로컬에서 AI 시뮬레이션 |
+| [5](./curriculum/05-supabase-integration.md) | Supabase 연동 |
 
-## 로그 (번호순)
+---
+
+## 보조 자료 (필요 시 참조)
+
+| 문서 | 용도 | 언제 보나 |
+|---|---|---|
+| [ANALYSIS.md](./ANALYSIS.md) | 24 로그 교차 분석 (Timeline / Spec / Schema Diff / Branching Hotspots) | 사후 해부 |
+| [PHASE-CARDS.md](./PHASE-CARDS.md) | 10 Phase 작업 단위 카드 (진입조건 / 산출물 / 검증) | 강사 체크용 |
+| [REPRODUCE-FAQ.md](./REPRODUCE-FAQ.md) | Q&A 35개 (AI가 다른 제안 시 즉답) | 탈선 감지 시 |
+
+## 원본 로그 (시간순 · 부록)
+
+curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**를 복기하려면 아래 로그를 본다.
+
+<details>
+<summary>원본 로그 24개 펼치기</summary>
 
 | # | 제목 | 날짜 | 파일 |
 |---|------|------|------|
@@ -38,3 +61,5 @@
 | 022 | MUSE — 디자인 QA 전수 이행 (elevation/hover/위치 효과 제거, Accordion 필터, 색상환 유사색, GNB 재구성, 앰비언트 배경) | 2026-04-23 | [022-MUSE-디자인-QA-전수-이행.md](./022-MUSE-디자인-QA-전수-이행.md) |
 | 023 | MUSE — T1/T3 아키텍처 전환 (업로드 시 T3 레벨 값 추출 + 프로젝트 시 이미지 없이 compose, Haiku 통일, 비용 ~2.5x 절감) | 2026-04-23 | [023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md](./023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md) |
 | 024 | MUSE — 다중 업로드 간헐 생략 + 프로젝트 생성 후 "없는 프로젝트" 에러 수정 + T1 태깅 재시도 정책 | 2026-04-23 | [024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md](./024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md) |
+
+</details>

@@ -5,6 +5,8 @@
  */
 
 export { FilterBar } from './FilterBar.jsx';
+export { FilterPanel } from './FilterPanel.jsx';
+export { SortMenu } from './SortMenu.jsx';
 export { ReferencePicker } from './ReferencePicker.jsx';
 export { ProjectCreateWizard } from './ProjectCreateWizard.jsx';
 

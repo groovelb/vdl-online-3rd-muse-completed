@@ -25,14 +25,14 @@ export function ProjectListRoute() {
 
   return (
     <ProjectListPage
-      logo={ <MuseNav /> }
-      headerEnd={ <UserMenu /> }
-      projects={ projectsWithThumbnails }
-      onSelectProject={ (id) => navigate(`/projects/${id}`) }
-      onNewProject={ () => navigate('/projects/new') }
-      onDeleteProject={ (id) => {
+      logo={<MuseNav />}
+      headerEnd={<UserMenu />}
+      projects={projectsWithThumbnails}
+      onSelectProject={(id) => navigate(`/projects/${id}`)}
+      onNewProject={() => navigate('/projects/new')}
+      onDeleteProject={(id) => {
         if (window.confirm('이 프로젝트를 삭제할까요?')) removeProject(id);
-      } }
+      }}
     />
   );
 }

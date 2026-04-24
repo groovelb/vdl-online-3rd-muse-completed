@@ -10,7 +10,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
-import { AppShell } from '../layout/AppShell.jsx';
 import { PageContainer } from '../layout/PageContainer.jsx';
 
 const AI_MODELS = [
@@ -38,7 +37,6 @@ const THEME_MODES = [
  * @param {object} settings - { aiModel, storageMode, themeMode, isAutoTagEnabled } [Required]
  * @param {function} onChange - (patch) => void [Required]
  * @param {function} onSave - "저장" 클릭 [Optional]
- * @param {node} logo - AppShell 로고 [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -48,7 +46,7 @@ const THEME_MODES = [
  *   onSave={ () => api.save(settings) }
  * />
  */
-export function SettingsPage({ settings, onChange, onSave, logo, headerEnd, sx }) {
+export function SettingsPage({ settings, onChange, onSave, sx }) {
   const [dirty, setDirty] = useState(false);
 
   const patch = (next) => {
@@ -57,16 +55,11 @@ export function SettingsPage({ settings, onChange, onSave, logo, headerEnd, sx }
   };
 
   return (
-    <AppShell
-      logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
-      headerPersistent={ headerEnd }
-      sx={ sx }
-    >
-      <PageContainer>
-        {/* Hero */}
-        <Box sx={ { py: { xs: 3, md: 5 } } }>
-          <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Settings</Typography>
-        </Box>
+    <PageContainer sx={ sx }>
+      {/* Hero */}
+      <Box sx={ { py: { xs: 3, md: 5 } } }>
+        <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Settings</Typography>
+      </Box>
 
         <Box sx={ { maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 5 } }>
           {/* AI Model */}
@@ -167,9 +160,8 @@ export function SettingsPage({ settings, onChange, onSave, logo, headerEnd, sx }
           ) }
         </Box>
 
-        <Box sx={ { height: 64 } } />
-      </PageContainer>
-    </AppShell>
+      <Box sx={ { height: 64 } } />
+    </PageContainer>
   );
 }
 

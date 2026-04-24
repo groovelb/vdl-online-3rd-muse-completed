@@ -188,7 +188,7 @@ export function ImageCard({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                mt: title ? 0.5 : 0,
+                mt: title ? 2 : 0,
               } }
             >
               { dominantColors.slice(0, 5).map((hex, i) => (
@@ -214,7 +214,7 @@ export function ImageCard({
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: 0.5,
-                mt: (title || dominantColors.length) ? 0.5 : 0,
+                mt: (title || dominantColors.length) ? 2 : 0,
               } }
             >
               { tags.slice(0, 3).map((tag) => (

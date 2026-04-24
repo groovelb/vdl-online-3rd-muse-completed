@@ -24,21 +24,21 @@ const palette = {
   mode: 'dark',
 
   primary: {
-    light: '#FCFCFF',
-    main: '#F3F3F9',
-    dark: '#D6D5E0',
-    contrastText: '#14132B',
+    light: '#FCFCFE',
+    main: '#F3F3F6',
+    dark: '#D7D6DC',
+    contrastText: '#17161E',
   },
   secondary: {
-    light: '#B5B4C2',
-    main: '#9493A3',
-    dark: '#7A798E',
-    contrastText: '#14132B',
+    light: '#B7B6BD',
+    main: '#97969E',
+    dark: '#7E7D88',
+    contrastText: '#17161E',
   },
 
   error: { light: '#ef5350', main: '#f44336', dark: '#d32f2f', contrastText: '#FFFFFF' },
-  warning: { light: '#ffb74d', main: '#ffa726', dark: '#fb8c00', contrastText: '#14132B' },
-  success: { light: '#81c784', main: '#66bb6a', dark: '#4caf50', contrastText: '#14132B' },
+  warning: { light: '#ffb74d', main: '#ffa726', dark: '#fb8c00', contrastText: '#17161E' },
+  success: { light: '#81c784', main: '#66bb6a', dark: '#4caf50', contrastText: '#17161E' },
   info: {
     light: '#818CF8',
     main: '#6366F1',
@@ -47,38 +47,38 @@ const palette = {
   },
 
   text: {
-    primary: '#F3F3F9',
-    secondary: '#9493A3',
-    disabled: 'rgba(243, 243, 249, 0.38)',
+    primary: '#F3F3F6',
+    secondary: '#97969E',
+    disabled: 'rgba(243, 243, 246, 0.38)',
   },
 
   background: {
-    default: '#0F0E1C',
-    paper: '#1A1932',
+    default: '#121118',
+    paper: '#1D1C25',
   },
 
-  divider: 'rgba(243, 243, 249, 0.10)',
+  divider: 'rgba(243, 243, 246, 0.10)',
 
   action: {
-    active: 'rgba(243, 243, 249, 0.54)',
-    hover: 'rgba(243, 243, 249, 0.06)',
-    selected: 'rgba(243, 243, 249, 0.10)',
-    disabled: 'rgba(243, 243, 249, 0.26)',
-    disabledBackground: 'rgba(243, 243, 249, 0.08)',
-    focus: 'rgba(243, 243, 249, 0.12)',
+    active: 'rgba(243, 243, 246, 0.54)',
+    hover: 'rgba(243, 243, 246, 0.06)',
+    selected: 'rgba(243, 243, 246, 0.10)',
+    disabled: 'rgba(243, 243, 246, 0.26)',
+    disabledBackground: 'rgba(243, 243, 246, 0.08)',
+    focus: 'rgba(243, 243, 246, 0.12)',
   },
 
   grey: {
-    50: '#14132B',
-    100: '#1A1932',
-    200: '#2A2944',
-    300: '#3A384E',
-    400: '#5A586E',
-    500: '#7A798E',
-    600: '#9493A3',
-    700: '#B5B4C2',
-    800: '#D6D5E0',
-    900: '#F3F3F9',
+    50: '#17161E',
+    100: '#1D1C25',
+    200: '#2D2C36',
+    300: '#3E3D48',
+    400: '#5E5D68',
+    500: '#7E7D88',
+    600: '#97969E',
+    700: '#B7B6BD',
+    800: '#D7D6DC',
+    900: '#F3F3F6',
   },
 };
 
@@ -98,11 +98,11 @@ darkTheme.customShadows = defaultTheme.customShadows;
 darkTheme.dashboard = {
   ...defaultTheme.dashboard,
   background: palette.background.default,
-  atmosphere: 'linear-gradient(to bottom, #0F0E1C 0%, #1A1932 100%)',
+  atmosphere: 'linear-gradient(to bottom, #121118 0%, #1D1C25 100%)',
   textColor: palette.text.primary,
   textSecondary: palette.text.secondary,
   dividerColor: palette.divider,
-  progressTrackColor: 'rgba(243, 243, 249, 0.08)',
+  progressTrackColor: 'rgba(243, 243, 246, 0.08)',
   progressBarColor: palette.primary.main,
 };
 

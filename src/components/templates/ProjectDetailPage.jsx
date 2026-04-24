@@ -5,7 +5,6 @@ import Button from '@mui/material/Button';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import IconButton from '@mui/material/IconButton';
-import { AppShell } from '../layout/AppShell.jsx';
 import { PageContainer } from '../layout/PageContainer.jsx';
 import { SplitScreen } from '../layout/SplitScreen.jsx';
 import { CategoryTab } from '../in-page-navigation/CategoryTab.jsx';
@@ -35,7 +34,6 @@ const LAYERS = [
  * @param {array}  [references] - 전체 store references — ZIP 이미지 번들링용 [Optional]
  * @param {function} onUpdateToken - (layerKey, tokenId, patch) => void [Required]
  * @param {function} onBack - 뒤로가기 [Optional]
- * @param {node} logo - AppShell 로고 [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -51,8 +49,6 @@ export function ProjectDetailPage({
   references = [],
   onUpdateToken,
   onBack,
-  logo,
-  headerEnd,
   sx,
 }) {
   const [activeLayer, setActiveLayer] = useState('color');
@@ -211,42 +207,33 @@ export function ProjectDetailPage({
   };
 
   return (
-    <AppShell
-      logo={ logo || <Typography variant="h6" sx={ { fontWeight: 700 } }>MUSE</Typography> }
-      headerPersistent={
-        <Box sx={ { display: 'flex', alignItems: 'center', gap: 1.5 } }>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={ <FolderZipIcon /> }
-            onClick={ () => setExportOpen(true) }
-          >
-            Export
-          </Button>
-          { headerEnd }
-        </Box>
-      }
-      sx={ sx }
-    >
-      <PageContainer>
-        {/* Project header */}
-        <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, py: 3 } }>
-          { onBack && (
-            <IconButton onClick={ onBack } aria-label="뒤로">
-              <ArrowBackIcon />
-            </IconButton>
-          ) }
-          <Box sx={ { flex: 1 } }>
-            <Typography variant="h3" sx={ { mb: 0.5 } }>
-              { project?.name || 'Untitled Project' }
+    <PageContainer sx={ sx }>
+      {/* Project header */}
+      <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, py: 3 } }>
+        { onBack && (
+          <IconButton onClick={ onBack } aria-label="뒤로">
+            <ArrowBackIcon />
+          </IconButton>
+        ) }
+        <Box sx={ { flex: 1 } }>
+          <Typography variant="h3" sx={ { mb: 0.5 } }>
+            { project?.name || 'Untitled Project' }
+          </Typography>
+          { project?.intent && (
+            <Typography variant="body2" color="text.secondary">
+              { project.intent }
             </Typography>
-            { project?.intent && (
-              <Typography variant="body2" color="text.secondary">
-                { project.intent }
-              </Typography>
-            ) }
-          </Box>
+          ) }
         </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={ <FolderZipIcon /> }
+          onClick={ () => setExportOpen(true) }
+        >
+          Export
+        </Button>
+      </Box>
 
         {/* Layer tabs */}
         <CategoryTab
@@ -268,8 +255,7 @@ export function ProjectDetailPage({
           right={ renderPreview() }
         />
 
-        <Box sx={ { height: 64 } } />
-      </PageContainer>
+      <Box sx={ { height: 64 } } />
 
       <ThemeExportDialog
         open={ isExportOpen }
@@ -278,6 +264,6 @@ export function ProjectDetailPage({
         analysis={ analysis }
         references={ references }
       />
-    </AppShell>
+    </PageContainer>
   );
 }

@@ -4,16 +4,13 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import SortIcon from '@mui/icons-material/Sort';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import CloseIcon from '@mui/icons-material/Close';
 import { SearchBar } from '../input/SearchBar';
+import { SortMenu } from './SortMenu.jsx';
 
 /**
  * FilterBar 템플릿
@@ -66,14 +63,6 @@ export function FilterBar({
   sx,
 }) {
   const [showFilters, setShowFilters] = useState(false);
-  const [sortAnchorEl, setSortAnchorEl] = useState(null);
-
-  const sortOptions = [
-    { id: 'newest', label: 'Newest First' },
-    { id: 'oldest', label: 'Oldest First' },
-    { id: 'name-asc', label: 'Name (A-Z)' },
-    { id: 'name-desc', label: 'Name (Z-A)' },
-  ];
 
   const hasActiveFilters = selectedTags.length > 0 || searchValue.length > 0;
 
@@ -85,31 +74,6 @@ export function FilterBar({
       onTagToggle(tag);
     },
     [onTagToggle]
-  );
-
-  /**
-   * 정렬 메뉴 열기
-   */
-  const handleSortOpen = useCallback((event) => {
-    setSortAnchorEl(event.currentTarget);
-  }, []);
-
-  /**
-   * 정렬 메뉴 닫기
-   */
-  const handleSortClose = useCallback(() => {
-    setSortAnchorEl(null);
-  }, []);
-
-  /**
-   * 정렬 선택
-   */
-  const handleSortSelect = useCallback(
-    (sortId) => {
-      onSortChange?.(sortId);
-      handleSortClose();
-    },
-    [onSortChange, handleSortClose]
   );
 
   /**
@@ -143,36 +107,7 @@ export function FilterBar({
 
         {/* 정렬 버튼 */}
         {onSortChange && (
-          <>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<SortIcon />}
-              onClick={handleSortOpen}
-              sx={{
-                textTransform: 'none',
-                borderColor: 'divider',
-                color: 'text.secondary',
-              }}
-            >
-              {sortOptions.find((opt) => opt.id === sortBy)?.label || 'Sort'}
-            </Button>
-            <Menu
-              anchorEl={sortAnchorEl}
-              open={Boolean(sortAnchorEl)}
-              onClose={handleSortClose}
-            >
-              {sortOptions.map((option) => (
-                <MenuItem
-                  key={option.id}
-                  selected={option.id === sortBy}
-                  onClick={() => handleSortSelect(option.id)}
-                >
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Menu>
-          </>
+          <SortMenu value={sortBy} onChange={onSortChange} />
         )}
 
         {/* 뷰 모드 토글 */}

@@ -11,6 +11,7 @@ import {
   ProjectCreateRoute,
   ProjectDetailRoute,
   SettingsRoute,
+  AppShellLayout,
 } from './pages';
 import AuthPage from './pages/auth/AuthPage';
 import AuthGuard from './pages/auth/AuthGuard';
@@ -20,9 +21,9 @@ function ThemedApp({ children }) {
   const { settings } = useSettingsSlice();
   const theme = settings?.themeMode === 'dark' ? darkTheme : defaultTheme;
   return (
-    <ThemeProvider theme={ theme }>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
-      { children }
+      {children}
     </ThemeProvider>
   );
 }
@@ -35,12 +36,14 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/" element={<AuthGuard><Navigate to="/archive" replace /></AuthGuard>} />
-              <Route path="/archive" element={<AuthGuard><ArchiveRoute /></AuthGuard>} />
-              <Route path="/projects" element={<AuthGuard><ProjectListRoute /></AuthGuard>} />
-              <Route path="/projects/new" element={<AuthGuard><ProjectCreateRoute /></AuthGuard>} />
-              <Route path="/projects/:id" element={<AuthGuard><ProjectDetailRoute /></AuthGuard>} />
-              <Route path="/settings" element={<AuthGuard><SettingsRoute /></AuthGuard>} />
+              <Route element={<AuthGuard><AppShellLayout /></AuthGuard>}>
+                <Route path="/" element={<Navigate to="/archive" replace />} />
+                <Route path="/archive" element={<ArchiveRoute />} />
+                <Route path="/projects" element={<ProjectListRoute />} />
+                <Route path="/projects/new" element={<ProjectCreateRoute />} />
+                <Route path="/projects/:id" element={<ProjectDetailRoute />} />
+                <Route path="/settings" element={<SettingsRoute />} />
+              </Route>
               <Route path="*" element={<Navigate to="/archive" replace />} />
             </Routes>
           </BrowserRouter>

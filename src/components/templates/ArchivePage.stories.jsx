@@ -1,12 +1,14 @@
 import { useCallback, useState } from 'react';
 import { ArchivePage } from './ArchivePage';
 import { references as allReferences } from '../../data/muse';
+import { withAppShell } from './_appShellDecorator.jsx';
 
 export default {
   title: 'Page/ArchivePage',
   component: ArchivePage,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },
+  decorators: [withAppShell],
 };
 
 /** Store Mode: fixtures 기반 쇼케이스. 업로드 버튼은 로컬 dispatch only (Supabase 호출 없음, Storybook 전용) */

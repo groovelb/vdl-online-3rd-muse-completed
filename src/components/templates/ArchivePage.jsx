@@ -17,6 +17,7 @@ import { PageContainer } from '../layout/PageContainer.jsx';
 import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
 import { ImageCard } from '../card/ImageCard.jsx';
 import { FileDropzone } from '../input/FileDropzone.jsx';
+import { ReferenceDetailDialog } from '../overlay-feedback/ReferenceDetailDialog.jsx';
 import { flattenTags } from '../../data/muse';
 import { FilterPanel } from './FilterPanel.jsx';
 import { useReferenceArchive } from './useReferenceArchive';
@@ -62,6 +63,7 @@ export function ArchivePage({
   const [activeColors, setActiveColors] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteState, setDeleteState] = useState({ isDeleting: false, error: null });
+  const [detailTarget, setDetailTarget] = useState(null);
 
   const {
     references,
@@ -96,9 +98,8 @@ export function ArchivePage({
     );
 
   const toggleColor = (hex) => {
-    const key = hex.toLowerCase();
     setActiveColors((prev) =>
-      prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key],
+      prev.includes(hex) ? prev.filter((c) => c !== hex) : [...prev, hex],
     );
   };
 
@@ -106,6 +107,8 @@ export function ArchivePage({
     setActiveTags([]);
     setActiveColors([]);
   };
+
+  const resetColors = () => setActiveColors([]);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -169,6 +172,7 @@ export function ArchivePage({
             onToggleTag={ toggleTag }
             activeColors={ activeColors }
             onToggleColor={ toggleColor }
+            onResetColors={ resetColors }
             onResetFilters={ resetAllFilters }
             filteredCount={ filtered.length }
             totalCount={ references.length }
@@ -199,6 +203,7 @@ export function ArchivePage({
               <ArchiveCard
                 item={ item }
                 useStoreMode={ useStoreMode }
+                onOpenDetail={ () => setDetailTarget(item) }
                 onRequestDelete={ () =>
                   setDeleteTarget({ id: item.id, title: item.title || '(제목 없음)' })
                 }
@@ -242,12 +247,19 @@ export function ArchivePage({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ReferenceDetailDialog
+        reference={ detailTarget }
+        onClose={ () => setDetailTarget(null) }
+        activeTags={ activeTags }
+        activeColors={ activeColors }
+      />
     </>
   );
 }
 
 /** 아카이브 그리드 내 단일 카드 — 호버 시 삭제, 태깅 상태 오버레이 포함 */
-function ArchiveCard({ item, useStoreMode, onRequestDelete, onRetryTagging }) {
+function ArchiveCard({ item, useStoreMode, onOpenDetail, onRequestDelete, onRetryTagging }) {
   return (
     <Box
       sx={ {
@@ -260,6 +272,7 @@ function ArchiveCard({ item, useStoreMode, onRequestDelete, onRetryTagging }) {
         title={ item.title }
         tags={ flattenTags(item).slice(0, 3) }
         dominantColors={ item.dominantColors || [] }
+        onClick={ onOpenDetail }
       />
       { useStoreMode && !item._pending && (
         <IconButton

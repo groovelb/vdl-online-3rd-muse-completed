@@ -28,6 +28,14 @@ MUSE 프로젝트 실습 교육 자료. **바이브 코딩으로 동일한 프�
 | [PHASE-CARDS.md](./PHASE-CARDS.md) | 10 Phase 작업 단위 카드 (진입조건 / 산출물 / 검증) | 강사 체크용 |
 | [REPRODUCE-FAQ.md](./REPRODUCE-FAQ.md) | Q&A 35개 (AI가 다른 제안 시 즉답) | 탈선 감지 시 |
 
+## 분기점 (Checkpoints)
+
+여러 세션 누적 결과를 1장으로 압축한 마일스톤 마커. "지금 시스템이 어디까지 와 있는지" 빠르게 파악할 때 본다.
+
+| # | 범위 | 제목 | 날짜 |
+|---|---|---|---|
+| 001 | 001~024 | [MUSE Foundation 완료 — 기획 / 컴포넌트 / AI / Supabase](./CHECKPOINT-001-MUSE-Foundation-완료.md) | 2026-04-27 |
+
 ## 원본 로그 (시간순 · 부록)
 
 curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**를 복기하려면 아래 로그를 본다.

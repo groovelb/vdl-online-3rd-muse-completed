@@ -86,6 +86,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 
 - AnalysisProgress: 레이어별 단계 상태(pending/running/done/error) + 전체 진행률 집계. 취소/재시도 액션 (`components/overlay-feedback/AnalysisProgress.jsx`)
 - ThemeExportDialog: MUI `createTheme` 코드 export 다이얼로그. 클립보드 복사 + 파일 다운로드, 필수 토큰 누락 경고. `utils/serializeTheme.js`와 페어 (`components/overlay-feedback/ThemeExportDialog.jsx`)
+- ReferenceDetailDialog: 아카이브 카드 클릭 시 레퍼런스 상세(원본 이미지 + 레이어별 전체 태그 + 대표 색상 + 출처/수집일) 모달. 활성 필터 태그/색상은 강조 표시 (`components/overlay-feedback/ReferenceDetailDialog.jsx`)
 - Dialog: MUI Dialog 컴포넌트 [MUI]
 
 ## 10. Navigation (Global) — 페이지 간 이동

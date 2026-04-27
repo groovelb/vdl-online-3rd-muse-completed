@@ -131,6 +131,7 @@ function buildRepresentativeCounts(references) {
  * @param {function} onToggleTag - (tag) => void [Required]
  * @param {string[]} activeColors - 활성화된 색상 hex 배열 [Required]
  * @param {function} onToggleColor - (hex) => void [Required]
+ * @param {function} onResetColors - () => void, "모두 보기" 클릭 시 색상 필터 해제 [Optional]
  * @param {function} onResetFilters - () => void [Required]
  * @param {number} filteredCount - 현재 필터 결과 개수 [Required]
  * @param {number} totalCount - 전체 개수 [Required]
@@ -158,6 +159,7 @@ export function FilterPanel({
   onToggleTag,
   activeColors,
   onToggleColor,
+  onResetColors,
   onResetFilters,
   filteredCount,
   totalCount,
@@ -195,7 +197,47 @@ export function FilterPanel({
           { /* 색상 — 대표 색상환 기반, 선택 시 주변색 유사도 매칭 */ }
           { representativeCounts.length > 0 && (
             <FilterAccordion label="색상" count={ activeColors.length }>
-              <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 1 } }>
+              <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' } }>
+                { /* "모두 보기" — 색상 필터가 비어있을 때 활성 표시, 클릭 시 색상 필터 해제 */ }
+                <Box
+                  onClick={ () => activeColors.length > 0 && onResetColors?.() }
+                  title="모두 보기 (색상 필터 해제)"
+                  sx={ {
+                    position: 'relative',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'conic-gradient(from 0deg, #ff5b5b, #ffbd2e, #6dd86d, #4cc4ff, #b56bff, #ff5bd0, #ff5b5b)',
+                    cursor: activeColors.length > 0 ? 'pointer' : 'default',
+                    border: activeColors.length === 0 ? '3px solid' : '1px solid',
+                    borderColor: activeColors.length === 0 ? 'primary.main' : 'divider',
+                    boxShadow: activeColors.length === 0 ? '0 0 0 2px rgba(99,102,241,0.25)' : 'none',
+                    transition: 'border-color 150ms, border-width 150ms, box-shadow 150ms',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box',
+                  } }
+                >
+                  <Box
+                    sx={ {
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      bgcolor: 'background.default',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    } }
+                  >
+                    <Typography
+                      sx={ { fontSize: '0.55rem', fontWeight: 700, lineHeight: 1, color: 'text.primary' } }
+                    >
+                      All
+                    </Typography>
+                  </Box>
+                </Box>
+
                 { representativeCounts.map(({ hex, label, count }) => {
                   const isActive = activeColors.includes(hex);
                   return (
@@ -210,12 +252,14 @@ export function FilterPanel({
                         borderRadius: '50%',
                         bgcolor: hex,
                         cursor: 'pointer',
-                        outline: '2px solid',
-                        outlineOffset: 2,
-                        outlineColor: isActive ? 'primary.main' : 'transparent',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        transition: 'outline-color 150ms',
+                        border: isActive ? '3px solid' : '1px solid',
+                        borderColor: isActive ? 'primary.main' : 'divider',
+                        boxSizing: 'border-box',
+                        boxShadow: isActive ? '0 0 0 2px rgba(99,102,241,0.25)' : 'none',
+                        transition: 'border-color 150ms, border-width 150ms, box-shadow 150ms',
+                        '&:hover': {
+                          borderColor: isActive ? 'primary.main' : 'text.secondary',
+                        },
                       } }
                     >
                       { isActive && (

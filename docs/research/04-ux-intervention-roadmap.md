@@ -1,7 +1,8 @@
 # MUSE UX 최소 개입 로드맵 — 사용자 의도를 UX에 심기
 
 > 작성일: 2026-04-28
-> **2026-04-28 수정**: TP1 폐기 결정. 6개 → **5개 터치포인트** (TP2~TP6). 폐기 사유는 §TP1 섹션 참조.
+> **2026-04-28 수정 1**: TP1 폐기. 사유는 §TP1 섹션.
+> **2026-04-28 수정 2**: TP5 폐기 (Step 3 하단 버튼이 흡수). Step 3 (활용 노트, RefinementNotesField) 신규 도입 — Progressive Narrowing의 핵심.
 > 근거: `01-design-md-painpoints-raw.md` (52건 출처) + `02-painpoints-qualitative-analysis.md` (4 super-themes) + `03-product-priority-roadmap.md` (15개 작업 후보)
 > 결정 방향: **퍼포먼스 파인튜닝보다 UX 자체에 의도가 들어가는 방향으로**
 > 핵심 원칙: 큰 화면 신규 X. 기존 입력 지점에 "왜?" 질문을 끼워 넣음. UX 자체가 사용자 주도권을 일깨우고 결과 디테일을 끌어올림.
@@ -143,8 +144,42 @@ selectedRefs[].useLayers = ['color', 'typography', 'layout', 'gradient', 'visual
 
 ---
 
-### TP5. Step 3 분석 직전 (확인 박스)
-**위치**: `ProjectCreateWizard.jsx` Step 3 진입
+### ❌ TP5. 분석 직전 확인 박스 — 폐기 (2026-04-28)
+
+**폐기 사유**: Step 3 (활용 노트) 하단 [분석 시작 →] 버튼이 자연스럽게 confirm 역할 흡수. 별도 step 불필요. AnalysisConfirmBox 컴포넌트 + 스토리 + barrel export 모두 제거.
+
+---
+
+### Step 3 (NEW). 활용 노트 — RefinementNotesField
+**위치**: `ProjectCreateWizard.jsx` Step 3 (NEW)
+
+**목적**: 레퍼런스 본 후 사용자가 명시 지시 입력. T3 합성 시 HIGHEST PRIORITY (L4 > L3 > L2 > L1).
+
+**구성**:
+- 상단: 선택된 ref 썸네일 row (시각 참조)
+- textarea: maxLength 300, helperText 글자수 + 모드별 안내
+- 가이드 박스: "어느 ref의 무엇 / 강조 / 변형" 3가지 + 좋은예/나쁜예
+- [분석 시작 →] 버튼이 곧 confirm (TP5 흡수)
+
+**모드별 minLength 차등**:
+- `concept` = 0자 (스킵 가능, P1 비디자이너 진입 마찰 ↓)
+- `system` = 30자
+- `handoff` = 50자 + ref-id 포함 권장
+
+**T3 system prompt 추가**:
+```
+=== User Notes (Step 3, HIGHEST PRIORITY) ===
+Priority order: userNotes (L4) > useLayers (L3) > intent (L2) > mode (L1).
+When userNotes conflicts with initial intent, L4 WINS.
+Emit decisionRationale.appliedUserNotes ONLY for tokens directly driven by L4.
+```
+
+**기존 TP5 (폐기) 자리**: ~~분석 직전 확인 박스~~
+
+---
+
+### ~~TP5. Step 3 분석 직전 (확인 박스)~~ (폐기됨, 위 §TP5 폐기 참조)
+**위치**: ~~`ProjectCreateWizard.jsx` Step 3 진입~~
 
 **Before**: "분석 시작" 버튼만
 **After**: 버튼 위에 confirmation 박스

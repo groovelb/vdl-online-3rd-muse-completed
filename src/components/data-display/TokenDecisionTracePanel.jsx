@@ -29,7 +29,13 @@ const LAYER_LABEL = {
  */
 export function TokenDecisionTracePanel({ decisionRationale, references = [], sx }) {
   if (!decisionRationale) return null;
-  const { whichReferences = [], whichLayers = [], whyChosen, alternativesConsidered = [] } = decisionRationale;
+  const {
+    whichReferences = [],
+    whichLayers = [],
+    whyChosen,
+    appliedUserNotes,
+    alternativesConsidered = [],
+  } = decisionRationale;
 
   const refsWithThumb = whichReferences
     .map((id) => references.find((r) => r.id === id))
@@ -103,6 +109,26 @@ export function TokenDecisionTracePanel({ decisionRationale, references = [], sx
           </Typography>
           <Typography variant="body2" sx={ { display: 'inline', fontSize: 13 } }>
             { whyChosen }
+          </Typography>
+        </Box>
+      ) }
+
+      { /* 사용자 노트 반영 (Step 3 userNotes 직접 영향 토큰만) */ }
+      { appliedUserNotes && (
+        <Box
+          sx={ {
+            p: 1,
+            borderRadius: 1,
+            bgcolor: 'primary.50',
+            borderLeft: '3px solid',
+            borderColor: 'primary.main',
+          } }
+        >
+          <Typography variant="caption" sx={ { fontWeight: 600, color: 'primary.main', mr: 1 } }>
+            ✋ 사용자 노트 반영
+          </Typography>
+          <Typography variant="body2" sx={ { display: 'inline', fontSize: 13, fontStyle: 'italic' } }>
+            "{ appliedUserNotes }"
           </Typography>
         </Box>
       ) }

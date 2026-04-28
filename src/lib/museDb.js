@@ -49,14 +49,18 @@ export function mapReferenceToDb(ref, userId) {
 }
 
 export function mapProjectFromDb(row) {
+  const projectRefs = Array.isArray(row.project_references) ? row.project_references : [];
   return {
     id: row.id,
     name: row.name,
     intent: row.intent || '',
-    type: row.type,
-    referenceIds: Array.isArray(row.project_references)
-      ? row.project_references.map((pr) => pr.reference_id)
-      : [],
+    mode: row.mode || 'system',
+    userNotes: row.user_notes || '',
+    referenceIds: projectRefs.map((pr) => pr.reference_id),
+    selectedRefs: projectRefs.map((pr) => ({
+      id: pr.reference_id,
+      useLayers: Array.isArray(pr.use_layers) ? pr.use_layers : [],
+    })),
     createdAt: row.created_at,
   };
 }
@@ -67,7 +71,8 @@ export function mapProjectToDb(project, userId) {
     user_id: userId,
     name: project.name,
     intent: project.intent || '',
-    type: project.type,
+    mode: project.mode || 'system',
+    user_notes: project.userNotes || '',
   };
 }
 

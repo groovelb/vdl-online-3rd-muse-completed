@@ -84,7 +84,7 @@ export const Docs = {
                 <Typography variant="caption" sx={ { fontFamily: 'monospace', color: 'text.secondary' } }>
                   { project.id }
                 </Typography>
-                <Chip size="small" label={ project.type } variant="outlined" />
+                <Chip size="small" label={ project.mode || 'system' } variant="outlined" />
                 <Chip size="small" label={ analysis.status } color="success" />
               </Box>
 

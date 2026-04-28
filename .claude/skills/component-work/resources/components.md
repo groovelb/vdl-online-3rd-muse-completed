@@ -64,6 +64,8 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - FileDropzone: 파일 드래그&드롭 영역 (`components/input/FileDropzone.jsx`)
 - SearchBar: 검색 입력 바 (`components/input/SearchBar.jsx`)
 - TagInput: 태그 입력 필드 (`components/input/TagInput.jsx`)
+- IntentGuideField: TP3 (Step 1) — 한 줄 의도 textarea (placeholder + helperText 가이드만, maxLength 120). 가이드 박스는 Step 3 RefinementNotesField 로 옮겨감 (`components/input/IntentGuideField.jsx`)
+- RefinementNotesField: Step 3 — 레퍼런스 본 후 활용 노트 textarea + 가이드 박스 + 선택된 ref 썸네일. 모드별 minLength 차등 (concept=0, system=30, handoff=50). T3 합성 HIGHEST PRIORITY 입력 (`components/input/RefinementNotesField.jsx`)
 - Button: MUI Button 컴포넌트 [MUI]
 - Checkbox: MUI Checkbox 컴포넌트 [MUI]
 - Select: MUI Select 컴포넌트 [MUI]
@@ -90,7 +92,6 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - AnalysisProgress: 레이어별 단계 상태(pending/running/done/error) + 전체 진행률 집계. 취소/재시도 액션 (`components/overlay-feedback/AnalysisProgress.jsx`)
 - ThemeExportDialog: MUI `createTheme` 코드 export 다이얼로그. 클립보드 복사 + 파일 다운로드, 필수 토큰 누락 경고. `utils/serializeTheme.js`와 페어 (`components/overlay-feedback/ThemeExportDialog.jsx`)
 - ReferenceDetailDialog: 아카이브 카드 클릭 시 레퍼런스 상세(원본 이미지 + 레이어별 전체 태그 + 대표 색상 + 출처/수집일) 모달. 활성 필터 태그/색상은 강조 표시 (`components/overlay-feedback/ReferenceDetailDialog.jsx`)
-- AnalysisConfirmBox: TP5 — 프로젝트 생성 Step 3 분석 직전 "이렇게 합성합니다" 확인 박스. 모드/의도/우선 레이어/예상 비용 표시 + [수정하기] / [분석 시작 →] (`components/overlay-feedback/AnalysisConfirmBox.jsx`)
 - Dialog: MUI Dialog 컴포넌트 [MUI]
 
 ## 10. Navigation (Global) — 페이지 간 이동

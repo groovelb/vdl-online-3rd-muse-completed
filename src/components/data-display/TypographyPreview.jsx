@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TokenListItem } from './TokenListItem.jsx';
+import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
 
 /**
  * 타이포 토큰을 문자열 summary로 포맷 (value 슬롯용)
@@ -38,36 +43,67 @@ const formatTypoValue = (token) => {
  *   onChange={ updateToken }
  * />
  */
-export function TypographyPreview({ tokens, onChange, defaultSample = 'Aa', sx }) {
+export function TypographyPreview({ tokens, onChange, defaultSample = 'Aa', references = [], sx }) {
+  const [expandedId, setExpandedId] = useState(null);
+
   return (
     <Box sx={ { width: '100%', bgcolor: 'background.paper', borderRadius: 3, py: 1, ...sx } }>
-      { tokens.map((token, i) => (
-        <Box key={ token.id }>
-          <TokenListItem
-            preview={
-              <Typography
-                sx={ {
-                  fontFamily: token.fontFamily,
-                  fontWeight: token.fontWeight,
-                  fontSize: 28,
-                  lineHeight: 1,
-                  letterSpacing: token.letterSpacing,
-                  color: 'text.primary',
-                } }
-              >
-                { token.sampleText || defaultSample }
-              </Typography>
-            }
-            label={ token.label }
-            value={ formatTypoValue(token) }
-            isEnabled={ token.isEnabled }
-            emphasis={ token.emphasis }
-            onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
-            onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
-          />
-          { i < tokens.length - 1 && <Divider sx={ { mx: 2 } } /> }
-        </Box>
-      )) }
+      { tokens.map((token, i) => {
+        const hasRationale = !!token.decisionRationale;
+        const isExpanded = expandedId === token.id;
+        return (
+          <Box key={ token.id }>
+            <Box sx={ { position: 'relative' } }>
+              <TokenListItem
+                preview={
+                  <Typography
+                    sx={ {
+                      fontFamily: token.fontFamily,
+                      fontWeight: token.fontWeight,
+                      fontSize: 28,
+                      lineHeight: 1,
+                      letterSpacing: token.letterSpacing,
+                      color: 'text.primary',
+                    } }
+                  >
+                    { token.sampleText || defaultSample }
+                  </Typography>
+                }
+                label={ token.label }
+                value={ formatTypoValue(token) }
+                isEnabled={ token.isEnabled }
+                emphasis={ token.emphasis }
+                onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
+                onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
+              />
+              { hasRationale && (
+                <IconButton
+                  size="small"
+                  aria-label={ isExpanded ? '결정 근거 닫기' : '결정 근거 보기' }
+                  onClick={ () => setExpandedId(isExpanded ? null : token.id) }
+                  sx={ {
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform 150ms',
+                  } }
+                >
+                  <ExpandMoreIcon fontSize="small" />
+                </IconButton>
+              ) }
+            </Box>
+            <Collapse in={ isExpanded }>
+              <TokenDecisionTracePanel
+                decisionRationale={ token.decisionRationale }
+                references={ references }
+                sx={ { mx: 2, mb: 1 } }
+              />
+            </Collapse>
+            { i < tokens.length - 1 && <Divider sx={ { mx: 2 } } /> }
+          </Box>
+        );
+      }) }
     </Box>
   );
 }

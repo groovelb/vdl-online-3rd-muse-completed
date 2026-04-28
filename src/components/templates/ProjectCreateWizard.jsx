@@ -6,24 +6,17 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
 import { ReferencePicker } from './ReferencePicker.jsx';
 import { AnalysisProgress } from '../overlay-feedback/AnalysisProgress.jsx';
 import { ModeSelectCard } from '../card/ModeSelectCard.jsx';
-import { IntentSeedField } from '../input/IntentSeedField.jsx';
-import { AnalysisConfirmBox } from '../overlay-feedback/AnalysisConfirmBox.jsx';
+import { IntentGuideField } from '../input/IntentGuideField.jsx';
+import { RefinementNotesField } from '../input/RefinementNotesField.jsx';
 
-const STEPS = ['모드', '기본 정보', '레퍼런스', '확인', '분석'];
+const STEPS = ['모드', '제목+의도', '레퍼런스', '활용 노트', '분석'];
 
-const PROJECT_TYPES = [
-  { value: 'landing', label: '랜딩 페이지' },
-  { value: 'dashboard', label: '대시보드' },
-  { value: 'mobile', label: '모바일' },
-  { value: 'brand', label: '브랜드' },
-];
+/** Step 3 모드별 최소 글자수 — concept=0(스킵 가능), system=30, handoff=50 */
+const STEP3_MIN_LENGTH = { concept: 0, system: 30, handoff: 50 };
 
 const MUSE_LAYERS = [
   { key: 'color', label: '컬러' },
@@ -39,11 +32,9 @@ const MODE_DEFS = [
   { mode: 'handoff', title: '🎯 코드 직행', subtitle: 'MUI/Tailwind로 바로', description: '완전성·표준 우선 — naming MUI/DTCG 호환' },
 ];
 
-const COST_BY_MODE = { concept: '~$0.008', system: '~$0.012', handoff: '~$0.014' };
-
 const initialState = {
   step: 0,
-  form: { name: '', intent: '', type: 'landing', mode: 'system' },
+  form: { name: '', intent: '', mode: 'system', userNotes: '' },
   selectedIds: [],
   selectedRefs: [], // TP4: [{ id, useLayers }]
   tagFilter: [],
@@ -65,6 +56,8 @@ function reducer(state, action) {
       return { ...state, form: { ...state.form, mode: action.payload } };
     case 'SET_INTENT':
       return { ...state, form: { ...state.form, intent: action.payload } };
+    case 'SET_USER_NOTES':
+      return { ...state, form: { ...state.form, userNotes: action.payload } };
     case 'SET_SELECTED':
       return { ...state, selectedIds: action.payload };
     case 'SET_SELECTED_REFS':
@@ -171,6 +164,7 @@ export function ProjectCreateWizard({
   const isStep0Valid = !!state.form.mode;
   const isStep1Valid = state.form.name.trim().length > 0 && state.form.intent.trim().length > 0;
   const isStep2Valid = state.selectedIds.length > 0;
+  const isStep3Valid = (state.form.userNotes?.trim().length || 0) >= (STEP3_MIN_LENGTH[state.form.mode] ?? 30);
 
   const handleStartAnalysis = async () => {
     dispatch({ type: 'GOTO', payload: 4 });
@@ -183,10 +177,11 @@ export function ProjectCreateWizard({
     });
 
     const payload = {
-      form: state.form,
+      form: state.form,                  // userNotes 포함
       selectedIds: state.selectedIds,
       selectedRefs: enrichedSelectedRefs,
       mode: state.form.mode,
+      userNotes: state.form.userNotes,
     };
 
     let analysisResult = null;
@@ -264,28 +259,12 @@ export function ProjectCreateWizard({
             label="프로젝트 이름"
             fullWidth
           />
-          <IntentSeedField
+          <IntentGuideField
             value={ state.form.intent }
             onChange={ (next) => dispatch({ type: 'SET_INTENT', payload: next }) }
             label="한 줄 의도"
-            placeholder="예: 미니멀한 흑백 대비, 라지 타이포 중심의 매거진 톤"
+            placeholder="예: 차분한 다크 무드의 핀테크 대시보드, 데이터 가독성 우선"
           />
-          <FormControl fullWidth>
-            <Select
-              displayEmpty
-              value={ state.form.type }
-              onChange={ (e) => dispatch({ type: 'UPDATE_FORM', payload: { type: e.target.value } }) }
-              renderValue={ (v) => {
-                if (!v) return <Box component="span" sx={ { color: 'text.secondary' } }>프로젝트 유형 선택</Box>;
-                const t = PROJECT_TYPES.find((x) => x.value === v);
-                return t ? t.label : v;
-              } }
-            >
-              { PROJECT_TYPES.map((t) => (
-                <MenuItem key={ t.value } value={ t.value }>{ t.label }</MenuItem>
-              )) }
-            </Select>
-          </FormControl>
         </Box>
       );
     }
@@ -319,21 +298,19 @@ export function ProjectCreateWizard({
       );
     }
 
-    // Step 3 — TP5 분석 직전 확인
+    // Step 3 — 활용 노트 (레퍼런스 본 후 명시 지시)
     if (state.step === 3) {
-      const enriched = state.selectedIds.map((id) => {
-        const existing = state.selectedRefs.find((r) => r.id === id);
-        return existing || { id, useLayers: [] };
-      });
+      const selectedFullRefs = state.selectedIds
+        .map((id) => archive.find((a) => a.id === id))
+        .filter(Boolean)
+        .map((a) => ({ id: a.id, thumbnailUrl: a.src || a.thumbnailUrl, title: a.title }));
       return (
         <Box sx={ { maxWidth: 720, mx: 'auto', width: '100%' } }>
-          <AnalysisConfirmBox
+          <RefinementNotesField
+            value={ state.form.userNotes }
+            onChange={ (next) => dispatch({ type: 'SET_USER_NOTES', payload: next }) }
+            selectedRefs={ selectedFullRefs }
             mode={ state.form.mode }
-            intent={ state.form.intent }
-            selectedRefs={ enriched }
-            estimatedCost={ COST_BY_MODE[state.form.mode] }
-            onConfirm={ handleStartAnalysis }
-            onEdit={ () => dispatch({ type: 'GOTO', payload: 1 }) }
           />
         </Box>
       );
@@ -415,7 +392,18 @@ export function ProjectCreateWizard({
             onClick={ () => dispatch({ type: 'NEXT' }) }
             disabled={ !isStep2Valid }
           >
-            확인 화면으로 · { state.selectedIds.length }장
+            다음 · { state.selectedIds.length }장
+          </Button>
+        ) }
+
+        { state.step === 3 && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={ handleStartAnalysis }
+            disabled={ !isStep3Valid }
+          >
+            분석 시작 →
           </Button>
         ) }
 

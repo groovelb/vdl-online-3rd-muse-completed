@@ -13,7 +13,6 @@ export const projects = [
     id: 'proj-001',
     name: 'Editorial Minimal',
     intent: '흑백 대비 · 라지 타이포 · 넉넉한 여백의 매거진 톤',
-    type: 'landing',
     mode: 'system',
     selectedRefs: [
       { id: 'ref-001', useLayers: ['color', 'typography'] },
@@ -27,7 +26,6 @@ export const projects = [
     id: 'proj-002',
     name: 'Fintech Dashboard',
     intent: '데이터 밀도 높은 대시보드, 차분한 블루 기조',
-    type: 'dashboard',
     mode: 'handoff',
     selectedRefs: [
       { id: 'ref-007', useLayers: ['color'] },
@@ -41,7 +39,6 @@ export const projects = [
     id: 'proj-003',
     name: 'Lifestyle App',
     intent: '따뜻한 톤 모바일 앱, 일상적인 질감',
-    type: 'mobile',
     mode: 'concept',
     selectedRefs: [
       { id: 'ref-012', useLayers: [] },
@@ -55,7 +52,6 @@ export const projects = [
     id: 'proj-004',
     name: 'Studio Brand',
     intent: '브랜딩 · 대담한 컬러 · 한정된 타이포',
-    type: 'brand',
     mode: 'system',
     selectedRefs: [
       { id: 'ref-017', useLayers: ['color', 'gradient'] },

@@ -2,17 +2,9 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import AddIcon from '@mui/icons-material/Add';
 import { PageContainer } from '../layout/PageContainer.jsx';
 import { MoodboardCard } from '../card/MoodboardCard.jsx';
-
-const TYPE_LABEL = {
-  landing: '랜딩',
-  dashboard: '대시보드',
-  mobile: '모바일',
-  brand: '브랜드',
-};
 
 /**
  * ProjectListPage 템플릿
@@ -21,7 +13,7 @@ const TYPE_LABEL = {
  * 각 프로젝트의 레퍼런스 미리보기 + 이름 + 유형을 표시.
  *
  * Props:
- * @param {array} projects - 프로젝트 목록 [{ id, name, intent?, type, thumbnails[], createdAt? }] [Required]
+ * @param {array} projects - 프로젝트 목록 [{ id, name, intent?, thumbnails[], createdAt? }] [Required]
  * @param {function} onSelectProject - 프로젝트 클릭 (id) => void [Optional]
  * @param {function} onNewProject - 새 프로젝트 버튼 클릭 [Optional]
  * @param {function} onEditProject - 편집 (id) => void [Optional]
@@ -94,20 +86,6 @@ export function ProjectListPage({
                   onEdit={onEditProject ? () => onEditProject(project.id) : undefined}
                   onDelete={onDeleteProject ? () => onDeleteProject(project.id) : undefined}
                 />
-                {project.type && (
-                  <Chip
-                    label={TYPE_LABEL[project.type] || project.type}
-                    size="small"
-                    color="primary"
-                    variant="filled"
-                    sx={{
-                      position: 'absolute',
-                      top: 12,
-                      left: 12,
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
               </Box>
             </Grid>
           ))}

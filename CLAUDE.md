@@ -21,17 +21,20 @@
 
 ## Current Status (2026-04-28)
 
-### ✅ 작동 중
-- **TP2 모드 선택** — ProjectCreateWizard Step 0
-- **TP3 의도 시드** — Step 1 IntentSeedField
-- **TP4 레이어 chip** — ReferencePicker 카드별 ReferenceLayerChipRow → T3 useLayers strict 전달
-- **TP5 분석 직전 확인 박스** — Step 3 AnalysisConfirmBox
-- **TP6 결정 추적 (컬러만)** — ColorSwatchList 펼침 → TokenDecisionTracePanel
+### ✅ 작동 중 — 5-step Progressive Narrowing 흐름
+- **Step 0 TP2 모드 선택** — concept / system / handoff 카드, 모든 후속 분기 기준
+- **Step 1 TP3 제목+한줄의도** — IntentGuideField (가이드 박스 제거, placeholder만)
+- **Step 2 TP4 레퍼런스+layer chip** — ReferencePicker + ReferenceLayerChipRow → T3 useLayers strict
+- **Step 3 활용 노트 (NEW)** — RefinementNotesField. 모드별 minLength 차등 (concept=0 / system=30 / handoff=50). T3 합성 HIGHEST PRIORITY 입력
+- **Step 4 분석** — T3 호출, AnalysisProgress
+- **TP6 결정 추적** — ColorSwatchList / TypographyPreview / LayoutTokenPreview / GradientPreview 4개 모두 ❓ 펼침 → TokenDecisionTracePanel (출처 + 의도 매칭 + ✋ appliedUserNotes 인용 + 탈락 후보)
 
-### ❌ 폐기 결정 (2026-04-28)
-- **TP1 userIntent (업로드 시 chip)**: 폐기. T1 시스템 프롬프트는 이미지를 정보 원천으로 함. 사용자 chip 답이 태깅 정확도를 의미 있게 향상시키지 않음을 검증·인정. TP4(레이어 chip)와 다운스트림 가치 중복. 화면 변화 없는 chip은 사용자 신뢰 손상. → 관련 코드·UI·문서 모두 제거.
+### ❌ 폐기됨 (2026-04-28)
+- **TP1 userIntent (업로드 시 chip)**: T1 은 이미지가 정보 원천이라 사용자 chip 답이 정확도 향상에 기여 안 함. TP4 와 다운스트림 가치 중복. 화면 변화 없는 chip 은 신뢰 손상.
+- **TP5 AnalysisConfirmBox**: Step 3 하단 "분석 시작 →" 버튼이 곧 confirm 으로 흡수. 별도 step 불필요.
 
 ### ⚠️ 미완료
-- **TP6 펼침 UI가 ColorSwatchList에만 적용**: TypographyPreview / LayoutTokenPreview / GradientPreview 3개는 `TokenDecisionTracePanel` 통합 필요.
-- **AITasks.stories.jsx 신규 변수 노출**: T1/T2/T3 IO 섹션에 mode / useLayers / decisionRationale 표시 안 됨.
-- **TP2/TP4 실제 결과 차이 검증 안 됨**: 모드별 / useLayers 별로 정말 다른 결과가 나오는지 실제 호출로 검증 안 함. LLM 자율 분기에 의존.
+- **ThemeExportDialog 모드별 default + 4가지 산출물**: DTCG / DESIGN.md / decision-trace.md 신규 생성기 필요. 현재 MUI theme 만 export.
+- **WizardContextBar (단계 컨텍스트 누적 카드)**: 각 step 상단 이전 결정 표시. 현재 미구현.
+- **AITasks.stories.jsx T3 IO 섹션 업데이트**: userNotes 입력 + appliedUserNotes 출력 표시.
+- **TP2/TP4/Step 3 실제 결과 차이 검증 안 됨**: AI Playground 에서 mode 3종 / userNotes 3 케이스 호출 비교 검증 필요. LLM 자율 분기에 의존.

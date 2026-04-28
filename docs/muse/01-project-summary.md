@@ -35,18 +35,17 @@
 |---|------|------|---------|---------|
 | 1 | 레퍼런스 아카이빙 | 드래그앤드롭/링크로 이미지 저장, 인피니트 그리드 뷰 | — | 필수 (구현 완료) |
 | 2 | 레퍼런스 자동 태깅 (T1) | 업로드 시 5 레이어 태그 + dominantColors + extracted 토큰 추출 | — | 필수 (구현 완료) |
-| ~~3~~ | ~~레퍼런스 의도 chip (TP1)~~ | **폐기 (2026-04-28)** — T1은 이미지가 정보 원천. 사용자 chip이 태깅 정확도를 의미 있게 향상시키지 않음. TP4와 다운스트림 가치 중복. | — | 폐기 |
-| 4 | **프로젝트 모드 선택** (TP2) | 첫 화면에 카드 3개 (컨셉 / 시스템 / 코드직행) — 모든 후속 단계의 분기 기준 | T2, T3 | **필수 신규** |
-| 5 | **의도 시드 단어 + 예시** (TP3) | Step 1 textarea에 시드 칩과 예시 토글 (빈칸 공포 회피) | T2 | **필수 신규** |
-| 6 | 레퍼런스 자동 추천 (T2) | 의도 + 모드 기반 Top-N 추천 (Haiku, text-only) | — | 필수 (구현 완료, 모드 분기 추가 필요) |
-| 7 | **레퍼런스 layer chip** (TP4) | 추천 카드별 "이 레퍼런스의 어느 레이어를 가져올지" chip 토글 | T2, T4 | **필수 신규 — 시장 갭 직격** |
-| 8 | **분석 직전 확인 박스** (TP5) | "이 모드 + 이 의도 + 이 레이어 가중치 + 예상 비용"으로 합성합니다 | T3 | **필수 신규** |
-| 9 | 자동 토큰 분석 (T3) | 선택 레퍼런스의 extracted를 의도와 합성 → 4 레이어 토큰 + visualDirection.md | — | 필수 (구현 완료, decisionRationale 출력 추가 필요) |
-| 10 | 토큰 확인 및 조정 | 레이어별 결과 확인, 불필요 요소 제거, 중요 요소 강조 | — | 필수 (구현 완료) |
-| 11 | **토큰 결정 추적 (decision trace)** (TP6) | 토큰 카드에 출처 레퍼런스 + 의도 매칭 이유 + 탈락 후보 펼침 | T1 | **필수 신규 — MUSE 시그니처** |
-| 12 | 토큰 내보내기 | MUI theme + ZIP (이미지 + JSON + visual-direction.md) | — | 필수 (구현 완료) |
-| 13 | **decision-trace.md export** | 모든 토큰의 결정 로그를 ZIP에 동봉 | T1 | 권장 |
-| 14 | **DTCG / DESIGN.md 동시 출력** | W3C 표준 + Stitch 호환 마크다운 | T3 | 권장 (시장 호환) |
+| ~~3~~ | ~~레퍼런스 의도 chip (TP1)~~ | **폐기 (2026-04-28)** — 검증 결과 효과 없음 | — | 폐기 |
+| 4 | **프로젝트 모드 선택** (TP2 / Wizard Step 0) | 카드 3개 (concept/system/handoff) — 모든 후속 분기 기준 | T2/T3 | 구현 완료 |
+| 5 | **제목 + 한 줄 의도** (TP3 / Wizard Step 1) | IntentGuideField. placeholder + helperText 가이드 (가이드 박스는 Step 3로 이전) | T2 키워드 매칭 | 구현 완료 |
+| 6 | 레퍼런스 자동 추천 (T2 / Wizard Step 2) | 의도 + 모드 기반 Top-N 추천 + referenceLayer per ref | — | 구현 완료 |
+| 7 | **레퍼런스 layer chip** (TP4 / Wizard Step 2) | 추천 카드별 layer chip 토글 (자동/수동) | T3 useLayers strict | 구현 완료 |
+| 8 | **활용 노트** (Step 3 NEW / Wizard Step 3) | RefinementNotesField — 레퍼런스 본 후 명시 지시. 모드별 minLength 차등 (concept=0/system=30/handoff=50). T3 HIGHEST PRIORITY 입력 | T3 합성 | **필수 신규** 구현 완료 |
+| ~~9~~ | ~~분석 직전 확인 박스 (TP5)~~ | **폐기 (2026-04-28)** — Step 3 하단 [분석 시작 →] 버튼이 흡수 | — | 폐기 |
+| 10 | 자동 토큰 분석 (T3 / Wizard Step 4) | 선택 ref + intent + mode + useLayers + **userNotes** → 4 레이어 토큰 + visualDirection.md + decisionRationale (per token) | — | 구현 완료 |
+| 11 | **토큰 결정 추적** (TP6) | 4 layer (color/typo/layout/gradient) 토큰 카드 ❓ 펼침 → 출처 + 의도 매칭 + ✋ appliedUserNotes 인용 + 탈락 후보 | T1 결정 추적 | 구현 완료 |
+| 12 | 토큰 내보내기 (MUI theme + ZIP) | MUI createTheme JSON + 이미지 + visual-direction.md | — | 구현 완료 |
+| 13 | **DTCG / DESIGN.md / decision-trace.md 동시 출력** | W3C DTCG + Stitch 호환 + 결정 로그. 모드별 default 다름 | T3 산출물 | **미구현 (다음 단계)** |
 
 ## 대상 사용자 (페르소나 4명 — `02-painpoints-qualitative-analysis.md` §6 매핑)
 

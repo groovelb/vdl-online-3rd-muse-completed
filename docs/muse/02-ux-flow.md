@@ -18,32 +18,33 @@
 - **성공 조건**: 업로드 후 2초 이내 썸네일 노출, 태그는 비동기로 채워짐
 - **예외 상황**: 링크 로드 실패 → 재시도 버튼, AI 태깅 실패 → 카드에 "다시 시도" 버튼
 
-### 시나리오 2: 프로젝트 생성 — 모드 + 의도 + 레이어 큐레이션 (TP2~TP5)
+### 시나리오 2: 프로젝트 생성 — Progressive Narrowing 5-step (TP2~TP4 + Step 3)
 
-- **사용자**: 디자이너 / PM / 엔지니어 (페르소나별 다른 진입)
-- **목표**: 사용자가 자기 도구 사용 목적을 명시하고 (모드), 의도를 구체화하고 (시드), 레퍼런스의 어느 레이어를 가져올지 결정한다 (layer chip). **"AI가 알아서"가 아닌 "내가 결정했다"는 인식**.
+- **사용자**: 디자이너 / PM / 엔지니어
+- **목표**: 사용자가 모드 → 한 줄 의도 → 레퍼런스 → 활용 노트 4단계로 의도를 좁혀가며 결정. **"AI가 알아서"가 아닌 "내가 단계마다 결정했다"는 인식**.
 - **플로우**:
   1. **Step 0 (TP2): 모드 선택 카드 3개**
-     - 🎨 컨셉 잡기 (P1 진입 / 다양성 우선)
-     - 🏗️ 디자인 시스템 만들기 (P2·P3 진입 / 일관성 우선, default)
-     - 🎯 코드 직행 (P3·P4 진입 / 표준 우선)
-     - → `project.mode` 변수 저장 → T2/T3 system prompt 분기 트리거
-  2. **Step 1 (TP3): 의도 입력 + 시드 + 예시**
-     - textarea + 시드 칩 [차분] [활기] [세련] [복고] [미니멀] + "예시 보기" 토글
-     - 시드 클릭 시 textarea에 prepend → 빈칸 공포 회피
+     - 🎨 컨셉 잡기 / 🏗️ 디자인 시스템 (default) / 🎯 코드 직행
+     - → `project.mode` 저장 → T2/T3 system prompt 분기 + Step 3 minLength 차등
+  2. **Step 1 (TP3): 제목 + 한 줄 의도**
+     - 제목 TextField + IntentGuideField (placeholder + helperText 가이드만, maxLength 120)
+     - 가이드: "무드 / 사용자 맥락 / 시각 방향 / 제약을 한 줄에"
   3. **Step 2 (TP4): 추천 + 레이어 chip**
      - T2 추천 N장 (mode 분기로 다양성 ↔ 일관성 ↔ 완전성)
-     - 각 카드에 chip: 🎨 색  📝 타이포  📐 레이아웃 (자동: T2 referenceLayer / 수동: 사용자 토글)
+     - 카드별 chip: 🎨 색  📝 타이포  📐 레이아웃 (자동: T2 referenceLayer / 수동: 사용자 토글)
      - → `selectedRefs[].useLayers` 저장
-  4. **Step 3 (TP5): 분석 직전 확인 박스**
-     - "이렇게 합성합니다: 모드 / 의도 / 우선 레이어 / 예상 비용" 한 번 표시
-     - [수정하기] / [분석 시작 →]
-     - → T3 호출 (mode + selectedRefs + useLayers + decisionRationale 출력 강제)
+  4. **Step 3 (NEW, 활용 노트 — RefinementNotesField)**
+     - 레퍼런스 본 후 활용 지점 명시 textarea + 선택된 ref 썸네일 + 가이드 박스
+     - 모드별 minLength: **concept=0(스킵) / system=30 / handoff=50**
+     - 좋은 예: "ref-002 색을 primary로, ref-005 grid 강조, 타이포는 가볍게"
+     - → `project.userNotes` 저장 → T3 합성 **HIGHEST PRIORITY** 입력
+     - [분석 시작 →] 버튼이 곧 confirm (TP5 흡수, 별도 step 없음)
+  5. **Step 4: 분석 진행** (AnalysisProgress) → 완료 시 프로젝트 상세
+- **T3 입력 우선순위 (Progressive Narrowing)**: userNotes (L4) > useLayers (L3) > intent (L2) > mode (L1)
 - **성공 조건**:
-  - 모드 카드 클릭 후 분석 완료까지 3분 이내
-  - Step 2 layer chip 수동 변경률 >30% (사용자 결정 행동 측정)
-  - "수정하기" 클릭 후 재분석 비율 ↓ (확인 박스로 후회 회피)
-- **예외 상황**: 0장 선택 시 분석 비활성, 분석 중 이탈 시 백그라운드 진행, 모드 미선택 시 default = 시스템 만들기
+  - concept 모드: 비디자이너 P1 도 5분 안에 완료 (Step 3 스킵 가능)
+  - system/handoff 모드: 사용자가 명시 지시한 토큰이 결과에 직접 반영 (TP6 펼침에 ✋ appliedUserNotes 인용)
+- **예외 상황**: 0장 선택 시 비활성, 분석 중 이탈 시 백그라운드 진행
 
 ### 시나리오 3: 토큰 확인 및 조정 + 결정 추적 펼침 (TP6)
 
@@ -98,14 +99,14 @@ flowchart TD
     AutoTag --> Archive
 
     Archive -->|새 프로젝트| TP2["TP2: 모드 선택 카드<br/>🎨 컨셉 / 🏗️ 시스템 / 🎯 코드직행"]
-    TP2 --> TP3["TP3: 의도 입력<br/>+ 시드 단어 + 예시"]
-    TP3 -->|projectMode| Recommend["T2 · 레퍼런스 추천<br/>(Haiku text-only)<br/>+ referenceLayer per ref"]
+    TP2 --> TP3["TP3: 제목 + 한 줄 의도<br/>(IntentGuideField, maxLength 120)"]
+    TP3 -->|projectMode + intent| Recommend["T2 · 레퍼런스 추천<br/>(Haiku text-only)<br/>+ referenceLayer per ref"]
     Recommend --> TP4["TP4: 카드 layer chip<br/>🎨 색  📝 타이포  📐 레이아웃<br/>(자동 / 수동 토글)"]
-    TP4 -->|selectedRefs.useLayers| TP5["TP5: 분석 직전 확인<br/>모드 + 의도 + 레이어 + 비용"]
-    TP5 -->|분석 시작| Analyze["T3 · 토큰 합성<br/>(Haiku text-only)<br/>+ decisionRationale per token"]
+    TP4 -->|selectedRefs.useLayers| Step3["Step 3 (NEW): 활용 노트<br/>RefinementNotesField<br/>모드별 minLength 차등"]
+    Step3 -->|분석 시작 →<br/>userNotes (L4 우선)| Analyze["T3 · 토큰 합성<br/>(Haiku text-only)<br/>L4>L3>L2>L1<br/>+ decisionRationale + appliedUserNotes"]
     Analyze --> Detail[프로젝트 상세 - 레이어 탭]
 
-    Detail --> TP6["TP6: 토큰 카드 출처 펼침<br/>출처 + 이유 + 탈락 후보"]
+    Detail --> TP6["TP6: 토큰 카드 출처 펼침<br/>출처 + 이유 + ✋ 사용자 노트 + 탈락 후보<br/>(4 layer 모두 적용)"]
     TP6 -->|레이어 탭 전환| Edit[토큰 on/off + emphasis]
     Edit -->|프리뷰 갱신| Detail
 
@@ -113,10 +114,10 @@ flowchart TD
     ExportDlg -->|모드별 default 출력| Done([완료])
 
     classDef tp fill:#fef3c7,stroke:#f59e0b,stroke-width:2px;
-    class TP2,TP3,TP4,TP5,TP6 tp;
+    class TP2,TP3,TP4,Step3,TP6 tp;
 ```
 
-> 노란 박스(TP2~TP6) = 04 로드맵의 사용자 의도 입력 지점. 큰 화면 신규 X, 기존 흐름 안에 끼워 넣은 작은 질문들. ~~TP1~~ 폐기.
+> 노란 박스 = 사용자 의도 입력 지점. ~~TP1~~ ~~TP5~~ 폐기. **Step 3 활용 노트 신규** (T3 HIGHEST PRIORITY 입력).
 
 ---
 
@@ -160,8 +161,8 @@ MUSE
 | 엔티티 | 주요 필드 | 관계 |
 |--------|----------|------|
 | `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags` (ReferenceLayeredTags), `dominantColors[]`, `extracted` (palette/typo/layout/gradient), `title?`, `createdAt` | N:M Project |
-| `Project` | `id`, `name`, `intent`, `type` (landing/dashboard/mobile/brand), **`mode` ('concept'\|'system'\|'handoff') — TP2**, **`selectedRefs[]` ({ id, useLayers[] }) — TP4**, `referenceIds[]`, `createdAt` | N:M Reference |
-| `AnalysisResult` | `id`, `projectId`, `layers` (AnalysisLayers + **`decisionRationale` per token — TP6**), `status`, `updatedAt` | 1:1 Project |
+| `Project` | `id`, `name`, `intent`, `type`, **`mode` — TP2**, **`selectedRefs[]` ({ id, useLayers[] }) — TP4**, **`userNotes` — Step 3 NEW (T3 HIGHEST PRIORITY)**, `referenceIds[]`, `createdAt` | N:M Reference |
+| `AnalysisResult` | `id`, `projectId`, `layers` (AnalysisLayers + **`decisionRationale` per token + `appliedUserNotes?` 인용 — TP6**), `status`, `updatedAt` | 1:1 Project |
 | `UserSettings` | `aiModel`, `storageMode`, `themeMode`, `isAutoTagEnabled` | singleton |
 
 ### `ReferenceLayeredTags` (Reference.tags)
@@ -212,7 +213,7 @@ MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 
 |----|--------|-------------|------|------|---------|
 | **T1** | 자동 태깅 + 토큰 추출 | `archive.upload` | 이미지 1장 (TP1 폐기, 사용자 의도 입력 없음) | `{ tags, dominantColors, title, extracted }` | Haiku 4.5 vision |
 | **T2** | 레퍼런스 추천 | `project.create.step2` | 의도 문장 + 아카이브 메타 + ★`projectMode` (TP2) | `{ recommendedIds, reasons, ★referenceLayer per id }` | Haiku 4.5 text-only |
-| **T3** | 토큰 합성 + VD | `project.create.step3` | 선택 레퍼런스 메타 + 의도 + ★`projectMode` (TP2) + ★`selectedRefs[].useLayers` (TP4) | 2 tool: `submit_tokens` + `submit_visual_direction` (+ ★`decisionRationale` per token: whichRefs / whyChosen / alternativesConsidered) | Haiku 4.5 text-only |
+| **T3** | 토큰 합성 + VD | `project.create.step4` | 선택 레퍼런스 메타 + intent + ★`mode` + ★`useLayers` + **★`userNotes` (Step 3, HIGHEST PRIORITY)** | 2 tool: `submit_tokens` + `submit_visual_direction` (+ ★`decisionRationale` per token: whichRefs / whyChosen / **★`appliedUserNotes?` 인용** / alternativesConsidered) | Haiku 4.5 text-only |
 
 → AI 호출 비용 변화 거의 없음 (system prompt token +200~300, cache hit). 출력 디테일 ↑.
 

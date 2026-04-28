@@ -1,6 +1,11 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TokenListItem } from './TokenListItem.jsx';
+import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
 
 /** 그리드 mini-diagram — 컬럼 수 시각화 */
 const GridDiagram = ({ columns = 4 }) => (
@@ -110,22 +115,51 @@ const formatLayoutValue = (token) => {
  *   onChange={ updateToken }
  * />
  */
-export function LayoutTokenPreview({ tokens, onChange, sx }) {
+export function LayoutTokenPreview({ tokens, onChange, references = [], sx }) {
+  const [expandedId, setExpandedId] = useState(null);
+
   return (
     <Box sx={ { width: '100%', bgcolor: 'background.paper', borderRadius: 3, py: 1, ...sx } }>
       { tokens.map((token, i) => {
         const Diagram = DIAGRAM_BY_KIND[token.kind] || (() => null);
+        const hasRationale = !!token.decisionRationale;
+        const isExpanded = expandedId === token.id;
         return (
           <Box key={ token.id }>
-            <TokenListItem
-              preview={ <Diagram { ...token } /> }
-              label={ token.label }
-              value={ formatLayoutValue(token) }
-              isEnabled={ token.isEnabled }
-              emphasis={ token.emphasis }
-              onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
-              onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
-            />
+            <Box sx={ { position: 'relative' } }>
+              <TokenListItem
+                preview={ <Diagram { ...token } /> }
+                label={ token.label }
+                value={ formatLayoutValue(token) }
+                isEnabled={ token.isEnabled }
+                emphasis={ token.emphasis }
+                onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
+                onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
+              />
+              { hasRationale && (
+                <IconButton
+                  size="small"
+                  aria-label={ isExpanded ? '결정 근거 닫기' : '결정 근거 보기' }
+                  onClick={ () => setExpandedId(isExpanded ? null : token.id) }
+                  sx={ {
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform 150ms',
+                  } }
+                >
+                  <ExpandMoreIcon fontSize="small" />
+                </IconButton>
+              ) }
+            </Box>
+            <Collapse in={ isExpanded }>
+              <TokenDecisionTracePanel
+                decisionRationale={ token.decisionRationale }
+                references={ references }
+                sx={ { mx: 2, mb: 1 } }
+              />
+            </Collapse>
             { i < tokens.length - 1 && <Divider sx={ { mx: 2 } } /> }
           </Box>
         );

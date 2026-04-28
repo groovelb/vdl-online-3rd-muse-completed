@@ -15,8 +15,9 @@ import {
 } from './tag/index.js';
 
 const TOOL_AUTO_TAG_NAME = 'submit_tagging';
-const TOOL_SUBMIT_TOKENS = 'submit_tokens';
-const TOOL_SUBMIT_VD = 'submit_visual_direction';
+const TOOL_SUBMIT_DESIGN_SYSTEM = 'submit_design_system';
+const TOOL_SUBMIT_CONCEPT_PROMPT = 'submit_concept_prompt';
+const TOOL_SUBMIT_HANDOFF_BUNDLE = 'submit_handoff_bundle';
 
 const COMMON_QUALITY = [
   { id: 'schema', label: '스키마 준수', type: 'auto', description: '필수 필드 존재 + 타입 적합' },
@@ -284,7 +285,6 @@ export const TASK_RECOMMEND = {
     description: '의도 + 모드 + 아카이브 메타 (이미지 없음, 레이어별 태그 포함)',
     shape: `{
   intent: string,
-  type: 'landing'|'dashboard'|'mobile'|'brand',
   mode: 'concept'|'system'|'handoff',  // TP2: 정렬 알고리즘 분기
   archive: Array<{ id, tags: ReferenceLayeredTags, dominantColors[], title }>,
   n?: number
@@ -302,7 +302,7 @@ export const TASK_RECOMMEND = {
 
   systemPrompt: `You are MUSE's reference matcher.
 
-You receive a project intent sentence, a project type, a mode, and the archive metadata
+You receive a project intent sentence, a mode, and the archive metadata
 (IDs, layered tags, dominantColors, titles). You DO NOT see images.
 
 Select the top N references (5 to 10) that best match the intent.
@@ -317,8 +317,7 @@ Select the top N references (5 to 10) that best match the intent.
 - Prioritize in order (within mode):
   (1) visualDirection tags overlap with intent,
   (2) color/typography/layout/gradient tag overlap,
-  (3) dominantColors palette alignment with intent mood,
-  (4) project type fit.
+  (3) dominantColors palette alignment with intent mood.
 - For each recommended id, a ONE-SENTENCE Korean reason (max 40 characters).
 - Rank best-first.
 
@@ -330,7 +329,6 @@ The user will see these as default chip selection in Step 2 and may toggle.
 - Respond via submit_recommendations tool. No prose.`,
 
   userMessageTemplate: `Project intent: "{{intent}}"
-Project type: {{type}}
 Project mode: {{mode}}
 Requested count: {{n}}
 Archive ({{archiveCount}} items):
@@ -421,15 +419,15 @@ export const TASK_ANALYZE_TOKENS = {
 
   input: {
     kind: 'text',
-    description: '선택된 N 장의 T1 pre-extracted 데이터 + 의도 + 유형 + 모드 + 레이어 큐레이션',
+    description: '선택된 N 장의 T1 pre-extracted 데이터 + 의도 + 모드 + 레이어 큐레이션 + 활용 노트',
     shape: `{
   intent: string,
-  type: 'landing'|'dashboard'|'mobile'|'brand',
   mode: 'concept'|'system'|'handoff',  // TP2: 합성 톤 분기
   references: Array<{
     id, title, tags, dominantColors[], extracted,
-    useLayers?: TokenLayerKey[]  // TP4: 사용자가 이 ref에서 가져올 레이어. 빈 배열이면 전체
-  }>
+    useLayers?: TokenLayerKey[]  // TP4: 사용자가 이 ref에서 가져올 레이어
+  }>,
+  userNotes?: string  // Step 3: 레퍼런스 본 후 명시 지시 (HIGHEST PRIORITY)
 }`,
   },
 
@@ -483,19 +481,43 @@ Other layers from the same ref are user-rejected — IGNORE them even if extract
 This is the user's explicit curation. Respect it strictly.
 If useLayers is missing or empty, use the ref's full extracted (default behavior).
 
+=== User Notes (Step 3, HIGHEST PRIORITY) ===
+If \`userNotes\` is provided (length >= 10 chars), it is the user's MOST REFINED intent —
+formed AFTER seeing the actual references. Treat as USER REQUIREMENTS, not suggestions.
+
+Priority order: userNotes (L4) > useLayers (L3) > intent (L2) > mode (L1).
+
+When userNotes conflicts with the initial intent (e.g. intent says "soft" but userNotes
+says "stronger contrast"), userNotes WINS.
+
+When userNotes explicitly mentions a ref-id (e.g. "ref-002 색을 primary로"), apply as a
+direct mapping instruction.
+
+If userNotes is empty or under 10 chars, fall back to L3 → L2 → L1 (default behavior).
+
 === Decision rationale (TP6, REQUIRED) ===
 For EVERY token in tokens.color / typography / layout / gradient, emit decisionRationale with:
   - whichReferences: array of ref IDs that contributed to this token (subset of input)
   - whichLayers: which layers from those refs (per useLayers if set)
   - whyChosen: ONE LINE in user's intent language explaining why this value
+  - appliedUserNotes: ONLY emit if userNotes (L4) directly drove this token's value.
+    Quote the relevant fragment from userNotes (10-30 chars, verbatim).
+    Do NOT echo generic userNotes across all tokens.
   - alternativesConsidered: optional, array of {value, reason} for top 1-2 rejected candidates
 This is shown to the user in the token detail panel. T1 super-theme: "AI가 정한 모든 결정의 이유를 추적할 수 있어야 한다."
 
 === OUTPUT ===
 
-Call BOTH tools in the same response:
-  1. submit_tokens — 4 token layers (color, typography, layout, gradient)
-  2. submit_visual_direction — Markdown document + aggregated tags
+Call submit_design_system EXACTLY ONCE with ALL fields populated in a single tool call:
+  - tokens.color (4-6 entries)
+  - tokens.typography (3-4 entries)
+  - tokens.layout (2-4 entries)
+  - tokens.gradient (1-3 entries)
+  - visualDirection.markdown (filled template)
+  - visualDirection.tags ({genre, style, subject})
+
+DO NOT split into multiple tool calls. DO NOT call the tool more than once.
+Every layer MUST be present and non-empty. Empty arrays will be rejected.
 
 Shared rules:
 - Reflect project intent strongly. Two projects with same refs but different intents
@@ -506,7 +528,7 @@ Shared rules:
 - Do NOT fabricate values outside the extracted pool (exception: typography
   unification may require adjusted fontSize to form a coherent scale).
 
-=== submit_tokens constraints ===
+=== tokens constraints ===
 
 [color] 4-6 tokens.
 - Source: extracted.palette union across refs + dominantColors as fallback
@@ -527,7 +549,7 @@ Shared rules:
 - Source: extracted.gradient across refs (or synthesize from palette if needed)
 - Fields: id, label, gradient (CSS string), stops, isEnabled, emphasis
 
-=== submit_visual_direction constraints ===
+=== visualDirection constraints ===
 
 markdown: fill this template faithfully, substituting {{PLACEHOLDERS}} with concrete content that reflects the intent and references:
 
@@ -556,10 +578,9 @@ markdown: fill this template faithfully, substituting {{PLACEHOLDERS}} with conc
 tags: the preset vocabulary tags used in section 3 (genre[], style[], subject[]).
 
 === Global ===
-Respond via the two tools only. No prose outside of tools.`,
+Respond via submit_design_system ONLY. No prose outside the tool. Single call with all fields.`,
 
   userMessageTemplate: `Project intent: "{{intent}}"
-Project type: {{type}}
 Reference count: {{count}} (ids = [{{ids}}])
 
 Pre-extracted references (T1 output, full data) are provided above as JSON.
@@ -568,37 +589,41 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
 
   toolSchemas: [
     {
-      name: TOOL_SUBMIT_TOKENS,
-      description: 'Submit the 4-layer token system (color, typography, layout, gradient).',
+      name: TOOL_SUBMIT_DESIGN_SYSTEM,
+      description: 'Submit the complete design system in ONE call: 4-layer token system + visual direction. ALL fields required and non-empty.',
       input_schema: {
         type: 'object',
         properties: {
-          color: { type: 'array', minItems: 4, maxItems: 6 },
-          typography: { type: 'array', minItems: 3, maxItems: 4 },
-          layout: { type: 'array', minItems: 2, maxItems: 4 },
-          gradient: { type: 'array', minItems: 1, maxItems: 3 },
-        },
-        required: ['color', 'typography', 'layout', 'gradient'],
-      },
-    },
-    {
-      name: TOOL_SUBMIT_VD,
-      description: 'Submit the visual direction as a filled Markdown document plus aggregated tags.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          markdown: { type: 'string', minLength: 200 },
-          tags: {
+          tokens: {
             type: 'object',
+            description: '4 token layers — every array MUST be non-empty.',
             properties: {
-              genre: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('genre') }, minItems: 0, maxItems: 2 },
-              style: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('style') }, minItems: 0, maxItems: 3 },
-              subject: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('subject') }, minItems: 0, maxItems: 3 },
+              color: { type: 'array', minItems: 4, maxItems: 6 },
+              typography: { type: 'array', minItems: 3, maxItems: 4 },
+              layout: { type: 'array', minItems: 2, maxItems: 4 },
+              gradient: { type: 'array', minItems: 1, maxItems: 3 },
             },
-            required: ['genre', 'style', 'subject'],
+            required: ['color', 'typography', 'layout', 'gradient'],
+          },
+          visualDirection: {
+            type: 'object',
+            description: 'Markdown narrative + aggregated tags.',
+            properties: {
+              markdown: { type: 'string', minLength: 200 },
+              tags: {
+                type: 'object',
+                properties: {
+                  genre: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('genre') }, minItems: 0, maxItems: 2 },
+                  style: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('style') }, minItems: 0, maxItems: 3 },
+                  subject: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('subject') }, minItems: 0, maxItems: 3 },
+                },
+                required: ['genre', 'style', 'subject'],
+              },
+            },
+            required: ['markdown', 'tags'],
           },
         },
-        required: ['markdown', 'tags'],
+        required: ['tokens', 'visualDirection'],
       },
     },
   ],
@@ -647,7 +672,284 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
   },
 };
 
-export const AI_TASKS = [TASK_AUTO_TAG, TASK_RECOMMEND, TASK_ANALYZE_TOKENS];
+/* =========================================================
+ * T3 (concept 전용) — 웹 프롬프트 즉시 검증용 단일 prompt 생성
+ *
+ * 목적: 비디자이너가 Claude Desktop / Gemini / ChatGPT 웹채팅에
+ *      그대로 붙여넣어 "이 분위기 디자인 나오나?" 즉시 시각화하기.
+ * 산출물: 200-800자 한글 prompt 문자열 (토큰 ID, JSON, 코드블록 없음)
+ * ========================================================= */
+export const TASK_ANALYZE_CONCEPT = {
+  id: 't3-concept',
+  name: '컨셉 프롬프트 생성',
+  purpose: '레퍼런스 + 의도 → 웹 AI 챗에 즉시 붙여넣을 800자 디자인 프롬프트',
+  stage: 'project.create.step4 (mode=concept)',
+  model: 'claude-haiku-4-5',
+
+  input: {
+    kind: 'text',
+    description: '의도 + selectedRefs(extracted) + userNotes',
+    shape: '{ intent, selectedRefs[], userNotes? }',
+  },
+
+  output: {
+    description: '단일 prompt 문자열 (200-800자, 한글, 시각 묘사 중심)',
+    shape: '{ prompt: string }',
+  },
+
+  systemPrompt: `You are MUSE's concept prompt writer.
+
+GOAL: produce a single Korean prompt (200-800 chars) the user can paste directly
+into Claude Desktop / Gemini / ChatGPT web chat to immediately visualize the design.
+
+The output is NOT a design system spec. It is a vivid, dense prompt that an AI
+image/UI generator can consume to render a concept screen.
+
+=== INPUT ===
+- intent: project intent sentence
+- selectedRefs[]: pre-extracted T1 data (palette, typography, layout, gradient observations)
+- userNotes (Step 3, HIGHEST PRIORITY): user's refined direction after seeing refs
+- mode: always 'concept' for this task
+
+=== OUTPUT prompt — content rules ===
+
+The prompt MUST cover ALL FIVE bands in a natural flowing Korean paragraph (no bullets, no headers, no markdown):
+  1. 전체 무드/장르 (1 sentence) — Editorial Dashboard / Brutalist Hero / etc
+  2. 핵심 컬러 (HEX 3-5개 명시) — Primary, Surface, Accent 역할 짧게
+  3. 타이포그래피 (font-family + size hint) — Display + Body 최소 2tier
+  4. 레이아웃·구조 (grid columns, spacing, container hint)
+  5. 분위기·텍스처 (배경, 그라디언트, 표면 처리)
+
+userNotes 가 있으면 그 내용을 반드시 prompt 안에 자연스럽게 녹여라 (verbatim 인용 X, 의미 반영).
+
+=== OUTPUT prompt — style rules ===
+- 한글 자연스러운 문장. "~한 ~의 ~" 식 묘사.
+- 구체적: HEX 코드, 폰트명, 픽셀/rem 수치 직접 명시.
+- 200자 미만이면 너무 빈약, 800자 초과면 자르기.
+- 절대 포함 금지: token id (col-ink, typo-h1 등), JSON, 코드블록(\`\`\`), 변수명, "primary:", "h1:" 같은 라벨.
+- 자연어로만. 사용자가 그대로 복사해 다른 AI 에 붙여넣음.
+
+=== EXAMPLE (참고용, 절대 그대로 출력 X) ===
+"흑백 대비가 강한 매거진 톤의 랜딩페이지. 잉크처럼 깊은 #14132B 를 주조색으로,
+크림빛 #FAF6E8 표면에 차분한 머스타드 #D4A857 액센트가 포인트로 흩어진 구성.
+Display 는 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 Inter sans-serif
+1rem 1.6 lineHeight 로 안정적. 12-col modular grid 24px gap, 컨테이너 max-width
+1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고,
+Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다."
+
+=== Global ===
+Respond via submit_concept_prompt ONLY. No prose outside the tool. Single call.`,
+
+  userMessageTemplate: `Intent: "{{intent}}"
+Reference count: {{count}} (ids = [{{ids}}])
+
+Pre-extracted reference data is provided above as JSON.
+Compose ONE Korean prompt 200-800 chars covering all 5 bands.`,
+
+  toolSchemas: [
+    {
+      name: TOOL_SUBMIT_CONCEPT_PROMPT,
+      description: 'Submit a single Korean concept prompt (200-800 chars) for direct paste into web AI chats.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          prompt: {
+            type: 'string',
+            minLength: 200,
+            maxLength: 800,
+            description: '한글 디자인 프롬프트. 5 band 모두 포함, HEX 3+ 명시, 자연어 문장.',
+          },
+        },
+        required: ['prompt'],
+      },
+    },
+  ],
+
+  qualityCriteria: [
+    { id: 'length', label: '길이 200-800자', type: 'auto', description: 'minLength/maxLength' },
+    { id: 'hex-presence', label: 'HEX 3개+', type: 'auto', description: '/(#[0-9A-Fa-f]{6}.*){3,}/' },
+    { id: 'no-markdown', label: '마크다운 없음', type: 'auto', description: '##, **, ```, - bullets 금지' },
+    { id: 'no-token-ids', label: '토큰 ID 없음', type: 'auto', description: 'col-, typo-, primary: 등 금지' },
+    { id: 'paste-ready', label: '웹채팅 즉시 사용', type: 'manual', description: 'Gemini 에 붙여넣어 시각화 됨' },
+  ],
+
+  workflow: [
+    'Step 4 시작 시 mode==="concept" 분기',
+    'pre-extracted selectedRefs + intent + userNotes 텍스트 payload',
+    'Anthropic messages.create (Haiku, tools: [submit_concept_prompt])',
+    'tool_choice 단일 강제 → 정확히 1번 호출',
+    '자동 검증 (길이 / HEX / 마크다운 부재)',
+    '검증 통과 시 ProjectDetailPage 에 prompt 박스 + 복사 버튼 렌더',
+  ],
+
+  estCost: {
+    model: 'Haiku 4.5',
+    tokensIn: '~3k (refs extracted + system)',
+    tokensOut: '~400 (한글 800자)',
+    note: '가장 저렴한 T3. 이미지 없음 + 짧은 출력.',
+  },
+};
+
+/* =========================================================
+ * T3 (handoff 전용) — 코드 직행. 5 layer 상세 + 토큰
+ *
+ * 목적: 로컬 디자인 시스템·컴포넌트 라이브러리 최적화. AI 코딩 도구
+ *      (Cursor/Claude Code) 가 그대로 컨텍스트로 받아 즉시 구현.
+ * 산출물: 토큰 (DTCG-friendly) + 5 layer 한글 상세 설명 + VD MD
+ *        + 프레임워크 config 는 클라이언트에서 토큰으로부터 결정론적 생성
+ *        (Tailwind / MUI / DTCG / CSS vars / .cursorrules)
+ * ========================================================= */
+export const TASK_ANALYZE_HANDOFF = {
+  id: 't3-handoff',
+  name: '핸드오프 번들 생성',
+  purpose: '로컬 컴포넌트 시스템 최적화 — 토큰 + 5 layer 상세 + 프레임워크 config 전환 가이드',
+  stage: 'project.create.step4 (mode=handoff)',
+  model: 'claude-haiku-4-5',
+
+  input: {
+    kind: 'text',
+    description: '의도 + selectedRefs(extracted) + userNotes',
+    shape: '{ intent, selectedRefs[], userNotes? }',
+  },
+
+  output: {
+    description: '4 token layer + 5 layer 한글 상세 + visualDirection MD',
+    shape: '{ tokens, visualDirection, layerDetails: { color, typography, layout, gradient, visualDirection } }',
+  },
+
+  systemPrompt: `You are MUSE's handoff bundle composer.
+
+GOAL: produce a handoff package that an engineer can drop into a local component
+library / design system. Output prioritizes MACHINE READABILITY (DTCG-style tokens,
+kebab-case ids, semantic labels) AND HUMAN LEGIBILITY (Korean layer-by-layer detail
+explaining HOW to apply each layer to components).
+
+The 5 layer details are the heart of the handoff — explain not just WHAT but HOW:
+which components consume this layer, what semantic role each token plays, naming
+conventions, and decisions made (and rejected).
+
+Framework-specific configs (Tailwind, MUI, DTCG, CSS vars, .cursorrules) will be
+generated DETERMINISTICALLY by the client from your tokens. DO NOT write framework
+config code yourself — your output is the SOURCE OF TRUTH for those generators.
+
+=== INPUT ===
+- intent, selectedRefs[] (pre-extracted T1), userNotes (HIGHEST PRIORITY)
+- mode: always 'handoff'
+
+=== Composition rules ===
+- kebab-case for ALL token ids: \`color-primary-ink\`, \`typo-display-1\`, \`layout-grid-12col\`
+- Semantic labels: "Primary Ink" not "Color 1"
+- Every token MUST have decisionRationale (whichReferences + whyChosen, optional appliedUserNotes)
+- Strict role uniqueness in color (exactly 1 primary)
+- Typography hierarchy h1>h2>body1 strict
+- Gradient is optional (1-2 if visually warranted, else 1 minimal)
+
+=== layerDetails (Korean, 5 layers) ===
+For each of the 5 layers (color, typography, layout, gradient, visualDirection),
+write a HANDOFF DETAIL EXPLANATION (한글) covering:
+
+  (1) 이 레이어가 시스템에서 담당하는 역할 (한 문단)
+  (2) 어떤 컴포넌트들이 이 layer 의 토큰을 소비하는가 — 구체적 컴포넌트명
+       (Button, Card, Input, AppBar, Typography, Surface 등)
+  (3) 토큰 → 컴포넌트 prop 매핑 가이드 (한 문단)
+  (4) 핵심 의사결정 + 탈락한 대안 (왜 이 값인가)
+  (5) 적용 시 주의 (다크모드 / 반응형 / a11y / 타 layer 와의 상호작용)
+
+각 layer detail 길이: 200-500 자. Markdown headers (##, ###) 사용 OK. 코드 블록
+사용 OK (예: \`<Button variant="contained" sx={ { bgcolor: 'color-primary-ink' } } />\`).
+"이 토큰은 ~에서 사용된다" 식으로 명확히.
+
+=== visualDirection markdown ===
+별도. 짧고 (300-600자) 톤·무드·금기 사항 중심. layerDetails 와 중복 X.
+
+=== Global ===
+Respond via submit_handoff_bundle ONLY. Single call. ALL fields required and non-empty.`,
+
+  userMessageTemplate: `Intent: "{{intent}}"
+Reference count: {{count}} (ids = [{{ids}}])
+
+Pre-extracted reference data is provided above as JSON.
+Compose the handoff bundle with all 4 token layers, 5 Korean layer details, and the visualDirection narrative.`,
+
+  toolSchemas: [
+    {
+      name: TOOL_SUBMIT_HANDOFF_BUNDLE,
+      description: 'Submit the complete handoff bundle: tokens (DTCG-friendly) + 5 Korean layer details + visualDirection. Single call, all fields required.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          tokens: {
+            type: 'object',
+            description: '4 token layers — kebab-case ids, semantic labels, decisionRationale required.',
+            properties: {
+              color: { type: 'array', minItems: 4, maxItems: 6 },
+              typography: { type: 'array', minItems: 3, maxItems: 4 },
+              layout: { type: 'array', minItems: 2, maxItems: 4 },
+              gradient: { type: 'array', minItems: 1, maxItems: 3 },
+            },
+            required: ['color', 'typography', 'layout', 'gradient'],
+          },
+          visualDirection: {
+            type: 'object',
+            properties: {
+              markdown: { type: 'string', minLength: 200 },
+              tags: {
+                type: 'object',
+                properties: {
+                  genre: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('genre') }, minItems: 0, maxItems: 2 },
+                  style: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('style') }, minItems: 0, maxItems: 3 },
+                  subject: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('subject') }, minItems: 0, maxItems: 3 },
+                },
+                required: ['genre', 'style', 'subject'],
+              },
+            },
+            required: ['markdown', 'tags'],
+          },
+          layerDetails: {
+            type: 'object',
+            description: '5 layers — Korean handoff explanation (200-500 chars each).',
+            properties: {
+              color: { type: 'string', minLength: 200, maxLength: 800 },
+              typography: { type: 'string', minLength: 200, maxLength: 800 },
+              layout: { type: 'string', minLength: 200, maxLength: 800 },
+              gradient: { type: 'string', minLength: 150, maxLength: 800 },
+              visualDirection: { type: 'string', minLength: 200, maxLength: 800 },
+            },
+            required: ['color', 'typography', 'layout', 'gradient', 'visualDirection'],
+          },
+        },
+        required: ['tokens', 'visualDirection', 'layerDetails'],
+      },
+    },
+  ],
+
+  qualityCriteria: [
+    { id: 'kebab-ids', label: 'kebab-case ID', type: 'auto', description: '모든 token id /^[a-z0-9-]+$/' },
+    { id: 'primary-unique', label: 'Primary 유일', type: 'auto', description: 'color.role==="primary" 개수 = 1' },
+    { id: 'rationale-presence', label: '결정 근거 명시', type: 'auto', description: '모든 token decisionRationale 존재' },
+    { id: 'layer-details-5', label: '5 layer 상세', type: 'auto', description: 'layerDetails 5 키 모두 200자+' },
+    { id: 'config-conversion', label: 'Config 변환 무결', type: 'auto', description: 'DTCG/Tailwind/MUI/CSS 모두 valid 한 형식' },
+  ],
+
+  workflow: [
+    'Step 4 시작 시 mode==="handoff" 분기',
+    'pre-extracted selectedRefs + intent + userNotes 텍스트 payload',
+    'Anthropic messages.create (Haiku, tools: [submit_handoff_bundle])',
+    'tool_choice 단일 강제 → 정확히 1번 호출',
+    '클라이언트에서 tokens → DTCG/Tailwind/MUI/CSS-vars/.cursorrules 결정론적 변환',
+    'ProjectDetailPage 에 5 layer 상세 + 프레임워크 미리보기 탭 렌더',
+    'Export 시 ZIP 번들 (tokens + 4 framework + .cursorrules + DESIGN_SYSTEM.md)',
+  ],
+
+  estCost: {
+    model: 'Haiku 4.5',
+    tokensIn: '~6k (refs + system + tool schema)',
+    tokensOut: '~3k (tokens + 5 layer details + VD)',
+    note: 'system 모드보다 출력 1.5배 (5 layer 한글 상세 추가). 변환 코드는 LLM 부담 0.',
+  },
+};
+
+export const AI_TASKS = [TASK_AUTO_TAG, TASK_RECOMMEND, TASK_ANALYZE_TOKENS, TASK_ANALYZE_CONCEPT, TASK_ANALYZE_HANDOFF];
 
 export const AI_TASKS_BY_ID = Object.fromEntries(AI_TASKS.map((t) => [t.id, t]));
 

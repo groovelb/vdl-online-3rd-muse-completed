@@ -9,7 +9,7 @@ import { useAnalysesSlice, useProjectsSlice, useReferencesSlice } from '../store
 export function ProjectDetailRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { projects } = useProjectsSlice();
+  const { projects, removeProject } = useProjectsSlice();
   const { getAnalysis, updateLayer } = useAnalysesSlice();
   const { references } = useReferencesSlice();
 
@@ -39,6 +39,10 @@ export function ProjectDetailRoute() {
       references={ references }
       onUpdateToken={ (layerKey, tokenId, patch) => updateLayer(project.id, layerKey, tokenId, patch) }
       onBack={ () => navigate('/projects') }
+      onDelete={ async () => {
+        await removeProject(project.id);
+        navigate('/projects');
+      } }
     />
   );
 }

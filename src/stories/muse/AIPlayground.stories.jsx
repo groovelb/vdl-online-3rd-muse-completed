@@ -13,7 +13,6 @@ import {
   checkAnthropicHealth,
   callAnthropic,
   extractToolInput,
-  extractAllToolInputs,
   extractText,
   toImageBlock,
   imageUrlToBase64DataUrl,
@@ -404,18 +403,10 @@ const toRecommendMeta = (r) => ({
   dominantColors: r.dominantColors,
 });
 
-const PROJECT_TYPES = [
-  { value: 'landing', label: '랜딩' },
-  { value: 'dashboard', label: '대시보드' },
-  { value: 'mobile', label: '모바일' },
-  { value: 'brand', label: '브랜드' },
-];
-
 export const T2Recommend = {
   name: 'T2 · Recommend',
   render: () => {
     const [intent, setIntent] = useState('흑백 대비 매거진 톤, 라지 타이포 중심');
-    const [type, setType] = useState('landing');
     const [n, setN] = useState(6);
     const [model, setModel] = useState(TASK_RECOMMEND.model);
     const [isLoading, setIsLoading] = useState(false);
@@ -433,7 +424,6 @@ export const T2Recommend = {
         const archive = references.map(toRecommendMeta);
         const userText = TASK_RECOMMEND.userMessageTemplate
           .replace('{{intent}}', intent)
-          .replace('{{type}}', type)
           .replace('{{n}}', String(n))
           .replace('{{archiveCount}}', String(archive.length))
           .replace('{{archiveJson}}', JSON.stringify(archive, null, 2));
@@ -489,12 +479,6 @@ export const T2Recommend = {
               rows={ 2 }
             />
             <Box sx={ { display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' } }>
-              <FormControl size="small" sx={ { minWidth: 160 } }>
-                <InputLabel>Type</InputLabel>
-                <Select label="Type" value={ type } onChange={ (e) => setType(e.target.value) }>
-                  { PROJECT_TYPES.map((t) => <MenuItem key={ t.value } value={ t.value }>{ t.label }</MenuItem>) }
-                </Select>
-              </FormControl>
               <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, minWidth: 220 } }>
                 <Typography variant="caption" color="text.secondary">N</Typography>
                 <Slider value={ n } onChange={ (_, v) => setN(v) } min={ 5 } max={ 10 } step={ 1 } marks valueLabelDisplay="auto" sx={ { maxWidth: 160 } } />
@@ -584,9 +568,10 @@ export const T3AnalyzeTokens = {
   name: 'T3 · Analyze Tokens + VD',
   render: () => {
     const [intent, setIntent] = useState('흑백 대비 매거진 톤, 라지 타이포 중심');
-    const [type, setType] = useState('landing');
     const [model, setModel] = useState(TASK_ANALYZE_TOKENS.model);
     const [selectedIds, setSelectedIds] = useState(new Set([references[0]?.id, references[4]?.id, references[9]?.id]));
+    // Phase 0 검증 — Step 3 활용 노트(L4 userNotes) 효과 측정용
+    const [userNotes, setUserNotes] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tokensResult, setTokensResult] = useState(null);
@@ -624,6 +609,20 @@ export const T3AnalyzeTokens = {
           extracted: ref.extracted || {},
         }));
 
+        // Phase 0 검증 — userNotes 가 있으면 Progressive Narrowing 블록 추가 (production system prompt 안 건드리고 user message 끝에만 주입)
+        const userNotesBlock = userNotes && userNotes.trim().length >= 10
+          ? `\n\n=== USER NOTES (HIGHEST PRIORITY — L4) ===
+After seeing the actual references, the user added these refinement notes:
+"${userNotes.trim()}"
+
+Treat these as USER REQUIREMENTS, NOT suggestions.
+- When L4 conflicts with the initial intent above, L4 WINS.
+- When L4 explicitly mentions a ref-id (e.g. "ref-002 색을 primary로"), apply directly.
+- For each token influenced by L4, include a "decisionRationale.appliedUserNotes" field
+  with the relevant 10-30 char fragment from the user notes (verbatim).
+- For tokens NOT influenced by L4, omit appliedUserNotes (do not echo across all tokens).`
+          : '';
+
         const content = [
           {
             type: 'text',
@@ -637,27 +636,28 @@ ${JSON.stringify(extractedPool, null, 2)}
             type: 'text',
             text: TASK_ANALYZE_TOKENS.userMessageTemplate
               .replace('{{intent}}', intent)
-              .replace('{{type}}', type)
               .replace('{{count}}', String(selectedRefs.length))
-              .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
+              .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', '))
+              + userNotesBlock,
           },
         ];
 
+        const toolName = TASK_ANALYZE_TOKENS.toolSchemas[0].name;
         const response = await callAnthropic({
           model,
-          max_tokens: 4096,
+          max_tokens: 8192,
           system: TASK_ANALYZE_TOKENS.systemPrompt,
           tools: TASK_ANALYZE_TOKENS.toolSchemas,
-          tool_choice: { type: 'any' }, // 둘 중 하나 이상 호출 강제
+          tool_choice: { type: 'tool', name: toolName },
           messages: [{ role: 'user', content }],
         });
 
         setRaw(response);
-        const allTools = extractAllToolInputs(response);
-        setTokensResult(allTools.submit_tokens || null);
-        setVdResult(allTools.submit_visual_direction || null);
+        const input = extractToolInput(response, toolName);
+        setTokensResult(input?.tokens || null);
+        setVdResult(input?.visualDirection || null);
 
-        if (!allTools.submit_tokens && !allTools.submit_visual_direction) {
+        if (!input) {
           throw new Error(`Tool use 응답 없음. text: ${extractText(response) || '(empty)'}`);
         }
       } catch (e) {
@@ -686,16 +686,48 @@ ${JSON.stringify(extractedPool, null, 2)}
             { TASK_ANALYZE_TOKENS.purpose } · 이미지 없음 (T1 extracted 기반) · Haiku · 2 tool 단일 호출
           </Typography>
 
+          {/* Phase 0 검증 안내 박스 */}
+          <Box
+            sx={ {
+              p: 2,
+              mb: 3,
+              borderRadius: 1.5,
+              border: '1px dashed',
+              borderColor: 'warning.main',
+              bgcolor: 'warning.50',
+            } }
+          >
+            <Typography variant="caption" sx={ { fontWeight: 700, color: 'warning.dark', display: 'block', mb: 1 } }>
+              🧪 Phase 0 검증 — Step 3 (활용 노트) 효과 측정
+            </Typography>
+            <Typography variant="body2" sx={ { fontSize: '0.85rem', mb: 1.5 } }>
+              같은 references + 같은 intent로 <strong>userNotes</strong> 만 바꿔서 3회 호출 → 결과 비교:
+            </Typography>
+            <Box component="ul" sx={ { m: 0, pl: 2.5, fontSize: '0.85rem' } }>
+              <li><strong>case A</strong>: userNotes 빈 칸 (현재 default 동작)</li>
+              <li><strong>case B</strong>: userNotes = "ref-002 색을 primary로"</li>
+              <li><strong>case C</strong>: userNotes = "ref-005 grid 레이아웃 강조, 타이포는 더 가볍게"</li>
+            </Box>
+            <Typography variant="caption" sx={ { display: 'block', mt: 1, color: 'text.secondary' } }>
+              체크 포인트: tokens.color[primary], tokens.layout, tokens.typography 가 case 별로 다른가? decisionRationale에 appliedUserNotes 필드가 출력되는가?
+            </Typography>
+          </Box>
+
           {/* Controls */}
           <Box sx={ { display: 'flex', flexDirection: 'column', gap: 2, mb: 3 } }>
-            <TextField label="프로젝트 의도" value={ intent } onChange={ (e) => setIntent(e.target.value) } fullWidth multiline rows={ 2 } />
+            <TextField label="프로젝트 의도 (L2)" value={ intent } onChange={ (e) => setIntent(e.target.value) } fullWidth multiline rows={ 2 } />
+            <TextField
+              label="🧪 활용 노트 / userNotes (L4) — Phase 0 검증용"
+              placeholder='예: "ref-002 색을 primary로" / "ref-005 grid 강조, 타이포는 가볍게" / 빈 칸으로 두면 case A'
+              value={ userNotes }
+              onChange={ (e) => setUserNotes(e.target.value) }
+              fullWidth
+              multiline
+              rows={ 3 }
+              helperText={ `${userNotes.length} 자 / 10자 이상이어야 활성화. 빈 칸 = case A (기존 동작 그대로)` }
+              inputProps={ { maxLength: 400 } }
+            />
             <Box sx={ { display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' } }>
-              <FormControl size="small" sx={ { minWidth: 160 } }>
-                <InputLabel>Type</InputLabel>
-                <Select label="Type" value={ type } onChange={ (e) => setType(e.target.value) }>
-                  { PROJECT_TYPES.map((t) => <MenuItem key={ t.value } value={ t.value }>{ t.label }</MenuItem>) }
-                </Select>
-              </FormControl>
               <FormControl size="small" sx={ { minWidth: 220 } }>
                 <InputLabel>Model</InputLabel>
                 <Select label="Model" value={ model } onChange={ (e) => setModel(e.target.value) }>

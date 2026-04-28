@@ -62,28 +62,13 @@ const TYPO_PRESETS = {
   ],
 };
 
-const LAYOUT_PRESETS = {
-  landing: [
-    { id: 'lay-grid-12', label: '12 Column Grid', kind: 'grid', columns: 12, gap: 24, isEnabled: true, emphasis: 2 },
-    { id: 'lay-section-gap', label: 'Section Gap', kind: 'spacing', px: 96, isEnabled: true, emphasis: 2 },
-    { id: 'lay-card-pad', label: 'Card Padding', kind: 'spacing', px: 24, isEnabled: true, emphasis: 1 },
-    { id: 'lay-hero', label: 'Hero Container', kind: 'container', ratio: 0.9, maxWidth: '1440px', isEnabled: true, emphasis: 1 },
-  ],
-  dashboard: [
-    { id: 'lay-grid-16', label: '16 Column Grid', kind: 'grid', columns: 16, gap: 16, isEnabled: true, emphasis: 2 },
-    { id: 'lay-panel-gap', label: 'Panel Gap', kind: 'spacing', px: 16, isEnabled: true, emphasis: 1 },
-    { id: 'lay-wide', label: 'Wide Container', kind: 'container', ratio: 1.0, maxWidth: 'none', isEnabled: true, emphasis: 1 },
-  ],
-  mobile: [
-    { id: 'lay-grid-4', label: '4 Column Grid', kind: 'grid', columns: 4, gap: 12, isEnabled: true, emphasis: 2 },
-    { id: 'lay-touch-pad', label: 'Touch Padding', kind: 'spacing', px: 20, isEnabled: true, emphasis: 1 },
-    { id: 'lay-narrow', label: 'Mobile Container', kind: 'container', ratio: 1.0, maxWidth: '480px', isEnabled: true, emphasis: 1 },
-  ],
-  brand: [
-    { id: 'lay-grid-6', label: '6 Column Grid', kind: 'grid', columns: 6, gap: 32, isEnabled: true, emphasis: 2 },
-    { id: 'lay-generous', label: 'Generous Gap', kind: 'spacing', px: 120, isEnabled: true, emphasis: 2 },
-  ],
-};
+/** 모든 프로젝트 fixture 가 공유하는 단일 layout preset (type 폐기 후 통합) */
+const DEFAULT_LAYOUT_PRESET = [
+  { id: 'lay-grid-12', label: '12 Column Grid', kind: 'grid', columns: 12, gap: 24, isEnabled: true, emphasis: 2 },
+  { id: 'lay-section-gap', label: 'Section Gap', kind: 'spacing', px: 96, isEnabled: true, emphasis: 2 },
+  { id: 'lay-card-pad', label: 'Card Padding', kind: 'spacing', px: 24, isEnabled: true, emphasis: 1 },
+  { id: 'lay-hero', label: 'Hero Container', kind: 'container', ratio: 0.9, maxWidth: '1440px', isEnabled: true, emphasis: 1 },
+];
 
 const COLOR_PRESETS = {
   'proj-001': [
@@ -306,7 +291,7 @@ export const analysisResultsByProjectId = projects.reduce((acc, project) => {
     layers: {
       color: COLOR_PRESETS[project.id] || [],
       typography: TYPO_PRESETS.editorial,
-      layout: LAYOUT_PRESETS[project.type] || [],
+      layout: DEFAULT_LAYOUT_PRESET,
       gradient: GRADIENT_PRESETS[project.id] || [],
       visualDirection: VISUAL_DIRECTION_MD[project.id] || {
         markdown: '# Visual Direction\n\n(not yet generated)',

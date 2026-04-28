@@ -100,10 +100,49 @@ export function extractText(response) {
 }
 
 /**
+ * 동일 tool 이 여러 번 호출됐을 때 input 들을 머지.
+ *  - 배열 필드: concat (중복 토큰은 id 기준 dedupe)
+ *  - 객체 필드: shallow merge (later wins)
+ *  - 스칼라: later wins (모델이 후속 호출에서 refine 한다고 가정)
+ *
+ * Haiku 4.5 가 tool_choice='any' 에서 submit_tokens 를
+ * 레이어별로 분할 호출하는 경우(예: color → typography → layout → gradient
+ * 각각 1번씩) 마지막 input 만 살아남으면 다른 레이어가 빈 배열로 사라진다.
+ * 이를 방지하기 위해 merge.
+ */
+function mergeToolInputs(prev, next) {
+  if (!prev) return next;
+  if (!next) return prev;
+  const out = { ...prev };
+  for (const [k, v] of Object.entries(next)) {
+    if (Array.isArray(v) && Array.isArray(prev[k])) {
+      const seen = new Set(prev[k].map((it) => it?.id).filter(Boolean));
+      const merged = [...prev[k]];
+      for (const item of v) {
+        if (item && typeof item === 'object' && item.id) {
+          if (!seen.has(item.id)) {
+            merged.push(item);
+            seen.add(item.id);
+          }
+        } else {
+          merged.push(item);
+        }
+      }
+      out[k] = merged;
+    } else if (v && typeof v === 'object' && !Array.isArray(v) && prev[k] && typeof prev[k] === 'object') {
+      out[k] = { ...prev[k], ...v };
+    } else if (v !== undefined && v !== null && v !== '') {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/**
  * 모든 tool_use 블록의 input을 이름별 map으로 추출.
- * T3처럼 단일 호출에 2 tool이 오는 경우에 사용.
+ * 동일 tool 이름 중복 호출 시 input merge (덮어쓰기 X).
  * @param {object} response
- * @returns {Record<string, object>} { [toolName]: inputObject }
+ * @returns {Record<string, object>} { [toolName]: mergedInput }
  */
 export function extractAllToolInputs(response) {
   const blocks = response?.content;
@@ -111,7 +150,7 @@ export function extractAllToolInputs(response) {
   const result = {};
   for (const b of blocks) {
     if (b.type === 'tool_use' && b.name) {
-      result[b.name] = b.input;
+      result[b.name] = mergeToolInputs(result[b.name], b.input);
     }
   }
   return result;

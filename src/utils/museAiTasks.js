@@ -8,7 +8,6 @@
 import {
   callAnthropic,
   extractToolInput,
-  extractAllToolInputs,
   extractText,
   toImageBlock,
   imageUrlToBase64DataUrl,
@@ -18,6 +17,8 @@ import {
   TASK_AUTO_TAG,
   TASK_RECOMMEND,
   TASK_ANALYZE_TOKENS,
+  TASK_ANALYZE_CONCEPT,
+  TASK_ANALYZE_HANDOFF,
 } from '../data/muse';
 
 /**
@@ -92,14 +93,13 @@ export async function runAutoTag({ imageUrl, model, maxAttempts = 3 }) {
  * T2 · 의도 문장 + 모드 + 아카이브 메타 → top-N 추천 + 레이어 자동 추천
  * @param {object} params
  * @param {string} params.intent
- * @param {string} params.type
  * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 모드 (정렬 분기)
  * @param {Array} params.archive
  * @param {number} [params.n=6]
  * @param {string} [params.model]
  * @returns {Promise<{ recommendedIds, reasons, referenceLayer }>}
  */
-export async function runRecommend({ intent, type, mode = 'system', archive, n = 6, model }) {
+export async function runRecommend({ intent, mode = 'system', archive, n = 6, model }) {
   const compactArchive = archive.map((r) => ({
     id: r.id,
     title: r.title,
@@ -109,7 +109,6 @@ export async function runRecommend({ intent, type, mode = 'system', archive, n =
 
   const userText = TASK_RECOMMEND.userMessageTemplate
     .replace('{{intent}}', intent)
-    .replace('{{type}}', type)
     .replace('{{mode}}', mode)
     .replace('{{n}}', String(n))
     .replace('{{archiveCount}}', String(compactArchive.length))
@@ -132,17 +131,17 @@ export async function runRecommend({ intent, type, mode = 'system', archive, n =
 }
 
 /**
- * T3 · 사전 추출 N장 + 의도 + 모드 + 레이어 큐레이션 → tokens + visualDirection(MD)
+ * T3 · 사전 추출 N장 + 의도 + 모드 + 레이어 큐레이션 + 활용 노트 → tokens + visualDirection(MD)
  * @param {object} params
  * @param {string} params.intent
- * @param {string} params.type
  * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 합성 톤
- * @param {Array<{id, thumbnailUrl, tags?, dominantColors?, extracted?, useLayers?}>} params.selectedRefs - 최대 4장 권장. useLayers 가 set 이면 TP4 큐레이션 활성
+ * @param {Array<{id, thumbnailUrl, tags?, dominantColors?, extracted?, useLayers?}>} params.selectedRefs
+ * @param {string} [params.userNotes=''] - Step 3 활용 노트 (레퍼런스 본 후 명시 지시, HIGHEST PRIORITY)
  * @param {string} [params.model]
- * @param {function} [params.onProgress] - (layers) => void, 현재는 단발(완료 시 전부 done)
+ * @param {function} [params.onProgress]
  * @returns {Promise<{ tokens, visualDirection }>}
  */
-export async function runAnalyzeTokens({ intent, type, mode = 'system', selectedRefs, model, onProgress }) {
+export async function runAnalyzeTokens({ intent, mode = 'system', selectedRefs, userNotes = '', model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
   // 사전 추출된 데이터만 payload 로 전송. 이미지 없음.
@@ -155,6 +154,17 @@ export async function runAnalyzeTokens({ intent, type, mode = 'system', selected
     // TP4: 사용자가 이 ref 에서 가져올 레이어. 빈 배열이거나 미설정이면 전체 사용.
     useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
   }));
+
+  const trimmedNotes = (userNotes || '').trim();
+  const hasUserNotes = trimmedNotes.length >= 10;
+  const userNotesBlock = hasUserNotes
+    ? `\n\n=== User Notes (Step 3, HIGHEST PRIORITY) ===
+"${trimmedNotes}"
+
+Treat as USER REQUIREMENTS. Override conflicting earlier intent.
+For each token influenced by these notes, emit decisionRationale.appliedUserNotes
+with the relevant fragment (10-30 chars, verbatim). Do NOT echo across tokens not influenced.`
+    : '\n\n=== User Notes ===\n(none — fall back to layer curation / intent / mode defaults)';
 
   const content = [
     {
@@ -177,13 +187,12 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     .filter((r) => r.useLayers.length > 0)
     .map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`)
     .join('\n')
-  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}`,
+  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}${userNotesBlock}`,
     },
     {
       type: 'text',
       text: TASK_ANALYZE_TOKENS.userMessageTemplate
         .replace('{{intent}}', intent)
-        .replace('{{type}}', type)
         .replace('{{mode}}', mode)
         .replace('{{count}}', String(selectedRefs.length))
         .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
@@ -198,21 +207,58 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     })),
   );
 
-  const response = await callAnthropic({
-    model: model || TASK_ANALYZE_TOKENS.model,
-    max_tokens: 4096,
-    system: TASK_ANALYZE_TOKENS.systemPrompt,
-    tools: TASK_ANALYZE_TOKENS.toolSchemas,
-    tool_choice: { type: 'any' },
-    messages: [{ role: 'user', content }],
-  });
+  const toolName = TASK_ANALYZE_TOKENS.toolSchemas[0].name;
 
-  const allTools = extractAllToolInputs(response);
-  const tokens = allTools.submit_tokens || null;
-  const visualDirection = allTools.submit_visual_direction || null;
+  // 단일 tool 강제 호출 → 모델이 분할 호출할 수 없음 (tool_choice.type='tool').
+  // 빈 레이어 발생 시 1회 재시도 (Haiku 가 간헐적으로 minItems 위반).
+  const callOnce = async (extraInstruction = '') => {
+    const messagesContent = extraInstruction
+      ? [...content, { type: 'text', text: extraInstruction }]
+      : content;
+    const res = await callAnthropic({
+      model: model || TASK_ANALYZE_TOKENS.model,
+      max_tokens: 8192,
+      system: TASK_ANALYZE_TOKENS.systemPrompt,
+      tools: TASK_ANALYZE_TOKENS.toolSchemas,
+      tool_choice: { type: 'tool', name: toolName },
+      messages: [{ role: 'user', content: messagesContent }],
+    });
+    const input = extractToolInput(res, toolName);
+    return { res, input };
+  };
 
-  if (!tokens && !visualDirection) {
+  const checkEmpties = (input) => {
+    const t = input?.tokens || {};
+    return ['color', 'typography', 'layout', 'gradient'].filter((k) => !(Array.isArray(t[k]) && t[k].length > 0));
+  };
+
+  let { res: response, input: result } = await callOnce();
+
+  if (!result) {
     throw new Error(`T3 tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  }
+
+  if (response?.stop_reason === 'max_tokens') {
+    throw new Error('T3 응답이 max_tokens(8192)에서 잘렸습니다. 레퍼런스 개수를 줄이거나 다시 시도해주세요.');
+  }
+
+  let empties = checkEmpties(result);
+  if (empties.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeTokens] 빈 layer 감지 → 재시도:', empties);
+    const retryInstruction = `[CRITICAL RETRY] Your previous response left these layers empty: ${empties.join(', ')}. ` +
+      'Re-emit the COMPLETE design system. Every tokens.{color,typography,layout,gradient} array MUST be non-empty per schema minItems. ' +
+      'Use the pre-extracted pool above as the source.';
+    const retry = await callOnce(retryInstruction);
+    if (retry.input) {
+      result = retry.input;
+      response = retry.res;
+      empties = checkEmpties(result);
+      if (empties.length > 0) {
+        // eslint-disable-next-line no-console
+        console.error('[runAnalyzeTokens] 재시도 후에도 빈 layer:', empties);
+      }
+    }
   }
 
   // 완료 상태 전달
@@ -223,5 +269,252 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     })),
   );
 
-  return { tokens, visualDirection };
+  return {
+    tokens: result.tokens || null,
+    visualDirection: result.visualDirection || null,
+  };
+}
+
+/**
+ * T3 (concept) — 800자 한글 디자인 프롬프트 생성
+ *  - 웹 AI 챗(Claude Desktop / Gemini / ChatGPT)에 즉시 붙여넣을 형태
+ *  - 단일 prompt 문자열만 반환 (토큰 합성 X)
+ *  - 검증: 길이 200-800, HEX 3+, 마크다운/토큰ID 부재
+ *  - 검증 실패 시 1회 retry
+ *
+ * @param {object} params
+ * @param {string} params.intent
+ * @param {Array<{id, tags?, dominantColors?, extracted?}>} params.selectedRefs
+ * @param {string} [params.userNotes='']
+ * @param {string} [params.model]
+ * @param {function} [params.onProgress]
+ * @returns {Promise<{ conceptPrompt: string }>}
+ */
+export async function runAnalyzeConcept({ intent, selectedRefs, userNotes = '', model, onProgress }) {
+  if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
+
+  const extractedPool = selectedRefs.map((ref) => ({
+    id: ref.id,
+    title: ref.title || null,
+    tags: ref.tags || {},
+    dominantColors: ref.dominantColors || [],
+    extracted: ref.extracted || {},
+  }));
+
+  const trimmedNotes = (userNotes || '').trim();
+  const userNotesBlock = trimmedNotes.length >= 10
+    ? `\n\n=== User Notes (HIGHEST PRIORITY) ===
+"${trimmedNotes}"
+Reflect these notes in the prompt naturally (semantic, not verbatim).`
+    : '';
+
+  const content = [
+    {
+      type: 'text',
+      text: `=== Pre-extracted references (${selectedRefs.length}) ===
+
+${JSON.stringify(extractedPool, null, 2)}
+
+=== End of references ===${userNotesBlock}`,
+    },
+    {
+      type: 'text',
+      text: TASK_ANALYZE_CONCEPT.userMessageTemplate
+        .replace('{{intent}}', intent)
+        .replace('{{count}}', String(selectedRefs.length))
+        .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
+    },
+  ];
+
+  const toolName = TASK_ANALYZE_CONCEPT.toolSchemas[0].name;
+
+  const callOnce = async (extraInstruction = '') => {
+    const messagesContent = extraInstruction
+      ? [...content, { type: 'text', text: extraInstruction }]
+      : content;
+    const res = await callAnthropic({
+      model: model || TASK_ANALYZE_CONCEPT.model,
+      max_tokens: 1024,
+      system: TASK_ANALYZE_CONCEPT.systemPrompt,
+      tools: TASK_ANALYZE_CONCEPT.toolSchemas,
+      tool_choice: { type: 'tool', name: toolName },
+      messages: [{ role: 'user', content: messagesContent }],
+    });
+    const input = extractToolInput(res, toolName);
+    return { res, input };
+  };
+
+  // 자동 검증: 길이, HEX 개수, 마크다운/토큰ID 부재
+  const validate = (prompt) => {
+    if (!prompt || typeof prompt !== 'string') return ['empty'];
+    const errors = [];
+    if (prompt.length < 200) errors.push(`too-short(${prompt.length})`);
+    if (prompt.length > 800) errors.push(`too-long(${prompt.length})`);
+    const hexCount = (prompt.match(/#[0-9A-Fa-f]{6}/g) || []).length;
+    if (hexCount < 3) errors.push(`hex-too-few(${hexCount})`);
+    if (/```|^#{1,6}\s|^\s*[-*]\s/m.test(prompt)) errors.push('markdown-detected');
+    if (/(col-|typo-|primary:|h1:|--[a-z]+-)/i.test(prompt)) errors.push('token-id-detected');
+    return errors;
+  };
+
+  onProgress?.([{ key: 'conceptPrompt', status: 'running' }]);
+
+  let { res: response, input: result } = await callOnce();
+  if (!result?.prompt) {
+    throw new Error(`T3(concept) tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  }
+
+  let errors = validate(result.prompt);
+  if (errors.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeConcept] 검증 실패 → 재시도:', errors);
+    const retryInstruction = `[CRITICAL RETRY] Previous prompt failed validation: ${errors.join(', ')}. ` +
+      'Constraints: 200-800 Korean chars, ≥3 HEX codes, NO markdown headers/bullets/code blocks, NO token IDs. ' +
+      'Re-emit a single natural Korean paragraph.';
+    const retry = await callOnce(retryInstruction);
+    if (retry.input?.prompt) {
+      result = retry.input;
+      response = retry.res;
+      errors = validate(result.prompt);
+      if (errors.length > 0) {
+        // eslint-disable-next-line no-console
+        console.error('[runAnalyzeConcept] 재시도 후에도 검증 실패:', errors, '— prompt 그대로 반환');
+      }
+    }
+  }
+
+  onProgress?.([{ key: 'conceptPrompt', status: 'done' }]);
+
+  return { conceptPrompt: result.prompt };
+}
+
+/**
+ * T3 (handoff) — 토큰 + 5 layer 한글 상세 + VD MD
+ *  - 프레임워크 config (Tailwind/MUI/DTCG/CSS-vars/.cursorrules) 는 클라이언트에서 토큰으로부터 결정론적 생성
+ *  - 검증: 4 token layer 비어있지 않음 + layerDetails 5 키 모두 200자+
+ *  - 검증 실패 시 1회 retry
+ *
+ * @returns {Promise<{ tokens, visualDirection, layerDetails }>}
+ */
+export async function runAnalyzeHandoff({ intent, selectedRefs, userNotes = '', model, onProgress }) {
+  if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
+
+  const extractedPool = selectedRefs.map((ref) => ({
+    id: ref.id,
+    title: ref.title || null,
+    tags: ref.tags || {},
+    dominantColors: ref.dominantColors || [],
+    extracted: ref.extracted || {},
+    useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
+  }));
+
+  const trimmedNotes = (userNotes || '').trim();
+  const userNotesBlock = trimmedNotes.length >= 10
+    ? `\n\n=== User Notes (HIGHEST PRIORITY) ===\n"${trimmedNotes}"\nReflect verbatim where appropriate via decisionRationale.appliedUserNotes.`
+    : '';
+
+  const content = [
+    {
+      type: 'text',
+      text: `=== Pre-extracted references (${selectedRefs.length}) ===
+
+${JSON.stringify(extractedPool, null, 2)}
+
+=== End of references ===
+
+=== Layer Curation (TP4) ===
+${extractedPool.some((r) => r.useLayers.length > 0)
+  ? extractedPool.filter((r) => r.useLayers.length > 0).map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`).join('\n')
+  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${userNotesBlock}`,
+    },
+    {
+      type: 'text',
+      text: TASK_ANALYZE_HANDOFF.userMessageTemplate
+        .replace('{{intent}}', intent)
+        .replace('{{count}}', String(selectedRefs.length))
+        .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
+    },
+  ];
+
+  const toolName = TASK_ANALYZE_HANDOFF.toolSchemas[0].name;
+
+  const callOnce = async (extraInstruction = '') => {
+    const messagesContent = extraInstruction
+      ? [...content, { type: 'text', text: extraInstruction }]
+      : content;
+    const res = await callAnthropic({
+      model: model || TASK_ANALYZE_HANDOFF.model,
+      max_tokens: 8192,
+      system: TASK_ANALYZE_HANDOFF.systemPrompt,
+      tools: TASK_ANALYZE_HANDOFF.toolSchemas,
+      tool_choice: { type: 'tool', name: toolName },
+      messages: [{ role: 'user', content: messagesContent }],
+    });
+    const input = extractToolInput(res, toolName);
+    return { res, input };
+  };
+
+  const validate = (input) => {
+    const errors = [];
+    const t = input?.tokens || {};
+    for (const k of ['color', 'typography', 'layout', 'gradient']) {
+      if (!Array.isArray(t[k]) || t[k].length === 0) errors.push(`tokens.${k}-empty`);
+    }
+    const ld = input?.layerDetails || {};
+    for (const k of ['color', 'typography', 'layout', 'gradient', 'visualDirection']) {
+      if (!ld[k] || ld[k].length < 200) errors.push(`layerDetails.${k}-too-short`);
+    }
+    if (!input?.visualDirection?.markdown || input.visualDirection.markdown.length < 200) {
+      errors.push('visualDirection-markdown-too-short');
+    }
+    return errors;
+  };
+
+  onProgress?.(
+    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key, i) => ({
+      key,
+      status: i === 0 ? 'running' : 'pending',
+    })),
+  );
+
+  let { res: response, input: result } = await callOnce();
+  if (!result) {
+    throw new Error(`T3(handoff) tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  }
+
+  if (response?.stop_reason === 'max_tokens') {
+    throw new Error('T3(handoff) 응답이 max_tokens(8192)에서 잘렸습니다. 레퍼런스 개수를 줄여보세요.');
+  }
+
+  let errors = validate(result);
+  if (errors.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeHandoff] 검증 실패 → 재시도:', errors);
+    const retryInstruction = `[CRITICAL RETRY] Previous handoff bundle failed: ${errors.join(', ')}. ` +
+      'Re-emit COMPLETE bundle. ALL 4 token layers non-empty. ALL 5 layerDetails keys present (200+ chars each). ' +
+      'visualDirection.markdown 200+ chars. Use the pre-extracted pool as source.';
+    const retry = await callOnce(retryInstruction);
+    if (retry.input) {
+      result = retry.input;
+      response = retry.res;
+      errors = validate(result);
+      if (errors.length > 0) {
+        // eslint-disable-next-line no-console
+        console.error('[runAnalyzeHandoff] 재시도 후에도 검증 실패:', errors);
+      }
+    }
+  }
+
+  onProgress?.(
+    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key) => ({
+      key,
+      status: 'done',
+    })),
+  );
+
+  return {
+    tokens: result.tokens || null,
+    visualDirection: result.visualDirection || null,
+    layerDetails: result.layerDetails || null,
+  };
 }

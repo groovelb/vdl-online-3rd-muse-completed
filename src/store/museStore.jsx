@@ -173,7 +173,7 @@ export function MuseStoreProvider({ children, seed = 'supabase' }) {
         supabase.from('reference_items').select('*').order('created_at', { ascending: false }),
         supabase
           .from('projects')
-          .select('*, project_references(reference_id)')
+          .select('*, project_references(reference_id, use_layers)')
           .order('created_at', { ascending: false }),
         supabase.from('analysis_results').select('*'),
         supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
@@ -316,7 +316,9 @@ export function useProjectsSlice() {
       id,
       name: project.name,
       intent: project.intent || '',
-      type: project.type,
+      mode: project.mode,
+      userNotes: project.userNotes || '',
+      selectedRefs: project.selectedRefs || [],
       referenceIds: project.referenceIds || [],
       createdAt: project.createdAt || new Date().toISOString(),
     };
@@ -325,9 +327,17 @@ export function useProjectsSlice() {
       const { error } = await supabase.from('projects').insert(mapProjectToDb(full, user.id));
       if (error) throw error;
       if (full.referenceIds.length > 0) {
+        // selectedRefs[].useLayers 가 있으면 매핑, 없으면 빈 배열(자동)
+        const useLayersByRid = new Map(
+          (full.selectedRefs || []).map((sr) => [sr.id, Array.isArray(sr.useLayers) ? sr.useLayers : []]),
+        );
         const { error: e2 } = await supabase
           .from('project_references')
-          .insert(full.referenceIds.map((rid) => ({ project_id: id, reference_id: rid })));
+          .insert(full.referenceIds.map((rid) => ({
+            project_id: id,
+            reference_id: rid,
+            use_layers: useLayersByRid.get(rid) || [],
+          })));
         if (e2) throw e2;
       }
     }
@@ -340,7 +350,8 @@ export function useProjectsSlice() {
       const dbPatch = {};
       if ('name' in patch) dbPatch.name = patch.name;
       if ('intent' in patch) dbPatch.intent = patch.intent;
-      if ('type' in patch) dbPatch.type = patch.type;
+      if ('mode' in patch) dbPatch.mode = patch.mode;
+      if ('userNotes' in patch) dbPatch.user_notes = patch.userNotes;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from('projects').update(dbPatch).eq('id', id);
         if (error) throw error;
@@ -348,9 +359,16 @@ export function useProjectsSlice() {
       if ('referenceIds' in patch) {
         await supabase.from('project_references').delete().eq('project_id', id);
         if (patch.referenceIds.length > 0) {
+          const useLayersByRid = new Map(
+            (patch.selectedRefs || []).map((sr) => [sr.id, Array.isArray(sr.useLayers) ? sr.useLayers : []]),
+          );
           const { error: e3 } = await supabase
             .from('project_references')
-            .insert(patch.referenceIds.map((rid) => ({ project_id: id, reference_id: rid })));
+            .insert(patch.referenceIds.map((rid) => ({
+              project_id: id,
+              reference_id: rid,
+              use_layers: useLayersByRid.get(rid) || [],
+            })));
           if (e3) throw e3;
         }
       }

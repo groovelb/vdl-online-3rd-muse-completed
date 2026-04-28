@@ -73,5 +73,7 @@ curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**�
 | 026 | MUSE — ProjectDetailPage에 사용된 레퍼런스 썸네일 strip + Dark Reader 확장 차단 (Vite + Storybook) | 2026-04-27 | [026-MUSE-ProjectDetailPage-사용레퍼런스-썸네일-DarkReader-차단.md](./026-MUSE-ProjectDetailPage-사용레퍼런스-썸네일-DarkReader-차단.md) |
 | 027 | MUSE — AI 디자인 도구 페인포인트 정성리서치 3라운드 + UX 최소개입 로드맵 (TP1~TP6) 확정 | 2026-04-28 | [027-MUSE-페인포인트-정성리서치-3라운드-UX-최소개입-로드맵.md](./027-MUSE-페인포인트-정성리서치-3라운드-UX-최소개입-로드맵.md) |
 | 028 | MUSE — TP1~TP6 UX 개입 + 시스템 프롬프트 + 데이터 모델 + 스토리북 일괄 구현 (단일 세션) | 2026-04-28 | [028-MUSE-TP1-TP6-UX-개입-일괄-구현.md](./028-MUSE-TP1-TP6-UX-개입-일괄-구현.md) |
+| 029 | MUSE — TP1 (레퍼런스 업로드 의도 chip) 폐기 + 관련 코드·문서 일괄 정리 + CLAUDE.md Reporting Rules 신규 | 2026-04-28 | [029-MUSE-TP1-폐기-및-관련-코드-문서-정리.md](./029-MUSE-TP1-폐기-및-관련-코드-문서-정리.md) |
+| 030 | MUSE — Step 3 활용 노트 + Progressive Narrowing + TP5 폐기 + TP6 4-layer 통합 | 2026-04-28 | [030-MUSE-Step3-활용노트-Progressive-Narrowing-구현.md](./030-MUSE-Step3-활용노트-Progressive-Narrowing-구현.md) |
 
 </details>

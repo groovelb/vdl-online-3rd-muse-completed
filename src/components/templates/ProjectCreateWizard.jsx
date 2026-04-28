@@ -11,12 +11,17 @@ import { ReferencePicker } from './ReferencePicker.jsx';
 import { AnalysisProgress } from '../overlay-feedback/AnalysisProgress.jsx';
 import { ModeSelectCard } from '../card/ModeSelectCard.jsx';
 import { IntentGuideField } from '../input/IntentGuideField.jsx';
-import { RefinementNotesField } from '../input/RefinementNotesField.jsx';
+import Chip from '@mui/material/Chip';
 
 const STEPS = ['모드', '제목+의도', '레퍼런스', '활용 노트', '분석'];
 
-/** Step 3 모드별 최소 글자수 — concept=0(스킵 가능), system=30, handoff=50 */
-const STEP3_MIN_LENGTH = { concept: 0, system: 30, handoff: 50 };
+const LAYER_LABEL = {
+  color: '🎨 색',
+  typography: '📝 타이포',
+  layout: '📐 레이아웃',
+  gradient: '🌈 그라디언트',
+  visualDirection: '🎭 무드',
+};
 
 const MUSE_LAYERS = [
   { key: 'color', label: '컬러' },
@@ -34,7 +39,7 @@ const MODE_DEFS = [
 
 const initialState = {
   step: 0,
-  form: { name: '', intent: '', mode: 'system', userNotes: '' },
+  form: { name: '', intent: '', mode: 'system', referenceNotes: {} },
   selectedIds: [],
   selectedRefs: [], // TP4: [{ id, useLayers }]
   tagFilter: [],
@@ -56,8 +61,13 @@ function reducer(state, action) {
       return { ...state, form: { ...state.form, mode: action.payload } };
     case 'SET_INTENT':
       return { ...state, form: { ...state.form, intent: action.payload } };
-    case 'SET_USER_NOTES':
-      return { ...state, form: { ...state.form, userNotes: action.payload } };
+    case 'SET_REFERENCE_NOTE': {
+      const { id, text } = action.payload;
+      const next = { ...state.form.referenceNotes };
+      if (text && text.trim().length > 0) next[id] = text;
+      else delete next[id];
+      return { ...state, form: { ...state.form, referenceNotes: next } };
+    }
     case 'SET_SELECTED':
       return { ...state, selectedIds: action.payload };
     case 'SET_SELECTED_REFS':
@@ -164,7 +174,8 @@ export function ProjectCreateWizard({
   const isStep0Valid = !!state.form.mode;
   const isStep1Valid = state.form.name.trim().length > 0 && state.form.intent.trim().length > 0;
   const isStep2Valid = state.selectedIds.length > 0;
-  const isStep3Valid = (state.form.userNotes?.trim().length || 0) >= (STEP3_MIN_LENGTH[state.form.mode] ?? 30);
+  // Step 3 = ref별 활용 노트. 모두 선택 (0자 OK) — 부분 차용 의도가 없으면 비워둬도 진행.
+  const isStep3Valid = true;
 
   const handleStartAnalysis = async () => {
     dispatch({ type: 'GOTO', payload: 4 });
@@ -177,11 +188,11 @@ export function ProjectCreateWizard({
     });
 
     const payload = {
-      form: state.form,                  // userNotes 포함
+      form: state.form,                  // referenceNotes 포함
       selectedIds: state.selectedIds,
       selectedRefs: enrichedSelectedRefs,
       mode: state.form.mode,
-      userNotes: state.form.userNotes,
+      referenceNotes: state.form.referenceNotes,
     };
 
     let analysisResult = null;
@@ -298,20 +309,113 @@ export function ProjectCreateWizard({
       );
     }
 
-    // Step 3 — 활용 노트 (레퍼런스 본 후 명시 지시)
+    // Step 3 — 레퍼런스별 활용 노트 (각 ref 의 어느 부분을 차용할지)
     if (state.step === 3) {
       const selectedFullRefs = state.selectedIds
         .map((id) => archive.find((a) => a.id === id))
         .filter(Boolean)
         .map((a) => ({ id: a.id, thumbnailUrl: a.src || a.thumbnailUrl, title: a.title }));
+      const useLayersByRef = Object.fromEntries(
+        state.selectedRefs.map((sr) => [sr.id, sr.useLayers || []]),
+      );
+      const notes = state.form.referenceNotes || {};
       return (
-        <Box sx={ { maxWidth: 720, mx: 'auto', width: '100%' } }>
-          <RefinementNotesField
-            value={ state.form.userNotes }
-            onChange={ (next) => dispatch({ type: 'SET_USER_NOTES', payload: next }) }
-            selectedRefs={ selectedFullRefs }
-            mode={ state.form.mode }
-          />
+        <Box sx={ { maxWidth: 760, mx: 'auto', width: '100%' } }>
+          <Typography variant="h5" sx={ { fontWeight: 700, mb: 1 } }>
+            레퍼런스별 활용 노트
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={ { mb: 3 } }>
+            각 레퍼런스의 어느 부분을 차용할지 자유롭게 적어주세요. 비워둬도 진행 가능합니다.
+            노트는 분석 시 우선 반영되고, 산출물의 paste block 에 ref별 매칭 단서로 들어갑니다.
+          </Typography>
+          <Box sx={ { display: 'flex', flexDirection: 'column', gap: 2 } }>
+            { selectedFullRefs.map((ref) => {
+              const layers = useLayersByRef[ref.id] || [];
+              const note = notes[ref.id] || '';
+              return (
+                <Box
+                  key={ ref.id }
+                  sx={ {
+                    display: 'flex',
+                    gap: 2,
+                    alignItems: 'flex-start',
+                    p: 1.5,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                  } }
+                >
+                  <Box
+                    sx={ {
+                      width: 88,
+                      height: 88,
+                      flexShrink: 0,
+                      borderRadius: 1.5,
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                    } }
+                  >
+                    { ref.thumbnailUrl && (
+                      <Box
+                        component="img"
+                        src={ ref.thumbnailUrl }
+                        alt={ ref.title || ref.id }
+                        sx={ { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }
+                      />
+                    ) }
+                  </Box>
+                  <Box sx={ { flex: 1, minWidth: 0 } }>
+                    <Box sx={ { display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5 } }>
+                      <Typography variant="body2" sx={ { fontWeight: 600 } }>
+                        { ref.title || ref.id }
+                      </Typography>
+                      <Typography variant="caption" sx={ { fontFamily: 'monospace', color: 'text.secondary' } }>
+                        { ref.id }
+                      </Typography>
+                    </Box>
+                    { layers.length > 0 ? (
+                      <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 } }>
+                        { layers.map((l) => (
+                          <Chip
+                            key={ l }
+                            label={ LAYER_LABEL[l] || l }
+                            size="small"
+                            variant="outlined"
+                            sx={ { height: 20, fontSize: '0.65rem' } }
+                          />
+                        )) }
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary" sx={ { display: 'block', mb: 1 } }>
+                        차용 layer: 자동 (전체)
+                      </Typography>
+                    ) }
+                    <TextField
+                      fullWidth
+                      size="small"
+                      multiline
+                      minRows={ 2 }
+                      maxRows={ 3 }
+                      placeholder={ '예: hero 영역 색감만 차용 / 우측 사이드바 구조 모방' }
+                      value={ note }
+                      onChange={ (e) =>
+                        dispatch({ type: 'SET_REFERENCE_NOTE', payload: { id: ref.id, text: e.target.value } })
+                      }
+                      inputProps={ { maxLength: 100 } }
+                      helperText={ `${note.length} / 100` }
+                    />
+                  </Box>
+                </Box>
+              );
+            }) }
+            { selectedFullRefs.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={ { textAlign: 'center', py: 4 } }>
+                Step 2 에서 레퍼런스를 먼저 선택해주세요.
+              </Typography>
+            ) }
+          </Box>
         </Box>
       );
     }

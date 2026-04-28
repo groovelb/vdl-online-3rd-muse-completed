@@ -227,7 +227,146 @@ Grid: 12-col 24px gap (첨부 1번 ref-001 구조)
 
 ---
 
-## 8. 출처
+## 8. 실측 검증 — Concept 결과 분석 (2026-04-28)
+
+> 같은 input (intent: "functional dashboard with retro mood and paper texture", 3 references with per-ref notes) 으로 Claude Design + Gemini 두 플랫폼에 paste 후 결과 비교.
+> 산출물: `src/result/muse-retro-mood-dashboard-concept-2026-04-28/` + `gemini.png` + `claude-design.png`
+
+### 8.1 결과 비교
+
+| 평가 항목 | Claude Design | Gemini |
+|---|---|---|
+| 의도 해석 | ✅ Editorial daily journal "Margin" — 의도 잘 파악 | ❌ "Sustainable Future Initiative" 솔라셀 대시보드 — intent 와 무관 |
+| Layout | ✅ 모듈러 그리드 카드, refined radius, 12-col 톤 | ⚠️ placeholder 카드만, 깊이 없음 |
+| Typography | ✅ Editorial sans hierarchy | ⚠️ "Fit Build Launch" 큰 타이틀 — 의도와 어긋남 |
+| Background | ❌ **flat cream — ref-002 의 ethereal grain gradient 손실** | ❌ flat gray — grain 없음 |
+| Color | ✅ 잉크/크림 대비 잡힘 | ⚠️ 잘못된 black bar 하단 |
+| 사용자 노트 반영 | ⚠️ "paper-grained background, fixed" 가 단순 cream 으로 의역 | ❌ 거의 무시 |
+
+### 8.2 본질 진단 — 5 가지 prompt 결함
+
+| # | 문제 | 위치 | 영향 |
+|---|---|---|---|
+| **A** | 단일 prose 한 단락 (467자) | `concept-prompt.md` Prompt(raw) 섹션 | weight 분리 없음 → 모델이 핵심/부가 구분 불가 |
+| **B** | 사용자 노트가 "semantic, not verbatim" 으로 약화 | T3 system prompt 룰 | "use retro style paper grained background with fixed position" → "종이의 온기" 로 축소. **강도 손실** |
+| **C** | Reference 본문 직접 인용 0건 | prompt 본문 vs 첨부물 매칭 표 분리 | 본문에 `ref-002` 출처 명시 없음 → 모델이 첨부 이미지 시각과 본문 추상 묘사 link 못 함 |
+| **D** | Negative / Avoid 섹션 부재 | T3 system prompt | Claude Cookbook 명시: "explicit avoidance" 가 weighting 핵심. `purple gradients on white` 류 generic 회귀 차단 못 함 |
+| **E** | Goal 추상 ("retro mood") | concept output | "1970s editorial? 80s synth?" 모호 → Gemini 가 "Sustainable Future" 로 hallucinate |
+
+### 8.3 외부 자료 핵심 권고 (Anthropic / Google 공식)
+
+- **Anthropic Cookbook (frontend aesthetics)**:
+  - "Claude **defaults to safe choices unless explicitly encouraged otherwise**" — Claude Design 의 cream 회귀 정확히 이것
+  - 4 차원 분리 권장: **Typography / Color & Theme / Motion / Backgrounds** — 단락 prose 가 아니라 분리 섹션
+  - Background: "**Layer CSS gradients, geometric patterns, contextual effects** rather than defaulting to solid colors"
+  - 강조 메커니즘 = **explicit avoidance** ("Never use Inter / Roboto / Arial...")
+  - "**Reference the design system explicitly. If Primary Button or Card layout exists, name them in the prompt**"
+- **Google Gemini 2.5 Image**:
+  - "Describe the scene, not just keywords" (우리 prose 충족 ✅)
+  - 권장 순서: subject → composition → environment → lighting → **textures** → aspect ratio
+  - "Use **semantic positive framing**: NOT 'no cars' BUT 'empty deserted street'"
+  - 정형 weighting 시스템은 공식 미제공 — 모델이 prompt 의 **명확성** 에 의존
+
+---
+
+## 9. Concept Prompt Schema 재설계 — 5 섹션 sectionalize
+
+### 9.1 새 출력 구조
+
+```markdown
+## GOAL
+{1줄, 시대·장르 구체 — 추상 형용사 대신 "1970s editorial magazine inspired functional dashboard" 식}
+
+## STYLE [CRITICAL]
+- {핵심1: 사용자 노트 verbatim, 출처 ref 직접 명시}
+- {핵심2: verbatim, 출처 ref}
+- {핵심3: verbatim, 출처 ref}
+
+## REFERENCES
+- 첨부 1번 `01-...jpg`: {what to copy} — {ignore via 차집합}
+- 첨부 2번 `02-...jpg`: {what to copy} — {ignore}
+- 첨부 3번 `03-...jpg`: {what to copy} — {ignore}
+
+## TOKENS
+- Color: Primary {hex}, Surface {hex}, Accent {hex}
+- Type: {family} {weight} {size}
+- Grid: {cols}-col {gap}px gap, max {width}
+
+## AVOID
+- {generic default 차단: "flat solid background", "predictable card grid", "Inter/Roboto fonts" 등}
+```
+
+### 9.2 핵심 변화 (vs 현재)
+
+| 항목 | 현재 | 개선 |
+|---|---|---|
+| 구조 | 단락 prose | **5 섹션 markdown headers** |
+| 사용자 노트 | "semantic, not verbatim" 의역 | **`[CRITICAL]` 섹션에 verbatim 인용** |
+| Reference 출처 | 본문 외부 매칭 표 only | 본문 안 in-text + 매칭 표 **둘 다** |
+| Negative | 없음 | `## AVOID` 섹션 신설 |
+| Weight | 자연어 강조어 ("핵심", "중요") | **`[CRITICAL]` 섹션 헤더 + bullets** |
+| Goal | 추상 ("retro mood") | 시대·장르 구체 (extracted.tags 활용) |
+
+### 9.3 자수 한도 — 800자 → 1000자
+
+- sectionalize 헤더 + bullet 마커 자체로 자수 소요
+- Gemini 약점은 **길이가 아니라 명확성** — 늘려도 무방
+- `TASK_ANALYZE_CONCEPT.toolSchemas[0].input_schema.properties.prompt.maxLength` 800 → **1000**
+- minLength 200 → **300** (5 섹션 모두 포함하려면 최소 자수 ↑)
+
+### 9.4 T3 system prompt 강화 항목 (concept 전용)
+
+| 항목 | 변경 |
+|---|---|
+| 출력 형식 | "5 band 자연어 단락" → **"5 섹션 markdown (## GOAL / ## STYLE [CRITICAL] / ## REFERENCES / ## TOKENS / ## AVOID)"** |
+| 사용자 노트 | "semantic 반영" → **"`[CRITICAL]` 섹션에 verbatim 인용"** |
+| Reference 인용 | 권장 → **각 [CRITICAL] bullet 옆에 출처 ref-XXX + attachFile 직접 명시 강제** |
+| Negative | 없음 → **`## AVOID` 섹션에 1+ 항목 강제** ("flat solid background", "purple gradients on white", 등 cliché 차단) |
+| Goal 구체화 | 추상 형용사 허용 → **시대·장르·페르소나 명시 권장** (extracted.tags.visualDirection.genre/style 활용) |
+| 마크다운 금지 룰 | 기존 "##, **, \`\`\`, - bullets 금지" → **"## headers + bullet 허용 (sectionalize 위해)"** |
+
+### 9.5 자동 검증 룰 추가
+
+기존 (concept tool schema 검증):
+- 길이 200-800
+- HEX 3+
+- 마크다운 부재
+- 토큰 ID 부재
+
+변경:
+- 길이 300-1000
+- HEX 3+
+- **`## STYLE [CRITICAL]` 섹션 존재 (정규식 매치)**
+- **`## AVOID` 섹션 존재 (정규식 매치)**
+- 토큰 ID 부재 (id naming 표기 금지 유지)
+- 마크다운 헤더 **허용** (단 ` ``` ` 코드블록 여전히 금지)
+
+---
+
+## 10. 신규 작업 우선순위 (Concept Schema 재설계 적용)
+
+§6 의 1-8 phase 는 완료/진행 중. 이번 검증 후 추가 phase:
+
+| Phase | 항목 | 적용 파일 | 기대 효과 |
+|---|---|---|---|
+| **A** | T3 concept system prompt 의 output 형식을 5 섹션 markdown 으로 변경 + 사용자 노트 verbatim 룰 | `aiTasks.js` `TASK_ANALYZE_CONCEPT.systemPrompt` | weight 분리 + 사용자 강조 보존 |
+| **B** | tool_schema maxLength 800→1000, minLength 200→300 | `aiTasks.js` 동일 task | sectionalize 자수 확보 |
+| **C** | `## AVOID` 섹션 강제 + `## STYLE [CRITICAL]` 섹션 강제 (system prompt + 자동 검증) | `aiTasks.js` + `museAiTasks.js` `runAnalyzeConcept` validate() | generic 회귀 차단 |
+| **D** | Goal 시대·장르 구체화 룰 — `extracted.tags.visualDirection.genre/style` 를 prompt 에 명시 인용 권장 | `aiTasks.js` system prompt | "retro mood" 모호성 해소 |
+| **E** | 마크다운 금지 룰 완화 — `##` headers + `-` bullets 허용 (단 코드블록 여전히 금지) | validate() 정규식 수정 | sectionalize 호환 |
+| **F** | 동일 input 으로 재호출 → Claude Design / Gemini 결과 재검증 | manual | 효과 측정 |
+
+### 10.1 시스템 / handoff 모드 적용 여부
+
+- 본 §9 의 sectionalize 는 **concept 전용**. system / handoff 는 schema 가 다름 (4 token layer + VD MD / + layerDetails) — 자체 구조가 이미 sectionalize.
+- 단 §8.2 의 (B) (D) (E) 는 system / handoff system prompt 에도 부분 적용 권장:
+  - (B) 사용자 노트 verbatim — 이미 강제됨 (이번 세션) ✓
+  - (D) Negative / Avoid — system / handoff 에는 아직 없음. 추후 보강
+  - (E) Goal 구체화 — 모든 mode 공통
+
+---
+
+## 11. 출처
 
 - [Introducing Claude Design by Anthropic Labs](https://www.anthropic.com/news/claude-design-anthropic-labs)
 - [Get started with Claude Design (Help Center)](https://support.claude.com/en/articles/14604416-get-started-with-claude-design)
@@ -241,3 +380,8 @@ Grid: 12-col 24px gap (첨부 1번 ref-001 구조)
 - [Gemini Apps Help — Files](https://support.google.com/gemini/answer/14903178)
 - [Claude Vision (Anthropic Docs)](https://platform.claude.com/docs/en/build-with-claude/vision)
 - [Claude.ai Supported File Types](https://support.claude.com/en/articles/8241126-supported-file-types-on-claude-ai)
+- [Prompt design strategies — Gemini API (Google)](https://ai.google.dev/gemini-api/docs/prompting-strategies)
+- [How to prompt Gemini 2.5 Flash Image Generation (Google Developers Blog)](https://developers.googleblog.com/how-to-prompt-gemini-2-5-flash-image-generation-for-the-best-results/)
+- [Prompting for frontend aesthetics (Claude Cookbook)](https://platform.claude.com/cookbook/coding-prompting-for-frontend-aesthetics)
+- [Claude prompting best practices (Claude Docs)](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
+- [awesome-claude-design (community curated)](https://github.com/rohitg00/awesome-claude-design)

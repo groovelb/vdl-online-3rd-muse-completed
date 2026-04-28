@@ -29,6 +29,19 @@ import {
  *   - 4xx (429 제외): no retry (재호출해도 같은 에러)
  *   - tool_use 응답 없음: 1회 retry (Haiku 가 간헐적으로 schema 위반)
  */
+/** ref 의 첨부 파일명 추론 (paste block 의 inferImageExt 와 동일 로직) */
+function inferRefAttachFile(ref, idx) {
+  const url = ref?.thumbnailUrl || '';
+  const m = String(url).match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  let ext = '.jpg';
+  if (m) {
+    const e = m[1].toLowerCase();
+    ext = e === 'jpeg' ? '.jpg' : `.${e}`;
+  }
+  const prefix = String(idx + 1).padStart(2, '0');
+  return `${prefix}-${ref.id}${ext}`;
+}
+
 /**
  * Build per-reference notes block for T3 system prompts.
  * selectedRefs[].note 가 비어있지 않은 ref 만 포함.
@@ -37,13 +50,26 @@ import {
 function buildReferenceNotesBlock(selectedRefs) {
   const withNotes = (selectedRefs || []).filter((r) => r?.note && String(r.note).trim().length > 0);
   if (withNotes.length === 0) return '';
-  const lines = withNotes.map((r) => `- ${r.id}: "${String(r.note).trim()}"`);
+  const lines = withNotes.map((r, idx) => {
+    const i = (selectedRefs || []).indexOf(r);
+    const file = inferRefAttachFile(r, i >= 0 ? i : idx);
+    return `- ${r.id} (첨부 ${(i >= 0 ? i : idx) + 1}번 = \`${file}\`): "${String(r.note).trim()}"`;
+  });
   return `\n\n=== Per-Reference Notes (HIGHEST PRIORITY per ref) ===
 사용자가 각 ref 별로 적은 차용 의도. 이 노트가 명시한 부분만 출력에 반영하고
-명시되지 않은 layer 는 출처에서 제외 (negative = positive 의 차집합).
+명시되지 않은 layer 는 출처에서 제외 (차집합 = 무시).
 ${lines.join('\n')}
 
 각 노트 출처 토큰의 decisionRationale.appliedReferenceNote 에 verbatim 인용.`;
+}
+
+/** extractedPool 에 attachFile 필드 부여 — system prompt 가 정확한 파일명 인용하도록 */
+function withAttachFiles(selectedRefs) {
+  return (selectedRefs || []).map((ref, i) => ({
+    ...ref,
+    attachFile: inferRefAttachFile(ref, i),
+    attachIdx: i + 1,
+  }));
 }
 
 function isRetryableError(err) {
@@ -158,31 +184,22 @@ export async function runRecommend({ intent, mode = 'system', archive, n = 6, mo
  * @param {function} [params.onProgress]
  * @returns {Promise<{ tokens, visualDirection }>}
  */
-export async function runAnalyzeTokens({ intent, mode = 'system', selectedRefs, userNotes = '', model, onProgress }) {
+export async function runAnalyzeTokens({ intent, mode = 'system', selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
-  // 사전 추출된 데이터만 payload 로 전송. 이미지 없음.
-  const extractedPool = selectedRefs.map((ref) => ({
+  // 사전 추출된 데이터만 payload 로 전송. 이미지 없음. attachFile = ZIP 안 정확한 파일명.
+  const extractedPool = selectedRefs.map((ref, i) => ({
     id: ref.id,
+    attachIdx: i + 1,
+    attachFile: inferRefAttachFile(ref, i),
     title: ref.title || null,
     tags: ref.tags || {},
     dominantColors: ref.dominantColors || [],
     extracted: ref.extracted || {},
-    // TP4: 사용자가 이 ref 에서 가져올 레이어. 빈 배열이거나 미설정이면 전체 사용.
     useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
   }));
 
   const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
-  const trimmedNotes = (userNotes || '').trim();
-  const hasUserNotes = trimmedNotes.length >= 10;
-  const userNotesBlock = hasUserNotes
-    ? `\n\n=== User Notes (Step 3, HIGHEST PRIORITY) ===
-"${trimmedNotes}"
-
-Treat as USER REQUIREMENTS. Override conflicting earlier intent.
-For each token influenced by these notes, emit decisionRationale.appliedUserNotes
-with the relevant fragment (10-30 chars, verbatim). Do NOT echo across tokens not influenced.`
-    : '\n\n=== User Notes ===\n(none — fall back to layer curation / intent / mode defaults)';
 
   const content = [
     {
@@ -205,7 +222,7 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     .filter((r) => r.useLayers.length > 0)
     .map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`)
     .join('\n')
-  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}${refNotesBlock}${userNotesBlock}`,
+  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}${refNotesBlock}`,
     },
     {
       type: 'text',
@@ -308,11 +325,13 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
  * @param {function} [params.onProgress]
  * @returns {Promise<{ conceptPrompt: string }>}
  */
-export async function runAnalyzeConcept({ intent, selectedRefs, userNotes = '', model, onProgress }) {
+export async function runAnalyzeConcept({ intent, selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
-  const extractedPool = selectedRefs.map((ref) => ({
+  const extractedPool = selectedRefs.map((ref, i) => ({
     id: ref.id,
+    attachIdx: i + 1,
+    attachFile: inferRefAttachFile(ref, i),
     title: ref.title || null,
     tags: ref.tags || {},
     dominantColors: ref.dominantColors || [],
@@ -320,13 +339,6 @@ export async function runAnalyzeConcept({ intent, selectedRefs, userNotes = '', 
   }));
 
   const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
-  const trimmedNotes = (userNotes || '').trim();
-  const userNotesBlock = trimmedNotes.length >= 10
-    ? `\n\n=== User Notes (HIGHEST PRIORITY) ===
-"${trimmedNotes}"
-Reflect these notes in the prompt naturally (semantic, not verbatim).`
-    : '';
-
   const content = [
     {
       type: 'text',
@@ -334,7 +346,7 @@ Reflect these notes in the prompt naturally (semantic, not verbatim).`
 
 ${JSON.stringify(extractedPool, null, 2)}
 
-=== End of references ===${refNotesBlock}${userNotesBlock}`,
+=== End of references ===${refNotesBlock}`,
     },
     {
       type: 'text',
@@ -415,11 +427,13 @@ ${JSON.stringify(extractedPool, null, 2)}
  *
  * @returns {Promise<{ tokens, visualDirection, layerDetails }>}
  */
-export async function runAnalyzeHandoff({ intent, selectedRefs, userNotes = '', model, onProgress }) {
+export async function runAnalyzeHandoff({ intent, selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
-  const extractedPool = selectedRefs.map((ref) => ({
+  const extractedPool = selectedRefs.map((ref, i) => ({
     id: ref.id,
+    attachIdx: i + 1,
+    attachFile: inferRefAttachFile(ref, i),
     title: ref.title || null,
     tags: ref.tags || {},
     dominantColors: ref.dominantColors || [],
@@ -428,10 +442,6 @@ export async function runAnalyzeHandoff({ intent, selectedRefs, userNotes = '', 
   }));
 
   const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
-  const trimmedNotes = (userNotes || '').trim();
-  const userNotesBlock = trimmedNotes.length >= 10
-    ? `\n\n=== User Notes (HIGHEST PRIORITY) ===\n"${trimmedNotes}"\nReflect verbatim where appropriate via decisionRationale.appliedUserNotes.`
-    : '';
 
   const content = [
     {
@@ -445,7 +455,7 @@ ${JSON.stringify(extractedPool, null, 2)}
 === Layer Curation (TP4) ===
 ${extractedPool.some((r) => r.useLayers.length > 0)
   ? extractedPool.filter((r) => r.useLayers.length > 0).map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`).join('\n')
-  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${refNotesBlock}${userNotesBlock}`,
+  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${refNotesBlock}`,
     },
     {
       type: 'text',

@@ -505,11 +505,12 @@ If userNotes is empty or under 10 chars, fall back to L3 → L2 → L1 (default 
 - 노트가 비어있는 ref 는 useLayers 와 intent 만 따르면 됨.
 
 === Reference Anchoring (산출물 안에서 ref 직접 명시) ===
-visualDirection.markdown / layerDetails (handoff) 안에서 시각적 특징을 묘사할 때마다
-출처 ref id 를 명시하라. 가능하면 markdown image syntax 도 사용:
-  - 텍스트 인용: "잉크처럼 깊은 톤 (출처: ref-001)"
-  - 이미지 인용: "![ref-001](references/01-ref-001.jpg)"
-이 앵커는 외부 AI 도구가 산출물 + 첨부 이미지를 매칭할 때 단서가 된다.
+visualDirection.markdown / layerDetails 안에서 시각적 특징을 묘사할 때마다
+출처 ref id 를 명시하라. extractedPool 의 각 항목에 \`attachFile\` 필드가 있으니 그 값을 그대로 사용:
+  - 텍스트 인용: "잉크처럼 깊은 톤 (출처: ref-001 = 첨부 1번 \`01-ref-001.jpg\`)"
+  - 이미지 인용 (가능 시): "![ref-001](01-ref-001.jpg)" — attachFile 값 그대로 (폴더 path 붙이지 마라)
+폴더 경로 (references/) 는 본문에 박지 마라. 사용자가 ZIP 풀어 개별 파일로 첨부하므로
+파일명만 참조해야 외부 AI 가 매칭 가능.
 
 === Decision rationale (TP6, REQUIRED) ===
 For EVERY token in tokens.color / typography / layout / gradient, emit decisionRationale with:
@@ -753,6 +754,16 @@ Display 는 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 In
 1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고,
 Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다."
 
+=== Per-Reference Notes (있을 시 HIGHEST PRIORITY per ref) ===
+사용자가 ref 별로 적은 차용 의도가 user message 끝에 있을 수 있다 (예: "ref-002: hero 색감만 차용").
+해당 노트가 명시한 부분만 그 ref 에서 가져오고, 나머지 layer 는 무시 (차집합).
+prompt 안에 노트 의도가 자연스럽게 녹아야 한다 (verbatim 인용 X — 800자 제약 때문에 의미 반영).
+
+=== Reference Anchoring (선택 — 800자 안에서 가능하면) ===
+가능하면 prompt 안에 ref-XXX 식 출처 단서를 짧게 녹여라 (예: "ref-001 의 잉크 톤").
+extractedPool 의 attachFile 필드 (예: \`01-ref-001.jpg\`) 가 ZIP 안 정확한 파일명이며
+이게 외부 AI 첨부 매칭 단서가 된다. 800자 제약상 모든 시각 묘사에 박을 필요는 없음.
+
 === Global ===
 Respond via submit_concept_prompt ONLY. No prose outside the tool. Single call.`,
 
@@ -877,6 +888,18 @@ write a HANDOFF DETAIL EXPLANATION (한글) covering:
 
 === visualDirection markdown ===
 별도. 짧고 (300-600자) 톤·무드·금기 사항 중심. layerDetails 와 중복 X.
+
+=== Per-Reference Notes (HIGHEST PRIORITY per ref) ===
+사용자가 각 ref 별로 적은 자유 텍스트 노트가 user message 에 있을 수 있다 (예: "ref-002: hero 영역 색감만 차용").
+- 해당 ref 출처 토큰의 decisionRationale.appliedReferenceNote 에 노트 fragment (10-40자) verbatim 인용.
+- 노트가 명시한 layer 외 부분은 그 ref 에서 가져오지 않음 (차집합 = 무시).
+
+=== Reference Anchoring (REQUIRED) ===
+visualDirection.markdown 과 layerDetails 안에서 시각적 특징을 묘사할 때마다 출처 ref id 명시.
+extractedPool 항목의 \`attachFile\` 값을 그대로 사용 (폴더 path 절대 붙이지 마라):
+- 텍스트 인용: "잉크처럼 깊은 톤 (출처: ref-001 = 첨부 1번 \`01-ref-001.jpg\`)"
+- 이미지 인용 (가능 시): "![ref-001](01-ref-001.jpg)" — attachFile 값 그대로
+모든 토큰 decisionRationale.whichReferences 필수 (이미 명시됨).
 
 === Global ===
 Respond via submit_handoff_bundle ONLY. Single call. ALL fields required and non-empty.`,

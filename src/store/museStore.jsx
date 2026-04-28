@@ -317,7 +317,6 @@ export function useProjectsSlice() {
       name: project.name,
       intent: project.intent || '',
       mode: project.mode,
-      userNotes: project.userNotes || '',
       referenceNotes: project.referenceNotes || {},
       selectedRefs: project.selectedRefs || [],
       referenceIds: project.referenceIds || [],

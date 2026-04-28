@@ -57,19 +57,20 @@ export function ProjectCreateRoute() {
               }
             } }
             onAnalyze={ async (payload, updateLayers) => {
-              // TP4: payload.selectedRefs 의 useLayers 를 ref 에 머지
+              // ref별 useLayers + note 를 ref 에 머지 → buildReferenceNotesBlock 가 selectedRefs[].note 읽음
+              const refNotes = payload.form.referenceNotes || {};
               const enriched = payload.selectedIds.map((id) => {
                 const ref = references.find((r) => r.id === id);
                 if (!ref) return null;
                 const useLayers = payload.selectedRefs?.find((sr) => sr.id === id)?.useLayers || [];
-                return { ...ref, useLayers };
+                const note = refNotes[id] || '';
+                return { ...ref, useLayers, note };
               }).filter(Boolean);
 
               // mode 별 산출물 분기
               if (payload.form.mode === 'concept') {
                 return runAnalyzeConcept({
                   intent: payload.form.intent,
-                  userNotes: payload.form.userNotes,
                   selectedRefs: enriched,
                   onProgress: updateLayers,
                 }); // { conceptPrompt }
@@ -77,7 +78,6 @@ export function ProjectCreateRoute() {
               if (payload.form.mode === 'handoff') {
                 return runAnalyzeHandoff({
                   intent: payload.form.intent,
-                  userNotes: payload.form.userNotes,
                   selectedRefs: enriched,
                   onProgress: updateLayers,
                 }); // { tokens, visualDirection, layerDetails }
@@ -85,7 +85,6 @@ export function ProjectCreateRoute() {
               return runAnalyzeTokens({
                 intent: payload.form.intent,
                 mode: payload.form.mode,
-                userNotes: payload.form.userNotes,
                 selectedRefs: enriched,
                 onProgress: updateLayers,
               }); // { tokens, visualDirection }
@@ -96,7 +95,7 @@ export function ProjectCreateRoute() {
                   name: form.name,
                   intent: form.intent,
                   mode: form.mode,
-                  userNotes: form.userNotes,
+                  referenceNotes: form.referenceNotes || {},
                   selectedRefs: selectedRefs || [],
                   referenceIds: referenceIds || [],
                 });

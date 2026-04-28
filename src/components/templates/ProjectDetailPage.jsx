@@ -21,6 +21,8 @@ import { TypographyPreview } from '../data-display/TypographyPreview.jsx';
 import { LayoutTokenPreview } from '../data-display/LayoutTokenPreview.jsx';
 import { GradientPreview } from '../data-display/GradientPreview.jsx';
 import { ThemeExportDialog } from '../overlay-feedback/ThemeExportDialog.jsx';
+import { ReferenceNotesDialog } from '../overlay-feedback/ReferenceNotesDialog.jsx';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   buildDtcgTokens,
   buildTailwindConfig,
@@ -73,6 +75,7 @@ export function ProjectDetailPage({
   onUpdateToken,
   onBack,
   onDelete,
+  onUpdateReferenceNotes,
   sx,
 }) {
   const [activeLayer, setActiveLayer] = useState('color');
@@ -80,6 +83,12 @@ export function ProjectDetailPage({
   const [isDeleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copyState, setCopyState] = useState('idle'); // 'idle' | 'copied'
+  const [isNotesOpen, setNotesOpen] = useState(false);
+
+  const referenceNotes = project?.referenceNotes || {};
+  const useLayersByRef = Object.fromEntries(
+    (project?.selectedRefs || []).map((sr) => [sr.id, sr.useLayers || []]),
+  );
 
   const isConceptMode = project?.mode === 'concept';
   const isHandoffMode = project?.mode === 'handoff';
@@ -367,16 +376,34 @@ export function ProjectDetailPage({
         ) }
       </Box>
 
-        {/* 사용된 레퍼런스 — 합성 소스 이미지 */}
+        {/* 사용된 레퍼런스 — 합성 소스 이미지 + 활용 노트 편집 진입점 */}
         { usedReferences.length > 0 && (
           <Box sx={ { mb: 3 } }>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={ { display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: '0.08em' } }
-            >
-              사용된 레퍼런스 ({ usedReferences.length })
-            </Typography>
+            <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, mb: 1 } }>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={ { textTransform: 'uppercase', letterSpacing: '0.08em' } }
+              >
+                사용된 레퍼런스 ({ usedReferences.length })
+              </Typography>
+              { onUpdateReferenceNotes && (
+                <Button
+                  size="small"
+                  variant="text"
+                  startIcon={ <EditNoteIcon /> }
+                  onClick={ () => setNotesOpen(true) }
+                  sx={ { fontSize: '0.7rem', minWidth: 0, py: 0, color: 'text.secondary' } }
+                >
+                  활용 노트 편집
+                  { Object.keys(referenceNotes).length > 0 && (
+                    <Box component="span" sx={ { ml: 0.5, color: 'primary.main', fontWeight: 600 } }>
+                      ({ Object.keys(referenceNotes).length })
+                    </Box>
+                  ) }
+                </Button>
+              ) }
+            </Box>
             <Box
               sx={ {
                 display: 'flex',
@@ -385,34 +412,52 @@ export function ProjectDetailPage({
                 pb: 1,
               } }
             >
-              { usedReferences.map((ref) => (
-                <Box
-                  key={ ref.id }
-                  title={ ref.title || ref.id }
-                  sx={ {
-                    flexShrink: 0,
-                    width: 88,
-                    height: 88,
-                    borderRadius: 1.5,
-                    overflow: 'hidden',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                  } }
-                >
+              { usedReferences.map((ref) => {
+                const hasNote = !!referenceNotes[ref.id];
+                return (
                   <Box
-                    component="img"
-                    src={ ref.thumbnailUrl || ref.src }
-                    alt={ ref.title || ref.id }
+                    key={ ref.id }
+                    title={ hasNote ? `${ref.title || ref.id} — ${referenceNotes[ref.id]}` : (ref.title || ref.id) }
                     sx={ {
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
+                      position: 'relative',
+                      flexShrink: 0,
+                      width: 88,
+                      height: 88,
+                      borderRadius: 1.5,
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: hasNote ? 'primary.main' : 'divider',
+                      bgcolor: 'background.paper',
                     } }
-                  />
-                </Box>
-              )) }
+                  >
+                    <Box
+                      component="img"
+                      src={ ref.thumbnailUrl || ref.src }
+                      alt={ ref.title || ref.id }
+                      sx={ {
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      } }
+                    />
+                    { hasNote && (
+                      <Box
+                        sx={ {
+                          position: 'absolute',
+                          top: 4,
+                          right: 4,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: 'primary.main',
+                          boxShadow: '0 0 0 2px white',
+                        } }
+                      />
+                    ) }
+                  </Box>
+                );
+              }) }
             </Box>
           </Box>
         ) }
@@ -574,6 +619,15 @@ export function ProjectDetailPage({
         project={ project }
         analysis={ analysis }
         references={ references }
+      />
+
+      <ReferenceNotesDialog
+        open={ isNotesOpen }
+        onClose={ () => setNotesOpen(false) }
+        usedReferences={ usedReferences }
+        initialNotes={ referenceNotes }
+        useLayersByRef={ useLayersByRef }
+        onSave={ async (next) => onUpdateReferenceNotes?.(next) }
       />
 
       <Dialog

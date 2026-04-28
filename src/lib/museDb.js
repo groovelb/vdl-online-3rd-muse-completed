@@ -56,6 +56,7 @@ export function mapProjectFromDb(row) {
     intent: row.intent || '',
     mode: row.mode || 'system',
     userNotes: row.user_notes || '',
+    referenceNotes: row.reference_notes || {},
     referenceIds: projectRefs.map((pr) => pr.reference_id),
     selectedRefs: projectRefs.map((pr) => ({
       id: pr.reference_id,
@@ -73,6 +74,7 @@ export function mapProjectToDb(project, userId) {
     intent: project.intent || '',
     mode: project.mode || 'system',
     user_notes: project.userNotes || '',
+    reference_notes: project.referenceNotes || {},
   };
 }
 

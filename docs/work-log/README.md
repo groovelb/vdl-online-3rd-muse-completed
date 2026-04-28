@@ -75,5 +75,7 @@ curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**�
 | 028 | MUSE — TP1~TP6 UX 개입 + 시스템 프롬프트 + 데이터 모델 + 스토리북 일괄 구현 (단일 세션) | 2026-04-28 | [028-MUSE-TP1-TP6-UX-개입-일괄-구현.md](./028-MUSE-TP1-TP6-UX-개입-일괄-구현.md) |
 | 029 | MUSE — TP1 (레퍼런스 업로드 의도 chip) 폐기 + 관련 코드·문서 일괄 정리 + CLAUDE.md Reporting Rules 신규 | 2026-04-28 | [029-MUSE-TP1-폐기-및-관련-코드-문서-정리.md](./029-MUSE-TP1-폐기-및-관련-코드-문서-정리.md) |
 | 030 | MUSE — Step 3 활용 노트 + Progressive Narrowing + TP5 폐기 + TP6 4-layer 통합 | 2026-04-28 | [030-MUSE-Step3-활용노트-Progressive-Narrowing-구현.md](./030-MUSE-Step3-활용노트-Progressive-Narrowing-구현.md) |
+| 031 | MUSE — 모드별 산출물 분리: concept(웹프롬프트 800자) + handoff(프레임워크 번들 + 5 layer 한글 상세) 신설 | 2026-04-28 | [031-MUSE-mode별-산출물-분리-concept-handoff-리팩토링.md](./031-MUSE-mode별-산출물-분리-concept-handoff-리팩토링.md) |
+| 032 | MUSE — 레퍼런스별 활용 노트 + AI Paste Block + 외부 플랫폼 중립 Export 통합 | 2026-04-28 | [032-MUSE-레퍼런스별-노트-AI-paste-block-export-통합.md](./032-MUSE-레퍼런스별-노트-AI-paste-block-export-통합.md) |
 
 </details>

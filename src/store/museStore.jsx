@@ -318,6 +318,7 @@ export function useProjectsSlice() {
       intent: project.intent || '',
       mode: project.mode,
       userNotes: project.userNotes || '',
+      referenceNotes: project.referenceNotes || {},
       selectedRefs: project.selectedRefs || [],
       referenceIds: project.referenceIds || [],
       createdAt: project.createdAt || new Date().toISOString(),
@@ -352,6 +353,7 @@ export function useProjectsSlice() {
       if ('intent' in patch) dbPatch.intent = patch.intent;
       if ('mode' in patch) dbPatch.mode = patch.mode;
       if ('userNotes' in patch) dbPatch.user_notes = patch.userNotes;
+      if ('referenceNotes' in patch) dbPatch.reference_notes = patch.referenceNotes;
       if (Object.keys(dbPatch).length > 0) {
         const { error } = await supabase.from('projects').update(dbPatch).eq('id', id);
         if (error) throw error;

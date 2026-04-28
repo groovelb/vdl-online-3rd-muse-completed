@@ -15,6 +15,30 @@
 const onlyEnabled = (tokens = []) => tokens.filter((t) => t.isEnabled !== false);
 const safeId = (id) => String(id || '').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
 
+const inferImageExt = (url) => {
+  if (!url) return '.jpg';
+  const m = String(url).match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  if (!m) return '.jpg';
+  const ext = m[1].toLowerCase();
+  return ext === 'jpeg' ? '.jpg' : `.${ext}`;
+};
+
+/**
+ * 사용된 ref 를 안정적 순서로 정렬 + 첨부 순번 부여.
+ * 외부 도구의 첨부물 매칭 prose ("첨부 1번 = ref-XXX") 의 일관성 확보.
+ */
+function buildOrderedRefs(project, references) {
+  const ids = project?.referenceIds || [];
+  return ids
+    .map((id) => (references || []).find((r) => r.id === id))
+    .filter(Boolean)
+    .map((r, i) => ({
+      ...r,
+      attachIdx: i + 1,
+      attachFile: `${String(i + 1).padStart(2, '0')}-${r.id}${inferImageExt(r.thumbnailUrl)}`,
+    }));
+}
+
 /* ============================================
  * DTCG JSON
  * ============================================ */
@@ -290,6 +314,130 @@ ${layerDetails ? Object.entries(layerDetails).map(([k, v]) => `### ${k}\n${v}`).
 /* ============================================
  * DESIGN_SYSTEM.md (5 layer 상세 문서)
  * ============================================ */
+
+/* ============================================
+ * AI Paste Block (mode 공통, 플랫폼 중립)
+ *
+ * 외부 AI 도구 (Claude Design / Gemini / AI Studio / ChatGPT 등) 에 paste 할 단일 .md.
+ * 토큰 자연어 풀이 + 차용 정책 (per-ref) + 첨부물 매칭 prose 3중 표기.
+ * LLM 재호출 없음 — 결정론적 변환.
+ *
+ * @param {object} params
+ * @param {object} params.project - { id, name, intent, mode, referenceIds, selectedRefs, referenceNotes }
+ * @param {object} params.analysis - mode 별 layers (system/handoff: tokens / concept: { conceptPrompt })
+ * @param {Array} params.references - 전체 store references (id, thumbnailUrl, title)
+ * @returns {string} markdown
+ * ============================================ */
+export function buildAiPasteBlock({ project, analysis, references }) {
+  const mode = project?.mode || 'system';
+  const orderedRefs = buildOrderedRefs(project, references);
+  const notes = project?.referenceNotes || {};
+  const useLayersByRef = Object.fromEntries(
+    (project?.selectedRefs || []).map((sr) => [sr.id, sr.useLayers || []]),
+  );
+
+  const refMatchingLines = orderedRefs.map((r) => {
+    const layers = useLayersByRef[r.id] || [];
+    const note = notes[r.id] || '';
+    const layerStr = layers.length > 0 ? `차용: [${layers.join(', ')}]` : '차용: 자동 (전체)';
+    const noteStr = note ? ` — ${note}` : '';
+    return `- 첨부 ${r.attachIdx}번 (${r.id} · ${r.attachFile}): ${layerStr}${noteStr}`;
+  });
+
+  const head = [
+    `# ${project?.name || 'Untitled'} — AI Paste Block`,
+    '',
+    `> Claude Design / Gemini / AI Studio / ChatGPT 등 외부 AI 도구에 본문을 paste + 첨부 이미지 ${orderedRefs.length}장 함께 업로드.`,
+    '',
+    `## Goal`,
+    project?.intent || '(없음)',
+    '',
+  ];
+
+  // mode 별 본문
+  let body = [];
+  if (mode === 'concept') {
+    const prompt = analysis?.conceptPrompt || '';
+    body = [
+      `## Concept Prompt`,
+      prompt || '(아직 생성되지 않음)',
+      '',
+    ];
+  } else {
+    // system / handoff: 토큰 자연어 풀이
+    const c = onlyEnabled(analysis?.color || []);
+    const t = onlyEnabled(analysis?.typography || []);
+    const l = onlyEnabled(analysis?.layout || []);
+    const g = onlyEnabled(analysis?.gradient || []);
+
+    const colorLines = c.map((tok) => {
+      const role = tok.role ? `${tok.role} ` : '';
+      const refs = (tok.decisionRationale?.whichReferences || []).join(', ');
+      const refStr = refs ? ` (출처: ${refs})` : '';
+      return `- ${role}${tok.label || tok.id}: ${tok.hex}${refStr}`;
+    });
+
+    const typoLines = t.map((tok) => {
+      const refs = (tok.decisionRationale?.whichReferences || []).join(', ');
+      const refStr = refs ? ` (출처: ${refs})` : '';
+      return `- ${tok.variant || tok.label || tok.id}: ${tok.fontFamily} ${tok.fontWeight} ${tok.fontSize} / line-height ${tok.lineHeight}${refStr}`;
+    });
+
+    const layoutLines = l.map((tok) => {
+      const refs = (tok.decisionRationale?.whichReferences || []).join(', ');
+      const refStr = refs ? ` (출처: ${refs})` : '';
+      if (tok.kind === 'grid') return `- Grid: ${tok.columns}-col, gap ${tok.gap}px${refStr}`;
+      if (tok.kind === 'spacing') return `- Spacing ${tok.label || tok.id}: ${tok.px}px${refStr}`;
+      if (tok.kind === 'container') return `- Container ${tok.label || tok.id}: max-width ${tok.maxWidth}${refStr}`;
+      return `- ${tok.label || tok.id}: ${tok.kind}${refStr}`;
+    });
+
+    const gradientLines = g.map((tok) => {
+      const refs = (tok.decisionRationale?.whichReferences || []).join(', ');
+      const refStr = refs ? ` (출처: ${refs})` : '';
+      return `- ${tok.label || tok.id}: ${tok.gradient}${refStr}`;
+    });
+
+    const vd = analysis?.visualDirection || {};
+    const vdTags = vd.tags ? Object.entries(vd.tags).flatMap(([k, v]) => (v || []).map((x) => `${k}:${x}`)).join(', ') : '';
+
+    body = [
+      `## Design System`,
+      '',
+      `### Color`,
+      ...(colorLines.length ? colorLines : ['(없음)']),
+      '',
+      `### Typography`,
+      ...(typoLines.length ? typoLines : ['(없음)']),
+      '',
+      `### Layout`,
+      ...(layoutLines.length ? layoutLines : ['(없음)']),
+      '',
+      `### Gradient`,
+      ...(gradientLines.length ? gradientLines : ['(없음)']),
+      '',
+      `### Visual Direction`,
+      vdTags ? `**Tags**: ${vdTags}` : '',
+      vd.markdown || '',
+      '',
+    ];
+  }
+
+  const tail = [
+    `## 첨부물 매칭 (CRITICAL — 외부 AI 가 부분 차용 인식하도록)`,
+    '',
+    ...(refMatchingLines.length ? refMatchingLines : ['(첨부 레퍼런스 없음)']),
+    '',
+    `> 위 매칭 표는 외부 AI 가 본문의 ref-XXX 언급과 첨부 이미지를 연결하기 위한 것.`,
+    `> 각 ref 의 "차용" 항목 외 layer 는 ref 에서 가져오지 않습니다 (차집합 = 무시).`,
+    '',
+    `---`,
+    '',
+    `_Generated by MUSE on ${new Date().toISOString().slice(0, 10)} (mode: ${mode})_`,
+  ];
+
+  return [...head, ...body, ...tail].filter((x) => x !== null && x !== undefined).join('\n');
+}
 
 export function buildDesignSystemMd({ project, tokens, visualDirection, layerDetails }) {
   const date = new Date().toISOString().slice(0, 10);

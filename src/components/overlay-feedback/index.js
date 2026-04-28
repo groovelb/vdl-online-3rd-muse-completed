@@ -13,3 +13,6 @@ export { ThemeExportDialog } from './ThemeExportDialog.jsx';
 // ReferenceDetailDialog - 아카이브 카드 클릭 시 레퍼런스 상세 정보 모달
 export { ReferenceDetailDialog } from './ReferenceDetailDialog.jsx';
 
+// ReferenceNotesDialog - 프로젝트 상세에서 ref별 자유 텍스트 노트 일괄 편집
+export { ReferenceNotesDialog } from './ReferenceNotesDialog.jsx';
+

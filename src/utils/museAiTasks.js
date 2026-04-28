@@ -29,6 +29,23 @@ import {
  *   - 4xx (429 제외): no retry (재호출해도 같은 에러)
  *   - tool_use 응답 없음: 1회 retry (Haiku 가 간헐적으로 schema 위반)
  */
+/**
+ * Build per-reference notes block for T3 system prompts.
+ * selectedRefs[].note 가 비어있지 않은 ref 만 포함.
+ * 모델은 이 노트를 verbatim 인용하고 차용 layer 외 부분 무시해야 함.
+ */
+function buildReferenceNotesBlock(selectedRefs) {
+  const withNotes = (selectedRefs || []).filter((r) => r?.note && String(r.note).trim().length > 0);
+  if (withNotes.length === 0) return '';
+  const lines = withNotes.map((r) => `- ${r.id}: "${String(r.note).trim()}"`);
+  return `\n\n=== Per-Reference Notes (HIGHEST PRIORITY per ref) ===
+사용자가 각 ref 별로 적은 차용 의도. 이 노트가 명시한 부분만 출력에 반영하고
+명시되지 않은 layer 는 출처에서 제외 (negative = positive 의 차집합).
+${lines.join('\n')}
+
+각 노트 출처 토큰의 decisionRationale.appliedReferenceNote 에 verbatim 인용.`;
+}
+
 function isRetryableError(err) {
   if (!err) return false;
   const status = err.status;
@@ -155,6 +172,7 @@ export async function runAnalyzeTokens({ intent, mode = 'system', selectedRefs, 
     useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
   }));
 
+  const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
   const trimmedNotes = (userNotes || '').trim();
   const hasUserNotes = trimmedNotes.length >= 10;
   const userNotesBlock = hasUserNotes
@@ -187,7 +205,7 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     .filter((r) => r.useLayers.length > 0)
     .map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`)
     .join('\n')
-  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}${userNotesBlock}`,
+  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}${refNotesBlock}${userNotesBlock}`,
     },
     {
       type: 'text',
@@ -301,6 +319,7 @@ export async function runAnalyzeConcept({ intent, selectedRefs, userNotes = '', 
     extracted: ref.extracted || {},
   }));
 
+  const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
   const trimmedNotes = (userNotes || '').trim();
   const userNotesBlock = trimmedNotes.length >= 10
     ? `\n\n=== User Notes (HIGHEST PRIORITY) ===
@@ -315,7 +334,7 @@ Reflect these notes in the prompt naturally (semantic, not verbatim).`
 
 ${JSON.stringify(extractedPool, null, 2)}
 
-=== End of references ===${userNotesBlock}`,
+=== End of references ===${refNotesBlock}${userNotesBlock}`,
     },
     {
       type: 'text',
@@ -408,6 +427,7 @@ export async function runAnalyzeHandoff({ intent, selectedRefs, userNotes = '', 
     useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
   }));
 
+  const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
   const trimmedNotes = (userNotes || '').trim();
   const userNotesBlock = trimmedNotes.length >= 10
     ? `\n\n=== User Notes (HIGHEST PRIORITY) ===\n"${trimmedNotes}"\nReflect verbatim where appropriate via decisionRationale.appliedUserNotes.`
@@ -425,7 +445,7 @@ ${JSON.stringify(extractedPool, null, 2)}
 === Layer Curation (TP4) ===
 ${extractedPool.some((r) => r.useLayers.length > 0)
   ? extractedPool.filter((r) => r.useLayers.length > 0).map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`).join('\n')
-  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${userNotesBlock}`,
+  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${refNotesBlock}${userNotesBlock}`,
     },
     {
       type: 'text',

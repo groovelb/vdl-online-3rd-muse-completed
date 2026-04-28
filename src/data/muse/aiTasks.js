@@ -495,6 +495,22 @@ direct mapping instruction.
 
 If userNotes is empty or under 10 chars, fall back to L3 → L2 → L1 (default behavior).
 
+=== Per-Reference Notes (사용자가 각 ref 별로 적은 자유 텍스트) ===
+프로젝트 단위 userNotes 와 별개로, 각 reference 마다 \`referenceNotes[refId]\` 가 있을 수 있다.
+이 노트는 그 ref 에 한정된 차용 의도이다 (예: "ref-002 의 hero 영역 색감만 차용").
+
+규칙:
+- 해당 ref 출처 토큰의 decisionRationale.appliedReferenceNote 필드에 노트 verbatim 인용 (10-40자 fragment).
+- 노트가 명시한 부분 외 (예: layout 무시) 은 출력에서 제외.
+- 노트가 비어있는 ref 는 useLayers 와 intent 만 따르면 됨.
+
+=== Reference Anchoring (산출물 안에서 ref 직접 명시) ===
+visualDirection.markdown / layerDetails (handoff) 안에서 시각적 특징을 묘사할 때마다
+출처 ref id 를 명시하라. 가능하면 markdown image syntax 도 사용:
+  - 텍스트 인용: "잉크처럼 깊은 톤 (출처: ref-001)"
+  - 이미지 인용: "![ref-001](references/01-ref-001.jpg)"
+이 앵커는 외부 AI 도구가 산출물 + 첨부 이미지를 매칭할 때 단서가 된다.
+
 === Decision rationale (TP6, REQUIRED) ===
 For EVERY token in tokens.color / typography / layout / gradient, emit decisionRationale with:
   - whichReferences: array of ref IDs that contributed to this token (subset of input)

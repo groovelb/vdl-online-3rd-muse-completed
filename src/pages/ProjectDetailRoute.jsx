@@ -9,7 +9,7 @@ import { useAnalysesSlice, useProjectsSlice, useReferencesSlice } from '../store
 export function ProjectDetailRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { projects, removeProject } = useProjectsSlice();
+  const { projects, removeProject, updateProject } = useProjectsSlice();
   const { getAnalysis, updateLayer } = useAnalysesSlice();
   const { references } = useReferencesSlice();
 
@@ -42,6 +42,9 @@ export function ProjectDetailRoute() {
       onDelete={ async () => {
         await removeProject(project.id);
         navigate('/projects');
+      } }
+      onUpdateReferenceNotes={ async (nextNotes) => {
+        await updateProject(project.id, { referenceNotes: nextNotes });
       } }
     />
   );

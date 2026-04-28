@@ -97,6 +97,7 @@
  * @property {ProjectMode} [mode] - TP2 모드 선택 (default: 'system')
  * @property {SelectedReferenceCuration[]} [selectedRefs] - TP4 레퍼런스별 layer 큐레이션
  * @property {string} [userNotes] - Step 3 활용 노트 (레퍼런스 본 후 명시 지시, T3 합성 우선 적용)
+ * @property {Object<string, string>} [referenceNotes] - 레퍼런스별 자유 텍스트 노트 ({refId: ≤100자}). ProjectDetailPage 에서 입력. paste block 생성에 결정론적 반영. T3 재호출 X
  * @property {string[]} referenceIds
  * @property {string} createdAt
  */
@@ -111,6 +112,7 @@
  * @property {TokenLayerKey[]} [whichLayers] - 어느 레이어에서 가져왔는가 (TP4 useLayers 반영)
  * @property {string} whyChosen - 사용자 의도와 매칭 이유 (한줄)
  * @property {string} [appliedUserNotes] - Step 3 userNotes 중 이 토큰 결정에 직접 영향 미친 fragment (10~30자)
+ * @property {string} [appliedReferenceNote] - 출처 ref 의 referenceNotes 중 이 토큰에 영향 미친 fragment (10~40자)
  * @property {Array<{value: string, reason: string}>} [alternativesConsidered] - 탈락 후보 + 사유
  */
 

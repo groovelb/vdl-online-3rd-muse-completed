@@ -12,3 +12,6 @@ export { ThemeExportDialog } from './ThemeExportDialog.jsx';
 
 // ReferenceDetailDialog - 아카이브 카드 클릭 시 레퍼런스 상세 정보 모달
 export { ReferenceDetailDialog } from './ReferenceDetailDialog.jsx';
+
+// AnalysisConfirmBox - TP5 분석 직전 확인 박스
+export { AnalysisConfirmBox } from './AnalysisConfirmBox.jsx';

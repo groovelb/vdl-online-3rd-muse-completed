@@ -281,40 +281,57 @@ export const TASK_RECOMMEND = {
 
   input: {
     kind: 'text',
-    description: '의도 + 아카이브 메타 (이미지 없음, 레이어별 태그 포함)',
+    description: '의도 + 모드 + 아카이브 메타 (이미지 없음, 레이어별 태그 포함)',
     shape: `{
   intent: string,
   type: 'landing'|'dashboard'|'mobile'|'brand',
+  mode: 'concept'|'system'|'handoff',  // TP2: 정렬 알고리즘 분기
   archive: Array<{ id, tags: ReferenceLayeredTags, dominantColors[], title }>,
   n?: number
 }`,
   },
 
   output: {
-    description: '추천 id 목록 + 각 id별 한 줄 근거',
-    shape: `{ recommendedIds: string[5..10], reasons: Array<{ id, reason }> }`,
+    description: '추천 id 목록 + 각 id별 한 줄 근거 + 어느 레이어가 강점인지',
+    shape: `{
+  recommendedIds: string[5..10],
+  reasons: Array<{ id, reason }>,
+  referenceLayer: Array<{ id, layers: TokenLayerKey[1..2] }>  // TP4 자동 추천
+}`,
   },
 
   systemPrompt: `You are MUSE's reference matcher.
 
-You receive a project intent sentence, a project type, and the archive metadata
+You receive a project intent sentence, a project type, a mode, and the archive metadata
 (IDs, layered tags, dominantColors, titles). You DO NOT see images.
 
 Select the top N references (5 to 10) that best match the intent.
 
-Rules:
+=== Mode-aware ranking (TP2) ===
+- mode="concept"  → prioritize DIVERSITY: pick refs spanning different visualDirection.style values
+- mode="system"   → prioritize COHERENCE: pick refs with overlapping color/typography for composability
+- mode="handoff"  → prioritize COMPLETENESS: pick refs whose tags cover all 5 layers
+
+=== Base rules ===
 - Work only with provided metadata.
-- Prioritize in order:
-  (1) visualDirection tags (genre/style/subject) overlap with intent,
+- Prioritize in order (within mode):
+  (1) visualDirection tags overlap with intent,
   (2) color/typography/layout/gradient tag overlap,
   (3) dominantColors palette alignment with intent mood,
   (4) project type fit.
 - For each recommended id, a ONE-SENTENCE Korean reason (max 40 characters).
 - Rank best-first.
+
+=== referenceLayer (TP4) — REQUIRED ===
+For each recommendedId, emit referenceLayer with 1-2 most useful TokenLayerKey for this ref:
+  TokenLayerKey: 'color' | 'typography' | 'layout' | 'gradient' | 'visualDirection'
+The user will see these as default chip selection in Step 2 and may toggle.
+
 - Respond via submit_recommendations tool. No prose.`,
 
   userMessageTemplate: `Project intent: "{{intent}}"
 Project type: {{type}}
+Project mode: {{mode}}
 Requested count: {{n}}
 Archive ({{archiveCount}} items):
 {{archiveJson}}
@@ -323,7 +340,7 @@ Select the best matches.`,
 
   toolSchema: {
     name: 'submit_recommendations',
-    description: 'Submit ranked recommended reference ids with reasons.',
+    description: 'Submit ranked recommended reference ids with reasons and per-ref recommended layers.',
     input_schema: {
       type: 'object',
       properties: {
@@ -336,8 +353,24 @@ Select the best matches.`,
             required: ['id', 'reason'],
           },
         },
+        referenceLayer: {
+          type: 'array',
+          description: 'TP4: 각 추천 ref가 어느 레이어에 가장 유용한지 1~2개',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              layers: {
+                type: 'array',
+                items: { type: 'string', enum: ['color', 'typography', 'layout', 'gradient', 'visualDirection'] },
+                minItems: 1, maxItems: 2,
+              },
+            },
+            required: ['id', 'layers'],
+          },
+        },
       },
-      required: ['recommendedIds', 'reasons'],
+      required: ['recommendedIds', 'reasons', 'referenceLayer'],
     },
   },
 
@@ -388,12 +421,15 @@ export const TASK_ANALYZE_TOKENS = {
 
   input: {
     kind: 'text',
-    description: '선택된 N 장의 T1 pre-extracted 데이터 (tags + dominantColors + extracted{palette/typo/layout/gradient}) + 의도 + 유형',
+    description: '선택된 N 장의 T1 pre-extracted 데이터 + 의도 + 유형 + 모드 + 레이어 큐레이션',
     shape: `{
   intent: string,
   type: 'landing'|'dashboard'|'mobile'|'brand',
-  references: Array<{ id, title, tags, dominantColors[], extracted }>
-    // 전부 text. 이미지 없음. T1 이 이미 관찰 가능한 값들을 모두 뽑아놓은 상태.
+  mode: 'concept'|'system'|'handoff',  // TP2: 합성 톤 분기
+  references: Array<{
+    id, title, tags, dominantColors[], extracted,
+    useLayers?: TokenLayerKey[]  // TP4: 사용자가 이 ref에서 가져올 레이어. 빈 배열이면 전체
+  }>
 }`,
   },
 
@@ -435,6 +471,25 @@ Produce: a UNIFIED design system that reflects the intent strongly, by:
 
 Reference images are NOT provided. Do not ask for them. Do not pretend to "see" them.
 Trust the pre-extracted data. Your value is composition, not observation.
+
+=== Mode-aware composition (TP2) ===
+- mode="concept"  → BIAS toward distinctive choices. Bold primary. Allow gradient, expressive type. Lower contrast/role enforcement.
+- mode="system"   → ENFORCE role uniqueness, AAA contrast for primary on bg, hierarchy h1>h2>body1 strict, conservative naming.
+- mode="handoff"  → OPTIMIZE naming for MUI/DTCG: kebab-case ids, semantic labels, every token decisionRationale required.
+
+=== Layer curation (TP4) ===
+For each reference, if \`useLayers\` is set and non-empty, ONLY consume those layers from this ref's extracted.
+Other layers from the same ref are user-rejected — IGNORE them even if extracted is rich.
+This is the user's explicit curation. Respect it strictly.
+If useLayers is missing or empty, use the ref's full extracted (default behavior).
+
+=== Decision rationale (TP6, REQUIRED) ===
+For EVERY token in tokens.color / typography / layout / gradient, emit decisionRationale with:
+  - whichReferences: array of ref IDs that contributed to this token (subset of input)
+  - whichLayers: which layers from those refs (per useLayers if set)
+  - whyChosen: ONE LINE in user's intent language explaining why this value
+  - alternativesConsidered: optional, array of {value, reason} for top 1-2 rejected candidates
+This is shown to the user in the token detail panel. T1 super-theme: "AI가 정한 모든 결정의 이유를 추적할 수 있어야 한다."
 
 === OUTPUT ===
 
@@ -556,6 +611,9 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
     { id: 'tool-both', label: '두 tool 모두 호출', type: 'auto', description: 'submit_tokens + submit_visual_direction 각 1회' },
     { id: 'intent-fit', label: '의도 반영도', type: 'manual', description: '토큰·MD가 의도와 일치' },
     { id: 'export-success', label: 'Export 적합성', type: 'auto', description: 'ThemeExportDialog + MD 다운로드 모두 무결' },
+    { id: 'rationale-presence', label: '결정 근거 명시', type: 'auto', description: 'TP6: 모든 token 에 decisionRationale 존재 (whichReferences + whyChosen 필수)' },
+    { id: 'use-layers-respect', label: '사용자 큐레이션 존중', type: 'auto', description: 'TP4: useLayers 가 set 인 ref 의 다른 레이어가 출력에 사용되지 않음' },
+    { id: 'mode-divergence', label: '모드별 분기', type: 'manual', description: 'TP2: 같은 refs+intent 라도 mode 별로 결과가 명백히 다름' },
   ],
 
   goldenExample: {

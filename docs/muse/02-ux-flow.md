@@ -1,5 +1,9 @@
 # MUSE — UX Flow
 
+> **핵심 원칙**: 새 화면 신규 X. 기존 5개 입력 지점(TP2~TP6)에 "왜?" 질문을 끼워 넣어 사용자 의도를 UX 자체에 박는다. 자세한 명세: [04-ux-intervention-roadmap.md](../research/04-ux-intervention-roadmap.md)
+>
+> **2026-04-28**: TP1(레퍼런스 업로드 chip) 폐기. T1은 이미지가 정보 원천이라 사용자 chip이 태깅 정확도를 의미 있게 향상시키지 않음. TP4(레이어 chip)와 다운스트림 가치 중복으로 판단.
+
 ## 유저 시나리오
 
 ### 시나리오 1: 레퍼런스 수시 아카이빙
@@ -9,68 +13,110 @@
 - **플로우**:
   1. 아카이브 화면 진입 (인피니트 그리드 뷰)
   2. 이미지 드래그앤드롭 또는 URL 붙여넣기
-  3. 자동 태깅 실행 (컬러톤 / 스타일 / 카테고리)
-  4. 그리드에 즉시 추가 (태그 배지 표시)
+  3. T1 자동 태깅 실행 (5 레이어 태그 + dominantColors + extracted 동시 추출 — Haiku 4.5 vision)
+  4. 그리드에 즉시 추가 (태그 배지 + 대표 색상 swatch 표시)
 - **성공 조건**: 업로드 후 2초 이내 썸네일 노출, 태그는 비동기로 채워짐
-- **예외 상황**: 링크 로드 실패 → 재시도 버튼, AI 태깅 실패 → 수동 태그 가능
+- **예외 상황**: 링크 로드 실패 → 재시도 버튼, AI 태깅 실패 → 카드에 "다시 시도" 버튼
 
-### 시나리오 2: 프로젝트 생성 & 레퍼런스 큐레이션
+### 시나리오 2: 프로젝트 생성 — 모드 + 의도 + 레이어 큐레이션 (TP2~TP5)
 
-- **사용자**: 디자이너
-- **목표**: 특정 프로젝트 방향에 맞는 레퍼런스를 선택해 묶는다
+- **사용자**: 디자이너 / PM / 엔지니어 (페르소나별 다른 진입)
+- **목표**: 사용자가 자기 도구 사용 목적을 명시하고 (모드), 의도를 구체화하고 (시드), 레퍼런스의 어느 레이어를 가져올지 결정한다 (layer chip). **"AI가 알아서"가 아닌 "내가 결정했다"는 인식**.
 - **플로우**:
-  1. "새 프로젝트" 진입 → 이름, 한 문장 의도, 유형(랜딩/대시보드/모바일/브랜드) 입력
-  2. (선택) 의도 문장 기반 자동 추천 레퍼런스 확인
-  3. 아카이브에서 이미지 다중 선택 (태그 필터 사용 가능)
-  4. 프로젝트 생성 완료 → 자동 토큰 분석 자동 시작
-- **성공 조건**: 프로젝트 생성 화면에서 분석 완료 화면까지 3분 이내
-- **예외 상황**: 0장 선택 시 생성 버튼 비활성, 분석 중 이탈 시 백그라운드 진행
+  1. **Step 0 (TP2): 모드 선택 카드 3개**
+     - 🎨 컨셉 잡기 (P1 진입 / 다양성 우선)
+     - 🏗️ 디자인 시스템 만들기 (P2·P3 진입 / 일관성 우선, default)
+     - 🎯 코드 직행 (P3·P4 진입 / 표준 우선)
+     - → `project.mode` 변수 저장 → T2/T3 system prompt 분기 트리거
+  2. **Step 1 (TP3): 의도 입력 + 시드 + 예시**
+     - textarea + 시드 칩 [차분] [활기] [세련] [복고] [미니멀] + "예시 보기" 토글
+     - 시드 클릭 시 textarea에 prepend → 빈칸 공포 회피
+  3. **Step 2 (TP4): 추천 + 레이어 chip**
+     - T2 추천 N장 (mode 분기로 다양성 ↔ 일관성 ↔ 완전성)
+     - 각 카드에 chip: 🎨 색  📝 타이포  📐 레이아웃 (자동: T2 referenceLayer / 수동: 사용자 토글)
+     - → `selectedRefs[].useLayers` 저장
+  4. **Step 3 (TP5): 분석 직전 확인 박스**
+     - "이렇게 합성합니다: 모드 / 의도 / 우선 레이어 / 예상 비용" 한 번 표시
+     - [수정하기] / [분석 시작 →]
+     - → T3 호출 (mode + selectedRefs + useLayers + decisionRationale 출력 강제)
+- **성공 조건**:
+  - 모드 카드 클릭 후 분석 완료까지 3분 이내
+  - Step 2 layer chip 수동 변경률 >30% (사용자 결정 행동 측정)
+  - "수정하기" 클릭 후 재분석 비율 ↓ (확인 박스로 후회 회피)
+- **예외 상황**: 0장 선택 시 분석 비활성, 분석 중 이탈 시 백그라운드 진행, 모드 미선택 시 default = 시스템 만들기
 
-### 시나리오 3: 토큰 확인 및 조정
+### 시나리오 3: 토큰 확인 및 조정 + 결정 추적 펼침 (TP6)
 
-- **사용자**: 디자이너 / 바이브 코딩 유저
-- **목표**: AI가 추출한 토큰을 의도에 맞게 다듬는다
+- **사용자**: 디자이너 / 바이브 코딩 유저 / 디자인 시스템 엔지니어
+- **목표**: AI가 추출한 토큰의 **출처와 이유를 검증**하고, 의도에 맞게 다듬는다. **"왜 이 색이 primary?"에 즉답할 수 있는 상태**.
 - **플로우**:
-  1. 프로젝트 상세 진입 → 레이어 탭(컬러/타이포/레이아웃/그라디언트/키비주얼)
-  2. 레이어별 토큰 목록 확인
-  3. 불필요 토큰 제거(토글 off) 또는 중요 토큰 강조(emphasis 상승)
-  4. 실시간으로 프리뷰 영역 업데이트
-- **성공 조건**: 토큰 on/off 시 200ms 이내 프리뷰 반영
-- **예외 상황**: 전체 제거 시 최소 1개 유지 경고
+  1. 프로젝트 상세 진입 → 레이어 탭(컬러/타이포/레이아웃/그라디언트/비주얼 디렉션)
+  2. 레이어별 토큰 카드 목록 확인 + **각 카드 우측에 ❓ from N refs 인디케이터 상시 표시**
+  3. **카드 클릭 시 펼침** — 출처 레퍼런스 썸네일 inline + 의도 매칭 이유 + 탈락 후보(`alternativesConsidered`) 표시
+     ```
+     primary: #14132B
+     ───────────────────────────
+     출처: ref-002 [썸] + ref-005 [썸]
+     의도 매칭: "차분한 다크" → 짙은 색 우선
+     다른 후보: ref-013 #4F46E5 (탈락: 채도 너무 높음)
+     ```
+  4. 불필요 토큰 제거(토글 off) 또는 중요 토큰 강조(emphasis 상승) — 기존 유지
+  5. 실시간으로 프리뷰 영역 업데이트
+- **성공 조건**:
+  - 토큰 카드 hover/click률 >60% (사용자가 근거 확인하는 행동)
+  - 토큰 on/off 시 200ms 이내 프리뷰 반영
+  - 디자인 리뷰 회의에서 "왜 이 색?" 질문에 즉답률 ↑ (사용자 인터뷰)
+- **예외 상황**: `decisionRationale` 누락 시 (구버전 데이터) 기본 sourceReferenceIds만 표시, 전체 제거 시 최소 1개 유지 경고
 
-### 시나리오 4: MUI theme export
+### 시나리오 4: 4중 export — 토큰 + 결정 로그 + 시장 표준
 
-- **사용자**: 바이브 코딩 유저
-- **목표**: 정리된 토큰을 Cursor/Claude Code에 투입한다
+- **사용자**: 바이브 코딩 유저 / 디자인 시스템 엔지니어 (P3·P4)
+- **목표**: 정리된 토큰을 다른 도구로 가져갈 때 **결정 로그까지 함께** 제공해 "왜 이 토큰인지"가 외부 도구·팀에 전달되게 한다
 - **플로우**:
   1. 프로젝트 상세에서 "Export" 클릭
-  2. MUI theme 코드 다이얼로그 표시
-  3. 복사(Copy) 또는 파일 다운로드
-- **성공 조건**: 클립보드에 유효한 MUI `createTheme` 객체 복사
-- **예외 상황**: 필수 토큰(palette.primary 등) 미충족 시 경고 표시
+  2. Export 다이얼로그에 **모드별 default 산출물** 자동 선택:
+     - 🎨 컨셉 모드: DESIGN.md 우선 + 미리보기
+     - 🏗️ 시스템 모드: 토큰 JSON + decision-trace.md
+     - 🎯 코드직행 모드: DTCG tokens.json + MUI theme + cursorrules
+  3. 복사 / 파일 다운로드 / ZIP 번들 — 4종 출력 동시 가능
+     - MUI theme (`createTheme` 코드)
+     - DTCG W3C tokens.json (외부 표준)
+     - DESIGN.md (Stitch 호환 9-section)
+     - decision-trace.md (모든 토큰 결정 로그)
+- **성공 조건**: 외부 도구 (Cursor / Claude Code / Style Dictionary) import 무수정 성공률 >90%
+- **예외 상황**: 필수 토큰(palette.primary 등) 미충족 시 경고 표시, decisionRationale 누락 시 기본 출처만 표시
 
 ---
 
-## UX 플로우
+## UX 플로우 (TP2~TP6)
 
 ```mermaid
 flowchart TD
     Start([사용자 진입]) --> Archive[아카이브 그리드]
     Archive -->|이미지 업로드| Upload[드래그앤드롭 / URL]
-    Upload --> AutoTag["T1 · 자동 태깅<br/>(Claude Haiku)"]
+    Upload --> AutoTag["T1 · 자동 태깅<br/>(Haiku 4.5 vision)<br/>tags + dominantColors + extracted"]
     AutoTag --> Archive
 
-    Archive -->|새 프로젝트| NewProj[프로젝트 생성 위자드]
-    NewProj -->|이름/의도/유형 입력| Recommend["T2 · 레퍼런스 추천<br/>(Claude Haiku, 텍스트)"]
-    Recommend -->|다중 선택| Analyze["T3 · 토큰 분석<br/>(Claude Sonnet, 이미지)"]
+    Archive -->|새 프로젝트| TP2["TP2: 모드 선택 카드<br/>🎨 컨셉 / 🏗️ 시스템 / 🎯 코드직행"]
+    TP2 --> TP3["TP3: 의도 입력<br/>+ 시드 단어 + 예시"]
+    TP3 -->|projectMode| Recommend["T2 · 레퍼런스 추천<br/>(Haiku text-only)<br/>+ referenceLayer per ref"]
+    Recommend --> TP4["TP4: 카드 layer chip<br/>🎨 색  📝 타이포  📐 레이아웃<br/>(자동 / 수동 토글)"]
+    TP4 -->|selectedRefs.useLayers| TP5["TP5: 분석 직전 확인<br/>모드 + 의도 + 레이어 + 비용"]
+    TP5 -->|분석 시작| Analyze["T3 · 토큰 합성<br/>(Haiku text-only)<br/>+ decisionRationale per token"]
     Analyze --> Detail[프로젝트 상세 - 레이어 탭]
 
-    Detail -->|레이어 탭 전환| Edit[토큰 on/off + emphasis]
+    Detail --> TP6["TP6: 토큰 카드 출처 펼침<br/>출처 + 이유 + 탈락 후보"]
+    TP6 -->|레이어 탭 전환| Edit[토큰 on/off + emphasis]
     Edit -->|프리뷰 갱신| Detail
 
-    Detail -->|Export| ExportDlg[MUI theme 다이얼로그]
-    ExportDlg -->|복사 / 다운로드| Done([완료])
+    Detail -->|Export| ExportDlg["4중 Export 다이얼로그<br/>MUI / DTCG / DESIGN.md / decision-trace.md"]
+    ExportDlg -->|모드별 default 출력| Done([완료])
+
+    classDef tp fill:#fef3c7,stroke:#f59e0b,stroke-width:2px;
+    class TP2,TP3,TP4,TP5,TP6 tp;
 ```
+
+> 노란 박스(TP2~TP6) = 04 로드맵의 사용자 의도 입력 지점. 큰 화면 신규 X, 기존 흐름 안에 끼워 넣은 작은 질문들. ~~TP1~~ 폐기.
 
 ---
 
@@ -79,22 +125,27 @@ flowchart TD
 ```
 MUSE
 ├── 아카이브 (/)
-│   ├── 인피니트 그리드 (이미지 + 태그)
-│   ├── 검색 / 태그 필터
+│   ├── 인피니트 그리드 (이미지 + 태그 + 대표 색상)
+│   ├── 검색 / 태그 / 색상 필터
+│   ├── 카드 클릭 → 디테일 모달 (출처/태그/팔레트)
 │   └── 업로드 영역 (드래그앤드롭 + URL 입력)
 ├── 프로젝트 목록 (/projects)
-│   └── 프로젝트 카드 (2x2 썸네일 + 이름 + 유형)
+│   └── 프로젝트 카드 (2x2 썸네일 + 이름 + 모드 뱃지)
 ├── 프로젝트 생성 (/projects/new)
-│   ├── Step 1. 이름 + 의도 + 유형
-│   ├── Step 2. 레퍼런스 선택 (추천 + 아카이브)
-│   └── Step 3. 분석 진행 화면
+│   ├── ★Step 0. 모드 선택 카드 — TP2 (컨셉 / 시스템 / 코드직행)
+│   ├── Step 1. 이름 + 의도 (+ ★시드 칩 + 예시 — TP3)
+│   ├── Step 2. 레퍼런스 선택 (추천 + 아카이브 + ★layer chip — TP4)
+│   └── Step 3. ★분석 직전 확인 박스 — TP5 → 분석 진행 화면
 ├── 프로젝트 상세 (/projects/:id)
+│   ├── 사용된 레퍼런스 strip (썸네일 행)
 │   ├── 레이어 탭 (컬러 / 타이포 / 레이아웃 / 그라디언트 / 비주얼 디렉션(MD))
-│   ├── 토큰 목록 + 편집 패널
+│   ├── 토큰 목록 + 편집 패널 (★카드 출처 펼침 — TP6)
 │   ├── 실시간 프리뷰 영역
-│   └── Export 액션
+│   └── Export 액션 (★4중 출력)
 └── 설정 (/settings)
     └── AI 모델 / 스토리지 / 테마
+
+★ 표시 = TP2~TP6 사용자 의도 입력 지점 (신규). TP1 폐기로 아카이브에는 의도 입력 없음.
 ```
 
 ---
@@ -108,10 +159,10 @@ MUSE
 
 | 엔티티 | 주요 필드 | 관계 |
 |--------|----------|------|
-| `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags` (ReferenceLayeredTags), `dominantColors[]`, `title?`, `createdAt` | N:M Project (via `Project.referenceIds[]`) |
-| `Project` | `id`, `name`, `intent`, `type` (landing/dashboard/mobile/brand), `referenceIds[]`, `createdAt` | N:M Reference |
-| `AnalysisResult` | `id`, `projectId`, `layers` (AnalysisLayers), `status` (pending/running/done/error), `updatedAt` | 1:1 Project |
-| `UserSettings` | `aiModel`, `storageMode` (local/cloud), `themeMode` (light/dark/system), `isAutoTagEnabled` | singleton |
+| `Reference` | `id`, `source` (file/url), `thumbnailUrl`, `tags` (ReferenceLayeredTags), `dominantColors[]`, `extracted` (palette/typo/layout/gradient), `title?`, `createdAt` | N:M Project |
+| `Project` | `id`, `name`, `intent`, `type` (landing/dashboard/mobile/brand), **`mode` ('concept'\|'system'\|'handoff') — TP2**, **`selectedRefs[]` ({ id, useLayers[] }) — TP4**, `referenceIds[]`, `createdAt` | N:M Reference |
+| `AnalysisResult` | `id`, `projectId`, `layers` (AnalysisLayers + **`decisionRationale` per token — TP6**), `status`, `updatedAt` | 1:1 Project |
+| `UserSettings` | `aiModel`, `storageMode`, `themeMode`, `isAutoTagEnabled` | singleton |
 
 ### `ReferenceLayeredTags` (Reference.tags)
 
@@ -155,13 +206,15 @@ preset(`src/data/muse/tag/muse_tags_preset.json`) 어휘에서만 선택. flat �
 
 MUSE가 Claude API에 위임하는 3개 태스크. 시스템 프롬프트·Tool 스키마·품질 축·골든 예시의 **단일 진실 원천은 `src/data/muse/aiTasks.js`** 이며, Storybook `MUSE/AI Tasks/*` 에서 검토 가능.
 
-### 태스크 인벤토리
+### 태스크 인벤토리 (TP2~TP6 통합 후)
 
-| ID | 태스크 | 시점 (stage) | 입력 | 출력 | 기본 모델 |
+| ID | 태스크 | 시점 (stage) | 입력 (★ = TP 신규 변수) | 출력 (★ = TP 신규 필드) | 기본 모델 |
 |----|--------|-------------|------|------|---------|
-| **T1** | 자동 태깅 | `archive.upload` | 이미지 1장 | `{ tags[2..4], dominantColors[3..5], title }` | Claude Haiku 4.5 |
-| **T2** | 레퍼런스 추천 | `project.create.step2` | 의도 문장 + 아카이브 메타 (이미지 없음) | `{ recommendedIds[5..10], reasons[] }` | Claude Haiku 4.5 |
-| **T3** | 토큰 분석 + VD | `project.create.step3` | 선택 이미지 N장 + 의도 + 유형 | 단일 호출 2 tool: `submit_tokens` (color/typography/layout/gradient) + `submit_visual_direction` (Markdown + 집계 태그) | Claude Sonnet 4.6 |
+| **T1** | 자동 태깅 + 토큰 추출 | `archive.upload` | 이미지 1장 (TP1 폐기, 사용자 의도 입력 없음) | `{ tags, dominantColors, title, extracted }` | Haiku 4.5 vision |
+| **T2** | 레퍼런스 추천 | `project.create.step2` | 의도 문장 + 아카이브 메타 + ★`projectMode` (TP2) | `{ recommendedIds, reasons, ★referenceLayer per id }` | Haiku 4.5 text-only |
+| **T3** | 토큰 합성 + VD | `project.create.step3` | 선택 레퍼런스 메타 + 의도 + ★`projectMode` (TP2) + ★`selectedRefs[].useLayers` (TP4) | 2 tool: `submit_tokens` + `submit_visual_direction` (+ ★`decisionRationale` per token: whichRefs / whyChosen / alternativesConsidered) | Haiku 4.5 text-only |
+
+→ AI 호출 비용 변화 거의 없음 (system prompt token +200~300, cache hit). 출력 디테일 ↑.
 
 ### 시나리오 ↔ 태스크 매핑
 
@@ -302,8 +355,18 @@ MUI theme 코드 최종 산출 흐름.
 
 ## 핵심 설계 포인트
 
+- **사용자 의도가 UX의 5개 입력 지점에 박힌다 (TP2~TP6)**: 새 화면 신규 X. 기존 흐름에 작은 질문 끼워 넣어 사용자가 답을 만드는 동안 자기 취향을 의식하게 만듦. 답은 system prompt 변수로 흘러가 결과 디테일 ↑. (TP1 폐기 — T1은 이미지가 정보 원천이라 사용자 의도가 정확도 향상에 기여 안 함)
+- **모든 질문은 스킵 가능 (자동 default OK)**: TP2 모드 미선택 시 "🏗️ 시스템" default. TP1 chip 미클릭 시 자동 태깅. 비디자이너 P1 페르소나 진입 막지 않음.
+- **모드별 분기가 파이프라인 전체 결정**: TP2 모드(컨셉/시스템/코드직행) 한 번 선택이 T2 정렬 + T3 합성 톤 + Export default 모두 분기. 사용자가 "내가 지금 뭘 하려는지" 명시화.
 - **아카이빙과 프로젝트 생성의 분리**: 아카이빙은 수시로, 프로젝트는 의도 기반 큐레이션 — 두 플로우의 진입점을 명확히 구분
 - **분석은 비동기·백그라운드**: 생성 이탈 후 돌아와도 결과 확인 가능
-- **토큰 편집 = on/off + emphasis 2축**: 삭제가 아닌 비활성화 기반으로 언제든 복원 가능
-- **Export는 최종 산출물**: 편집 결과가 즉시 MUI `createTheme` 객체로 직렬화 가능해야 함
-- **AI 태스크는 경계면으로만 노출**: 3개 Claude 태스크(T1 태깅 / T2 추천 / T3 분석)의 프롬프트·스키마는 `src/data/muse/aiTasks.js`에 고정, 컴포넌트/페이지는 콜백(`onAnalyze`, `onTag` 등)만 소비 → 모델·프롬프트 변경이 UI에 파급되지 않음
+- **토큰 편집 = on/off + emphasis 2축 + 결정 추적 (TP6)**: 삭제가 아닌 비활성화 기반으로 언제든 복원 가능. 추가로 카드 클릭 시 출처/이유/대안 펼침으로 "왜 이 토큰?" 즉답 가능.
+- **4중 Export — 토큰 + 결정 로그 + 시장 표준 동시**: MUI theme + DTCG W3C tokens.json + DESIGN.md (Stitch 호환) + decision-trace.md. 모드별 default 다름.
+- **AI 태스크는 경계면으로만 노출**: 3개 Claude 태스크(T1 태깅+추출 / T2 추천 / T3 합성)의 프롬프트·스키마는 `src/data/muse/aiTasks.js`에 고정. TP1~TP6의 새 변수(userIntent, projectMode, useLayers) 추가도 이 파일에서만 — UI 컴포넌트는 콜백만 소비.
+
+---
+
+## 참조 (정성 리서치 → UX 매핑)
+
+- [docs/research/02-painpoints-qualitative-analysis.md](../research/02-painpoints-qualitative-analysis.md) — 4 super-themes (T1 결정 추적 / T2 단일 입력 / T3 통제권 / T4 craft) 직격 매핑
+- [docs/research/04-ux-intervention-roadmap.md](../research/04-ux-intervention-roadmap.md) — TP1~TP6 + 시스템 프롬프트 업데이트 구현 명세 + 3~4주 작업 순서

@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import { ImageCard } from '../card/ImageCard.jsx';
+import { ReferenceLayerChipRow } from '../card/ReferenceLayerChipRow.jsx';
 import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
 import { flattenTags } from '../../data/muse';
 
@@ -25,6 +26,9 @@ import { flattenTags } from '../../data/muse';
  * @param {function} onLoadMore - 아카이브 더 불러오기 [Optional]
  * @param {boolean} hasMore - 아카이브 추가 로드 가능 여부 [Optional, 기본값: false]
  * @param {boolean} isLoading - 로딩 중 [Optional, 기본값: false]
+ * @param {object} referenceLayerMap - TP4 자동: { [refId]: layers[] } [Optional]
+ * @param {Array} selectedRefs - TP4 사용자 큐레이션: [{id, useLayers}] [Optional]
+ * @param {function} onUseLayersChange - TP4 (id, layers) => void [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -45,6 +49,9 @@ export function ReferencePicker({
   onLoadMore,
   hasMore = false,
   isLoading = false,
+  referenceLayerMap = {},
+  selectedRefs = [],
+  onUseLayersChange,
   sx,
 }) {
   const [tab, setTab] = useState(recommended.length ? 'recommended' : 'archive');
@@ -167,16 +174,32 @@ export function ReferencePicker({
               ? '선택한 태그와 일치하는 항목이 없습니다.'
               : '아카이브에 레퍼런스가 없습니다.'
         }
-        renderItem={ (item) => (
-          <ImageCard
-            src={ item.src }
-            title={ item.title }
-            tags={ flattenTags(item).slice(0, 3) }
-            isSelectable
-            isSelected={ selectedSet.has(item.id) }
-            onToggleSelect={ (next) => toggleId(item.id, next) }
-          />
-        ) }
+        renderItem={ (item) => {
+          const isSelected = selectedSet.has(item.id);
+          const autoLayers = referenceLayerMap[item.id] || [];
+          const userCuration = selectedRefs.find((r) => r.id === item.id)?.useLayers || [];
+          return (
+            <Box>
+              <ImageCard
+                src={ item.src }
+                title={ item.title }
+                tags={ flattenTags(item).slice(0, 3) }
+                isSelectable
+                isSelected={ isSelected }
+                onToggleSelect={ (next) => toggleId(item.id, next) }
+              />
+              { isSelected && onUseLayersChange && (
+                <Box onClick={ (e) => e.stopPropagation() } sx={ { mt: 0.5 } }>
+                  <ReferenceLayerChipRow
+                    autoLayers={ autoLayers.length > 0 ? autoLayers : ['color', 'typography'] }
+                    value={ userCuration }
+                    onChange={ (layers) => onUseLayersChange(item.id, layers) }
+                  />
+                </Box>
+              ) }
+            </Box>
+          );
+        } }
       />
     </Box>
   );

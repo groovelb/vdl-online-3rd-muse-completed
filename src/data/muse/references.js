@@ -32,7 +32,6 @@ import ref12 from './dummyImage/reference12.jpg';
 import ref13 from './dummyImage/reference13.jpg';
 import ref14 from './dummyImage/reference14.jpg';
 import ref15 from './dummyImage/reference15.jpg';
-import ref16 from './dummyImage/reference16.jpg';
 import ref17 from './dummyImage/reference17.jpg';
 import ref18 from './dummyImage/reference18.jpeg';
 import ref19 from './dummyImage/reference19.jpeg';
@@ -48,7 +47,7 @@ import ref28 from './dummyImage/reference28.jpg';
 
 const IMAGES = [
   ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, ref10,
-  ref11, ref12, ref13, ref14, ref15, ref16, ref17, ref18, ref19, ref20,
+  ref11, ref12, ref13, ref14, ref15, ref17, ref18, ref19, ref20,
   ref21, ref22, ref23, ref24, ref25, ref26, ref27, ref28,
 ];
 

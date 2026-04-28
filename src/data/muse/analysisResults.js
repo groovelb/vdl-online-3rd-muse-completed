@@ -87,9 +87,41 @@ const LAYOUT_PRESETS = {
 
 const COLOR_PRESETS = {
   'proj-001': [
-    { id: 'col-ink', label: 'Primary Ink', hex: '#14132B', role: 'primary', group: 'Brand', isEnabled: true, emphasis: 2 },
-    { id: 'col-accent', label: 'Accent Violet', hex: '#4F46E5', role: 'accent', group: 'Brand', isEnabled: true, emphasis: 1 },
-    { id: 'col-secondary', label: 'Secondary Neutral', hex: '#5A586E', role: 'secondary', group: 'Brand', isEnabled: true, emphasis: 1 },
+    {
+      id: 'col-ink',
+      label: 'Primary Ink',
+      hex: '#14132B',
+      role: 'primary',
+      group: 'Brand',
+      isEnabled: true,
+      emphasis: 2,
+      sourceReferenceIds: ['ref-001', 'ref-003'],
+      decisionRationale: {
+        whichReferences: ['ref-001', 'ref-003'],
+        whichLayers: ['color'],
+        whyChosen: '"흑백 대비 · 매거진 톤" 의도 매칭. 가장 짙고 채도 낮은 값',
+        alternativesConsidered: [
+          { value: '#000000', reason: '순흑은 매거진 톤보다 너무 강함' },
+          { value: '#1F1B3D', reason: 'ref-001 dominantColors 후보였으나 채도 약간 높아 탈락' },
+        ],
+      },
+    },
+    {
+      id: 'col-accent',
+      label: 'Accent Violet',
+      hex: '#4F46E5',
+      role: 'accent',
+      group: 'Brand',
+      isEnabled: true,
+      emphasis: 1,
+      sourceReferenceIds: ['ref-002'],
+      decisionRationale: {
+        whichReferences: ['ref-002'],
+        whichLayers: ['color'],
+        whyChosen: 'ref-002 dominantColors[1]에서 추출. accent 역할에 충분한 채도',
+      },
+    },
+    { id: 'col-secondary', label: 'Secondary Neutral', hex: '#5A586E', role: 'secondary', group: 'Brand', isEnabled: true, emphasis: 1, sourceReferenceIds: ['ref-001'] },
     { id: 'col-bg', label: 'Background Tint', hex: '#FCFCFF', group: 'Surface', isEnabled: true, emphasis: 0 },
     { id: 'col-muted', label: 'Muted Grey', hex: '#7A798E', group: 'Neutral', isEnabled: false, emphasis: 0 },
   ],

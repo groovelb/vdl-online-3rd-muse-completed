@@ -54,6 +54,10 @@ export function ProjectDetailPage({
   const [activeLayer, setActiveLayer] = useState('color');
   const [isExportOpen, setExportOpen] = useState(false);
 
+  const usedReferences = (project?.referenceIds || [])
+    .map((id) => references.find((r) => r.id === id))
+    .filter(Boolean);
+
   const handleChange = (layerKey) => (id, patch) => {
     onUpdateToken?.(layerKey, id, patch);
   };
@@ -65,6 +69,7 @@ export function ProjectDetailPage({
           <ColorSwatchList
             tokens={ analysis.color || [] }
             onChange={ handleChange('color') }
+            references={ references }
           />
         );
       case 'typography':
@@ -234,6 +239,56 @@ export function ProjectDetailPage({
           Export
         </Button>
       </Box>
+
+        {/* 사용된 레퍼런스 — 합성 소스 이미지 */}
+        { usedReferences.length > 0 && (
+          <Box sx={ { mb: 3 } }>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={ { display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: '0.08em' } }
+            >
+              사용된 레퍼런스 ({ usedReferences.length })
+            </Typography>
+            <Box
+              sx={ {
+                display: 'flex',
+                gap: 1,
+                overflowX: 'auto',
+                pb: 1,
+              } }
+            >
+              { usedReferences.map((ref) => (
+                <Box
+                  key={ ref.id }
+                  title={ ref.title || ref.id }
+                  sx={ {
+                    flexShrink: 0,
+                    width: 88,
+                    height: 88,
+                    borderRadius: 1.5,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                  } }
+                >
+                  <Box
+                    component="img"
+                    src={ ref.thumbnailUrl || ref.src }
+                    alt={ ref.title || ref.id }
+                    sx={ {
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    } }
+                  />
+                </Box>
+              )) }
+            </Box>
+          </Box>
+        ) }
 
         {/* Layer tabs */}
         <CategoryTab

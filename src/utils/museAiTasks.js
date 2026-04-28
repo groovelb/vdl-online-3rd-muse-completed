@@ -89,10 +89,17 @@ export async function runAutoTag({ imageUrl, model, maxAttempts = 3 }) {
 }
 
 /**
- * T2 · 의도 문장 + 아카이브 메타 → top-N 추천
- * @returns {Promise<{ recommendedIds, reasons }>}
+ * T2 · 의도 문장 + 모드 + 아카이브 메타 → top-N 추천 + 레이어 자동 추천
+ * @param {object} params
+ * @param {string} params.intent
+ * @param {string} params.type
+ * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 모드 (정렬 분기)
+ * @param {Array} params.archive
+ * @param {number} [params.n=6]
+ * @param {string} [params.model]
+ * @returns {Promise<{ recommendedIds, reasons, referenceLayer }>}
  */
-export async function runRecommend({ intent, type, archive, n = 6, model }) {
+export async function runRecommend({ intent, type, mode = 'system', archive, n = 6, model }) {
   const compactArchive = archive.map((r) => ({
     id: r.id,
     title: r.title,
@@ -103,6 +110,7 @@ export async function runRecommend({ intent, type, archive, n = 6, model }) {
   const userText = TASK_RECOMMEND.userMessageTemplate
     .replace('{{intent}}', intent)
     .replace('{{type}}', type)
+    .replace('{{mode}}', mode)
     .replace('{{n}}', String(n))
     .replace('{{archiveCount}}', String(compactArchive.length))
     .replace('{{archiveJson}}', JSON.stringify(compactArchive, null, 2));
@@ -124,16 +132,17 @@ export async function runRecommend({ intent, type, archive, n = 6, model }) {
 }
 
 /**
- * T3 · 이미지 N장 + 의도 → tokens + visualDirection(MD)
+ * T3 · 사전 추출 N장 + 의도 + 모드 + 레이어 큐레이션 → tokens + visualDirection(MD)
  * @param {object} params
  * @param {string} params.intent
  * @param {string} params.type
- * @param {Array<{id, thumbnailUrl, tags?, dominantColors?}>} params.selectedRefs - 최대 4장 권장
+ * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 합성 톤
+ * @param {Array<{id, thumbnailUrl, tags?, dominantColors?, extracted?, useLayers?}>} params.selectedRefs - 최대 4장 권장. useLayers 가 set 이면 TP4 큐레이션 활성
  * @param {string} [params.model]
  * @param {function} [params.onProgress] - (layers) => void, 현재는 단발(완료 시 전부 done)
  * @returns {Promise<{ tokens, visualDirection }>}
  */
-export async function runAnalyzeTokens({ intent, type, selectedRefs, model, onProgress }) {
+export async function runAnalyzeTokens({ intent, type, mode = 'system', selectedRefs, model, onProgress }) {
   if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
 
   // 사전 추출된 데이터만 payload 로 전송. 이미지 없음.
@@ -143,6 +152,8 @@ export async function runAnalyzeTokens({ intent, type, selectedRefs, model, onPr
     tags: ref.tags || {},
     dominantColors: ref.dominantColors || [],
     extracted: ref.extracted || {},
+    // TP4: 사용자가 이 ref 에서 가져올 레이어. 빈 배열이거나 미설정이면 전체 사용.
+    useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
   }));
 
   const content = [
@@ -152,13 +163,28 @@ export async function runAnalyzeTokens({ intent, type, selectedRefs, model, onPr
 
 ${JSON.stringify(extractedPool, null, 2)}
 
-=== End of references ===`,
+=== End of references ===
+
+=== Project Mode (TP2) ===
+mode: ${mode}
+${mode === 'concept' ? 'BIAS toward distinctive choices. Bold primary. Lower role enforcement.'
+  : mode === 'handoff' ? 'OPTIMIZE naming for MUI/DTCG. Every token decisionRationale required.'
+  : 'ENFORCE role uniqueness, AAA contrast for primary on bg, hierarchy strict.'}
+
+=== Layer Curation (TP4) ===
+${extractedPool.some((r) => r.useLayers.length > 0)
+  ? extractedPool
+    .filter((r) => r.useLayers.length > 0)
+    .map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`)
+    .join('\n')
+  : '(없음 — 모든 ref의 모든 layer 자유 사용)'}`,
     },
     {
       type: 'text',
       text: TASK_ANALYZE_TOKENS.userMessageTemplate
         .replace('{{intent}}', intent)
         .replace('{{type}}', type)
+        .replace('{{mode}}', mode)
         .replace('{{count}}', String(selectedRefs.length))
         .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
     },

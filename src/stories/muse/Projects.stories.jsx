@@ -62,6 +62,16 @@ export const Docs = {
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>intent</TableCell><TableCell>string</TableCell><TableCell>한 문장 의도</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>type</TableCell><TableCell>landing | dashboard | mobile | brand</TableCell><TableCell>프로젝트 유형</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>referenceIds</TableCell><TableCell>string[]</TableCell><TableCell>연결된 Reference id 배열</TableCell></TableRow>
+              <TableRow>
+                <TableCell sx={ { fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' } }>mode?</TableCell>
+                <TableCell><code>'concept'|'system'|'handoff'</code></TableCell>
+                <TableCell>★ <strong>TP2</strong> — 모드 선택. T2 정렬 알고리즘 + T3 합성 톤 + Export default 모두 분기. default: 'system'</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell sx={ { fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' } }>selectedRefs?</TableCell>
+                <TableCell><code>{ '[{id, useLayers}]' }</code></TableCell>
+                <TableCell>★ <strong>TP4</strong> — 사용자 레이어 큐레이션. 빈 배열이면 자동(T2 referenceLayer). 명시되면 다른 레이어는 T3에서 무시</TableCell>
+              </TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>createdAt</TableCell><TableCell>string</TableCell><TableCell>생성일</TableCell></TableRow>
             </TableBody>
           </Table>

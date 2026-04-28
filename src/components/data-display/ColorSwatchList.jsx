@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TokenListItem } from './TokenListItem.jsx';
+import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
 
 /**
  * ColorSwatchList 컴포넌트
@@ -10,9 +15,10 @@ import { TokenListItem } from './TokenListItem.jsx';
  * 선택적으로 `groupBy`를 지정하면 그룹 헤더와 함께 섹션을 나눈다.
  *
  * Props:
- * @param {array} tokens - [{ id, label, hex, role?, group?, isEnabled, emphasis }] [Required]
+ * @param {array} tokens - [{ id, label, hex, role?, group?, isEnabled, emphasis, decisionRationale? }] [Required]
  * @param {function} onChange - (id, patch) => void [Optional]
  * @param {boolean} isGrouped - group 필드 기준으로 섹션 분리 [Optional, 기본값: false]
+ * @param {array} references - TP6 출처 썸네일용 reference 풀 [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -21,32 +27,68 @@ import { TokenListItem } from './TokenListItem.jsx';
  *   onChange={ (id, patch) => updateToken(id, patch) }
  * />
  */
-export function ColorSwatchList({ tokens, onChange, isGrouped = false, sx }) {
-  const renderItem = (token, isLastInGroup) => (
-    <Box key={ token.id }>
-      <TokenListItem
-        preview={
-          <Box
-            sx={ {
-              width: 48,
-              height: 48,
-              borderRadius: 1.5,
-              backgroundColor: token.hex,
-              border: '1px solid',
-              borderColor: 'divider',
-            } }
+export function ColorSwatchList({ tokens, onChange, isGrouped = false, references = [], sx }) {
+  const [expandedId, setExpandedId] = useState(null);
+
+  const renderItem = (token, isLastInGroup) => {
+    const hasRationale = !!token.decisionRationale || (token.sourceReferenceIds || []).length > 0;
+    const isExpanded = expandedId === token.id;
+    return (
+      <Box key={ token.id }>
+        <Box sx={ { position: 'relative' } }>
+          <TokenListItem
+            preview={
+              <Box
+                sx={ {
+                  width: 48,
+                  height: 48,
+                  borderRadius: 1.5,
+                  backgroundColor: token.hex,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                } }
+              />
+            }
+            label={ token.label }
+            value={ token.hex }
+            isEnabled={ token.isEnabled }
+            emphasis={ token.emphasis }
+            onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
+            onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
           />
-        }
-        label={ token.label }
-        value={ token.hex }
-        isEnabled={ token.isEnabled }
-        emphasis={ token.emphasis }
-        onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
-        onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
-      />
-      { !isLastInGroup && <Divider sx={ { mx: 2 } } /> }
-    </Box>
-  );
+          { hasRationale && (
+            <IconButton
+              size="small"
+              aria-label={ isExpanded ? '결정 근거 닫기' : '결정 근거 보기' }
+              onClick={ () => setExpandedId(isExpanded ? null : token.id) }
+              sx={ {
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                transition: 'transform 150ms',
+              } }
+              title={ `from ${(token.decisionRationale?.whichReferences || token.sourceReferenceIds || []).length} refs` }
+            >
+              <ExpandMoreIcon fontSize="small" />
+            </IconButton>
+          ) }
+        </Box>
+        <Collapse in={ isExpanded }>
+          <TokenDecisionTracePanel
+            decisionRationale={ token.decisionRationale || (token.sourceReferenceIds ? {
+              whichReferences: token.sourceReferenceIds,
+              whichLayers: ['color'],
+              whyChosen: '(과거 데이터 — decisionRationale 없음, 출처만 표시)',
+            } : null) }
+            references={ references }
+            sx={ { mx: 2, mb: 1 } }
+          />
+        </Collapse>
+        { !isLastInGroup && <Divider sx={ { mx: 2 } } /> }
+      </Box>
+    );
+  };
 
   if (!isGrouped) {
     return (

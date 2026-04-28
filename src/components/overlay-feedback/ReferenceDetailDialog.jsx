@@ -107,44 +107,51 @@ export function ReferenceDetailDialog({
         <CloseIcon />
       </IconButton>
 
-      <DialogContent sx={ { p: 0, height: '100vh', overflow: 'hidden' } }>
-        <Box
-          sx={ {
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(320px, 420px)' },
-            gridTemplateRows: { xs: '1fr auto', md: '1fr' },
-            height: '100%',
-          } }
-        >
-          { /* 우측 메타 사이드 (md 이상) — 데스크탑 우측 컬럼은 두 번째 자식이라 아래에서 렌더 */ }
-          { /* 좌측 이미지 영역 — 원본비율 정가운데 */ }
+      <DialogContent sx={ { p: 0, height: '100vh', overflow: 'hidden', position: 'relative' } }>
+        { /* 이미지 — 데스크탑에선 viewport 정중앙 (사이드바 폭 무시) */ }
+        { reference && (
           <Box
             sx={ {
-              position: 'relative',
-              bgcolor: 'background.default',
+              position: { xs: 'static', md: 'absolute' },
+              inset: { md: 0 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              bgcolor: 'background.default',
               overflow: 'hidden',
               height: { xs: '55vh', md: '100vh' },
               p: { xs: 4, md: 10 },
+              zIndex: 0,
             } }
           >
-            { reference && (
-              <Box
-                component="img"
-                src={ reference.thumbnailUrl || reference.src }
-                alt={ reference.title || 'Reference' }
-                sx={ {
-                  maxWidth: { xs: '100%', md: 'min(100%, 1200px)' },
-                  maxHeight: { xs: '100%', md: 'min(100%, 80vh)' },
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  display: 'block',
-                } }
-              />
-            ) }
+            <Box
+              component="img"
+              src={ reference.thumbnailUrl || reference.src }
+              alt={ reference.title || 'Reference' }
+              sx={ {
+                maxWidth: { xs: '100%', md: '33vw' },
+                maxHeight: { xs: '100%', md: 'min(100%, 80vh)' },
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+              } }
+            />
+          </Box>
+        ) }
+
+        <Box
+          sx={ {
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(480px, 600px)' },
+            gridTemplateRows: { xs: '1fr auto', md: '1fr' },
+            height: '100%',
+            position: 'relative',
+            zIndex: 1,
+          } }
+        >
+          { /* 좌측 이미지 컬럼 — 자리만 차지, 실제 이미지는 위 absolute 레이어에 있음 */ }
+          <Box sx={ { display: { xs: 'none', md: 'block' } } }>
           </Box>
 
           { /* 우측 메타 사이드 */ }
@@ -157,6 +164,7 @@ export function ReferenceDetailDialog({
               overflowY: 'auto',
               height: { xs: 'auto', md: '100vh' },
               maxHeight: { xs: '45vh', md: '100vh' },
+              bgcolor: 'background.default',
             } }
           >
             <Box>

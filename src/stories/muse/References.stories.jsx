@@ -58,6 +58,7 @@ export const Docs = {
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>dominantColors</TableCell><TableCell>string[]</TableCell><TableCell>대표 색 HEX 2개</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>createdAt</TableCell><TableCell>string (YYYY-MM-DD)</TableCell><TableCell>생성일</TableCell></TableRow>
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>title</TableCell><TableCell>string</TableCell><TableCell>제목</TableCell></TableRow>
+              <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>extracted?</TableCell><TableCell>ExtractedValues</TableCell><TableCell>T1 가 추출한 palette/typography/layout/gradient (T3 합성 입력)</TableCell></TableRow>
             </TableBody>
           </Table>
         </TableContainer>

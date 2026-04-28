@@ -33,6 +33,8 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - CustomCard: 미디어+콘텐츠 카드. vertical/horizontal/overlay 레이아웃 (`components/card/CustomCard.jsx`)
 - ImageCard: 이미지 카드. 태그 배지, 선택 체크박스(`isSelectable`/`isSelected`/`onToggleSelect`), 기본 좋아요 액션 (`components/card/ImageCard.jsx`)
 - MoodboardCard: 무드보드 컬렉션 카드. 2x2 썸네일 그리드 (`components/card/MoodboardCard.jsx`)
+- ModeSelectCard: TP2 — 프로젝트 생성 첫 화면 모드 카드 (concept/system/handoff). 한 번의 선택이 T2 추천·T3 합성·Export 기본을 모두 분기 (`components/card/ModeSelectCard.jsx`)
+- ReferenceLayerChipRow: TP4 — 추천 카드별 "이 ref에서 어느 레이어를 가져올지" chip 토글. T2 referenceLayer 자동 / 사용자 수동 (`components/card/ReferenceLayerChipRow.jsx`)
 - Card: MUI Card 컴포넌트 [MUI]
 
 ## 4. Media — 이미지, 비디오 표시
@@ -45,7 +47,8 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 ## 5. Data Display — 구조화된 데이터 시각화
 
 - TokenListItem: 토큰 편집 공통 행. preview 48x48 슬롯 + label/value + emphasis(Low/Mid/High) + on/off Switch (`components/data-display/TokenListItem.jsx`)
-- ColorSwatchList: 컬러 레이어 토큰 목록. TokenListItem 반복, 선택적 group 헤더 (`components/data-display/ColorSwatchList.jsx`)
+- ColorSwatchList: 컬러 레이어 토큰 목록. TokenListItem 반복, 선택적 group 헤더, TP6 결정 추적 펼침(❓ 아이콘 → TokenDecisionTracePanel) (`components/data-display/ColorSwatchList.jsx`)
+- TokenDecisionTracePanel: TP6 — 토큰 카드 펼침 시 출처 레퍼런스 썸네일 + 의도 매칭 이유 + 탈락 후보(alternativesConsidered) 표시 (`components/data-display/TokenDecisionTracePanel.jsx`)
 - TypographyPreview: 타이포 레이어 토큰 목록. preview에 실제 폰트로 샘플 문자 렌더 (`components/data-display/TypographyPreview.jsx`)
 - LayoutTokenPreview: 레이아웃 레이어(grid/spacing/container) mini-diagram 프리뷰 (`components/data-display/LayoutTokenPreview.jsx`)
 - GradientPreview: 그라디언트 레이어 토큰 목록. preview에 실제 gradient 스와치 (`components/data-display/GradientPreview.jsx`)
@@ -87,6 +90,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - AnalysisProgress: 레이어별 단계 상태(pending/running/done/error) + 전체 진행률 집계. 취소/재시도 액션 (`components/overlay-feedback/AnalysisProgress.jsx`)
 - ThemeExportDialog: MUI `createTheme` 코드 export 다이얼로그. 클립보드 복사 + 파일 다운로드, 필수 토큰 누락 경고. `utils/serializeTheme.js`와 페어 (`components/overlay-feedback/ThemeExportDialog.jsx`)
 - ReferenceDetailDialog: 아카이브 카드 클릭 시 레퍼런스 상세(원본 이미지 + 레이어별 전체 태그 + 대표 색상 + 출처/수집일) 모달. 활성 필터 태그/색상은 강조 표시 (`components/overlay-feedback/ReferenceDetailDialog.jsx`)
+- AnalysisConfirmBox: TP5 — 프로젝트 생성 Step 3 분석 직전 "이렇게 합성합니다" 확인 박스. 모드/의도/우선 레이어/예상 비용 표시 + [수정하기] / [분석 시작 →] (`components/overlay-feedback/AnalysisConfirmBox.jsx`)
 - Dialog: MUI Dialog 컴포넌트 [MUI]
 
 ## 10. Navigation (Global) — 페이지 간 이동

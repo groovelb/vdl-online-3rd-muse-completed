@@ -40,38 +40,49 @@ export function ProjectCreateRoute() {
         <Box sx={ { width: '100%', maxWidth: 860, mx: 'auto' } }>
           <ProjectCreateWizard
             archive={ archive }
-            recommendedLoader={ async ({ intent, type }) => {
+            recommendedLoader={ async ({ intent, type, mode }) => {
               try {
                 const result = await runRecommend({
                   intent,
                   type,
+                  mode,
                   archive: references,
                   n: 6,
                 });
                 const ids = new Set(result.recommendedIds || []);
-                return references.filter((r) => ids.has(r.id)).map(toPickerItem);
+                const recItems = references.filter((r) => ids.has(r.id)).map(toPickerItem);
+                return { recommended: recItems, referenceLayer: result.referenceLayer || [] };
               } catch (e) {
                 console.warn('[T2 실패]', e);
                 return [];
               }
             } }
             onAnalyze={ async (payload, updateLayers) => {
-              const selected = references.filter((r) => payload.selectedIds.includes(r.id));
+              // TP4: payload.selectedRefs 의 useLayers 를 ref 에 머지
+              const enriched = payload.selectedIds.map((id) => {
+                const ref = references.find((r) => r.id === id);
+                if (!ref) return null;
+                const useLayers = payload.selectedRefs?.find((sr) => sr.id === id)?.useLayers || [];
+                return { ...ref, useLayers };
+              }).filter(Boolean);
               const result = await runAnalyzeTokens({
                 intent: payload.form.intent,
                 type: payload.form.type,
-                selectedRefs: selected,
+                mode: payload.form.mode,
+                selectedRefs: enriched,
                 onProgress: updateLayers,
               });
               return result;
             } }
-            onComplete={ async ({ form, referenceIds, analysis: analysisResult }) => {
+            onComplete={ async ({ form, referenceIds, selectedRefs, analysis: analysisResult }) => {
               // id 는 store 가 UUID 로 생성. 여기서 만들면 Postgres uuid 컬럼 insert 실패
               try {
                 const createdProject = await addProject({
                   name: form.name,
                   intent: form.intent,
                   type: form.type,
+                  mode: form.mode,
+                  selectedRefs: selectedRefs || [],
                   referenceIds: referenceIds || [],
                 });
                 const projectId = createdProject.id;

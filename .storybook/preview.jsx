@@ -4,6 +4,13 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { defaultTheme } from '../src/styles/themes';
 import { MuseStoreProvider } from '../src/store';
 
+// Dark Reader 차단 — 확장이 페이지 색을 임의로 반전시키지 않도록 opt-out
+if (typeof document !== 'undefined' && !document.querySelector('meta[name="darkreader-lock"]')) {
+  const darkreaderLock = document.createElement('meta');
+  darkreaderLock.name = 'darkreader-lock';
+  document.head.appendChild(darkreaderLock);
+}
+
 // Google Fonts 로드 (Material Symbols + 기본 폰트)
 const googleFonts = [
   // Material Symbols

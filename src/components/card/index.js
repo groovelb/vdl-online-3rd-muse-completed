@@ -7,3 +7,7 @@ export { MoodboardCard } from './MoodboardCard.jsx';
 
 // Style variant wrapper
 export { CardContainer } from './CardContainer.jsx';
+
+// MUSE — UX 개입 (TP2, TP4)
+export { ModeSelectCard } from './ModeSelectCard.jsx';
+export { ReferenceLayerChipRow } from './ReferenceLayerChipRow.jsx';

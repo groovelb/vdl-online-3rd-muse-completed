@@ -69,5 +69,9 @@ curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**�
 | 022 | MUSE — 디자인 QA 전수 이행 (elevation/hover/위치 효과 제거, Accordion 필터, 색상환 유사색, GNB 재구성, 앰비언트 배경) | 2026-04-23 | [022-MUSE-디자인-QA-전수-이행.md](./022-MUSE-디자인-QA-전수-이행.md) |
 | 023 | MUSE — T1/T3 아키텍처 전환 (업로드 시 T3 레벨 값 추출 + 프로젝트 시 이미지 없이 compose, Haiku 통일, 비용 ~2.5x 절감) | 2026-04-23 | [023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md](./023-MUSE-T1-T3-아키텍처-전환-업로드시-T3레벨-추출-프로젝트시-text-only-compose.md) |
 | 024 | MUSE — 다중 업로드 간헐 생략 + 프로젝트 생성 후 "없는 프로젝트" 에러 수정 + T1 태깅 재시도 정책 | 2026-04-23 | [024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md](./024-MUSE-다중업로드-생략-및-프로젝트-못찾음-버그-수정-태깅-재시도-정책.md) |
+| 025 | MUSE — Phase 2 시작. 색상필터 hex casing fix + "모두 보기" + 레퍼런스 디테일 모달 + AI Tasks 스토리북 4-섹션 재구조화 (코드 검증 정정 포함) | 2026-04-27 | [025-MUSE-Phase2-시작-색상필터-개선-디테일모달-AITasks-스토리북-재구조화.md](./025-MUSE-Phase2-시작-색상필터-개선-디테일모달-AITasks-스토리북-재구조화.md) |
+| 026 | MUSE — ProjectDetailPage에 사용된 레퍼런스 썸네일 strip + Dark Reader 확장 차단 (Vite + Storybook) | 2026-04-27 | [026-MUSE-ProjectDetailPage-사용레퍼런스-썸네일-DarkReader-차단.md](./026-MUSE-ProjectDetailPage-사용레퍼런스-썸네일-DarkReader-차단.md) |
+| 027 | MUSE — AI 디자인 도구 페인포인트 정성리서치 3라운드 + UX 최소개입 로드맵 (TP1~TP6) 확정 | 2026-04-28 | [027-MUSE-페인포인트-정성리서치-3라운드-UX-최소개입-로드맵.md](./027-MUSE-페인포인트-정성리서치-3라운드-UX-최소개입-로드맵.md) |
+| 028 | MUSE — TP1~TP6 UX 개입 + 시스템 프롬프트 + 데이터 모델 + 스토리북 일괄 구현 (단일 세션) | 2026-04-28 | [028-MUSE-TP1-TP6-UX-개입-일괄-구현.md](./028-MUSE-TP1-TP6-UX-개입-일괄-구현.md) |
 
 </details>

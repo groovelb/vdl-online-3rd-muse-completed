@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { ProjectCreateWizard } from '../components/templates/ProjectCreateWizard.jsx';
-import { PageContainer } from '../components/layout/PageContainer.jsx';
 import { useProjectsSlice, useReferencesSlice, useAnalysesSlice } from '../store';
 import { runRecommend, runAnalyzeTokens, runAnalyzeConcept, runAnalyzeHandoff } from '../utils/museAiTasks';
 
@@ -26,21 +25,18 @@ export function ProjectCreateRoute() {
   const archive = useMemo(() => references.map(toPickerItem), [references]);
 
   return (
-    <PageContainer>
-      <Box
-        sx={ {
-          minHeight: 'calc(100vh - 64px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          py: { xs: 6, md: 10 },
-        } }
-      >
-        <Box sx={ { width: '100%', maxWidth: 860, mx: 'auto' } }>
-          <ProjectCreateWizard
-            archive={ archive }
-            recommendedLoader={ async ({ intent, mode }) => {
+    <Box
+      sx={{
+        minHeight: 'calc(100vh - 64px)',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Box sx={{ width: '100%' }}>
+        <ProjectCreateWizard
+            archive={archive}
+            recommendedLoader={async ({ intent, mode }) => {
               try {
                 const result = await runRecommend({
                   intent,
@@ -55,8 +51,8 @@ export function ProjectCreateRoute() {
                 console.warn('[T2 실패]', e);
                 return [];
               }
-            } }
-            onAnalyze={ async (payload, updateLayers) => {
+            }}
+            onAnalyze={async (payload, updateLayers) => {
               // ref별 useLayers + note 를 ref 에 머지 → buildReferenceNotesBlock 가 selectedRefs[].note 읽음
               const refNotes = payload.form.referenceNotes || {};
               const enriched = payload.selectedIds.map((id) => {
@@ -88,8 +84,8 @@ export function ProjectCreateRoute() {
                 selectedRefs: enriched,
                 onProgress: updateLayers,
               }); // { tokens, visualDirection }
-            } }
-            onComplete={ async ({ form, referenceIds, selectedRefs, analysis: analysisResult }) => {
+            }}
+            onComplete={async ({ form, referenceIds, selectedRefs, analysis: analysisResult }) => {
               try {
                 const createdProject = await addProject({
                   name: form.name,
@@ -135,11 +131,10 @@ export function ProjectCreateRoute() {
                 console.error('[프로젝트 생성 실패]', e);
                 window.alert(`프로젝트 저장 중 에러: ${e?.message || e}`);
               }
-            } }
-            onCancel={ () => navigate('/') }
+            }}
+            onCancel={() => navigate('/')}
           />
-        </Box>
       </Box>
-    </PageContainer>
+    </Box>
   );
 }

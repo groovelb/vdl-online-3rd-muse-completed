@@ -19,3 +19,6 @@ export { Indicator } from '../../common/ui/Indicator.jsx';
 
 // CarouselIndicator - 레거시 호환용 (Indicator 사용 권장)
 export { CarouselIndicator } from './CarouselIndicator.jsx';
+
+// FloatingImageGallery - Three.js z-depth 무한 갤러리 (hero/배경용)
+export { FloatingImageGallery } from './FloatingImageGallery.jsx';

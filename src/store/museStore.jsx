@@ -16,6 +16,7 @@ import {
 } from '../data/muse';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/auth';
+import { BETA_LIMITS, BETA_LIMIT_MESSAGES, isAdminUser } from '../config/betaLimits';
 import {
   mapReferenceFromDb, mapReferenceToDb,
   mapProjectFromDb, mapProjectToDb,
@@ -230,6 +231,9 @@ export function useReferencesSlice() {
   const remote = seed !== 'fixtures';
 
   const addReference = async (payload = {}) => {
+    if (remote && !isAdminUser(user) && state.references.length >= BETA_LIMITS.references) {
+      throw new Error(BETA_LIMIT_MESSAGES.references);
+    }
     const { file, ...fields } = payload;
     const id = fields.id || genId();
     // fields 먼저 스프레드 → UI 플래그(_pending 등)도 살아있게. 이어서 정규화된 값으로 override
@@ -311,6 +315,9 @@ export function useProjectsSlice() {
   const remote = seed !== 'fixtures';
 
   const addProject = async (project) => {
+    if (remote && !isAdminUser(user) && state.projects.length >= BETA_LIMITS.projects) {
+      throw new Error(BETA_LIMIT_MESSAGES.projects);
+    }
     const id = project.id || genId();
     const full = {
       id,
@@ -458,6 +465,8 @@ export function useSettingsSlice() {
   const remote = seed !== 'fixtures';
 
   const updateSettings = async (patch) => {
+    // 낙관적 업데이트: UI 먼저 반영, DB 실패 시 콘솔로 노출 (조용한 롤백 방지)
+    dispatch({ type: 'UPDATE_SETTINGS', payload: patch });
     if (remote && user) {
       const dbPatch = mapSettingsToDb(patch);
       if (Object.keys(dbPatch).length > 0) {
@@ -465,10 +474,12 @@ export function useSettingsSlice() {
           .from('user_settings')
           .update(dbPatch)
           .eq('user_id', user.id);
-        if (error) throw error;
+        if (error) {
+          console.error('[updateSettings] supabase update 실패', error, patch);
+          throw error;
+        }
       }
     }
-    dispatch({ type: 'UPDATE_SETTINGS', payload: patch });
   };
 
   return {

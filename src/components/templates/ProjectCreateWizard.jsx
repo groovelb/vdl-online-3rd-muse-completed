@@ -32,14 +32,29 @@ const MUSE_LAYERS = [
 ];
 
 const MODE_DEFS = [
-  { mode: 'concept', title: '🎨 컨셉 잡기', subtitle: '감을 잡고 싶다', description: '빠른 다양성 우선 — T2 다양한 무드, T3 distinctive bias' },
-  { mode: 'system', title: '🏗️ 디자인 시스템 만들기', subtitle: '정확한 토큰 필요', description: '일관성·근거 우선 — role 엄격, contrast 검증' },
-  { mode: 'handoff', title: '🎯 코드 직행', subtitle: 'MUI/Tailwind로 바로', description: '완전성·표준 우선 — naming MUI/DTCG 호환' },
+  {
+    mode: 'concept',
+    title: '컨셉 디자인',
+    subtitle: '레퍼런스로 디자인 컨셉을 빠르게 만들고 싶을 때',
+    description: '레퍼런스 번들을 클로드 디자인에 그대로 입력하세요. 무드·컬러·타이포가 합성된 단일 프롬프트로 컨셉 시안을 빠르게 받아볼 수 있습니다.',
+  },
+  {
+    mode: 'system',
+    title: '디자인 시스템',
+    subtitle: '개발 환경에서 계속 관리할 디자인 시스템 토큰 구성',
+    description: '레퍼런스에서 추출한 색·타이포·레이아웃 토큰을 DTCG / MUI theme 형식으로 export 합니다. 새 프로젝트 저장소에 그대로 커밋해 시스템의 출발점으로 쓰세요.',
+  },
+  {
+    mode: 'handoff',
+    title: '디자인 토큰 추출',
+    subtitle: '이미 작업 중인 디자인 시스템에 적용할 토큰 추출',
+    description: '이미 운영 중인 시스템에 추가할 토큰만 골라 patch 형태로 추출합니다. 기존 naming·role 규칙과 충돌 없이 부분 반영하기 좋습니다.',
+  },
 ];
 
 const initialState = {
   step: 0,
-  form: { name: '', intent: '', mode: 'system', referenceNotes: {} },
+  form: { name: '', intent: '', mode: 'concept', referenceNotes: {} },
   selectedIds: [],
   selectedRefs: [], // TP4: [{ id, useLayers }]
   tagFilter: [],
@@ -235,15 +250,12 @@ export function ProjectCreateWizard({
     // Step 0 — 모드 선택 (TP2)
     if (state.step === 0) {
       return (
-        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 920, mx: 'auto', width: '100%' } }>
-          <Typography variant="body1" color="text.secondary">
-            무엇을 만드시나요? 모드 선택이 추천 정렬 + 합성 톤 + Export 기본을 결정합니다.
-          </Typography>
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 5, maxWidth: 1200, mx: 'auto', width: '100%' } }>
           <Box
             sx={ {
               display: 'grid',
               gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-              gap: 2,
+              gap: { xs: 2, md: 4 },
             } }
           >
             { MODE_DEFS.map((m) => (
@@ -262,7 +274,7 @@ export function ProjectCreateWizard({
     // Step 1 — 기본 정보 + TP3 의도 시드
     if (state.step === 1) {
       return (
-        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 620, mx: 'auto', width: '100%' } }>
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 4, maxWidth: 720, mx: 'auto', width: '100%' } }>
           <TextField
             value={ state.form.name }
             onChange={ (e) => dispatch({ type: 'UPDATE_FORM', payload: { name: e.target.value } }) }
@@ -320,15 +332,15 @@ export function ProjectCreateWizard({
       );
       const notes = state.form.referenceNotes || {};
       return (
-        <Box sx={ { maxWidth: 760, mx: 'auto', width: '100%' } }>
-          <Typography variant="h5" sx={ { fontWeight: 700, mb: 1 } }>
+        <Box sx={ { maxWidth: 880, mx: 'auto', width: '100%' } }>
+          <Typography variant="h5" sx={ { fontWeight: 700, mb: 1.5 } }>
             레퍼런스별 활용 노트
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={ { mb: 3 } }>
+          <Typography variant="body2" color="text.secondary" sx={ { mb: 5 } }>
             각 레퍼런스의 어느 부분을 차용할지 자유롭게 적어주세요. 비워둬도 진행 가능합니다.
             노트는 분석 시 우선 반영되고, 산출물의 paste block 에 ref별 매칭 단서로 들어갑니다.
           </Typography>
-          <Box sx={ { display: 'flex', flexDirection: 'column', gap: 2 } }>
+          <Box sx={ { display: 'flex', flexDirection: 'column', gap: 3 } }>
             { selectedFullRefs.map((ref) => {
               const layers = useLayersByRef[ref.id] || [];
               const note = notes[ref.id] || '';
@@ -434,97 +446,163 @@ export function ProjectCreateWizard({
     );
   };
 
+  const BOTTOM_BAR_HEIGHT = 88;
+  const APP_BAR_HEIGHT = 64;
+
   return (
     <Box sx={ { width: '100%', ...sx } }>
-      <Stepper activeStep={ state.step } sx={ { mb: 4 } }>
-        { STEPS.map((label) => (
-          <Step key={ label }>
-            <StepLabel>{ label }</StepLabel>
-          </Step>
-        )) }
-      </Stepper>
-
-      { renderStep() }
-
-      {/* Actions */}
       <Box
         sx={ {
+          width: '100%',
+          height: `calc(100vh - ${APP_BAR_HEIGHT}px)`,
           display: 'flex',
-          justifyContent: 'space-between',
-          gap: 1,
-          mt: 4,
-          pt: 3,
-          borderTop: '1px solid',
-          borderColor: 'divider',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          pb: `${BOTTOM_BAR_HEIGHT}px`,
         } }
       >
-        <Button
-          variant="text"
-          color="inherit"
-          onClick={ state.step > 0 ? () => dispatch({ type: 'BACK' }) : onCancel }
-          disabled={ state.analysisState === 'running' }
+        <Box
+          sx={ {
+            flexShrink: 0,
+            px: { xs: 3, md: 6, lg: 10 },
+            pt: { xs: 3, md: 5 },
+            pb: { xs: 2, md: 3 },
+          } }
         >
-          { state.step > 0 ? '이전' : '취소' }
-        </Button>
+          <Stepper activeStep={ state.step } sx={ { maxWidth: 960, mx: 'auto', width: '100%' } }>
+            { STEPS.map((label) => (
+              <Step key={ label }>
+                <StepLabel>{ label }</StepLabel>
+              </Step>
+            )) }
+          </Stepper>
+        </Box>
 
-        { state.step === 0 && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={ () => dispatch({ type: 'NEXT' }) }
-            disabled={ !isStep0Valid }
+        <Box
+          sx={ {
+            flex: 1,
+            minHeight: 0,
+            width: '100%',
+            overflowY: 'auto',
+            px: { xs: 3, md: 6, lg: 10 },
+            py: { xs: 3, md: 5 },
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+          } }
+        >
+          <Box
+            sx={ {
+              width: '100%',
+              my: 'auto',
+            } }
           >
-            다음
-          </Button>
-        ) }
+            { renderStep() }
+          </Box>
+        </Box>
+      </Box>
 
-        { state.step === 1 && (
+      {/* Fixed bottom navigation */}
+      <Box
+        sx={ {
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: (theme) => theme.zIndex.appBar,
+          bgcolor: 'background.paper',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          backdropFilter: 'blur(8px)',
+          height: BOTTOM_BAR_HEIGHT,
+          display: 'flex',
+          alignItems: 'center',
+          px: { xs: 3, md: 6, lg: 10 },
+        } }
+      >
+        <Box
+          sx={ {
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 2,
+          } }
+        >
           <Button
-            variant="contained"
-            color="primary"
-            onClick={ () => dispatch({ type: 'NEXT' }) }
-            disabled={ !isStep1Valid }
+            variant="text"
+            color="inherit"
+            size="large"
+            onClick={ state.step > 0 ? () => dispatch({ type: 'BACK' }) : onCancel }
+            disabled={ state.analysisState === 'running' }
           >
-            다음
+            { state.step > 0 ? '이전' : '취소' }
           </Button>
-        ) }
 
-        { state.step === 2 && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={ () => dispatch({ type: 'NEXT' }) }
-            disabled={ !isStep2Valid }
-          >
-            다음 · { state.selectedIds.length }장
-          </Button>
-        ) }
+          { state.step === 0 && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={ () => dispatch({ type: 'NEXT' }) }
+              disabled={ !isStep0Valid }
+            >
+              다음
+            </Button>
+          ) }
 
-        { state.step === 3 && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={ handleStartAnalysis }
-            disabled={ !isStep3Valid }
-          >
-            분석 시작 →
-          </Button>
-        ) }
+          { state.step === 1 && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={ () => dispatch({ type: 'NEXT' }) }
+              disabled={ !isStep1Valid }
+            >
+              다음
+            </Button>
+          ) }
 
-        { state.step === 4 && state.analysisState === 'done' && (
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={ () => onComplete?.({
-              form: state.form,
-              referenceIds: state.selectedIds,
-              selectedRefs: state.selectedRefs,
-              analysis: null,
-            }) }
-          >
-            프로젝트 열기
-          </Button>
-        ) }
+          { state.step === 2 && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={ () => dispatch({ type: 'NEXT' }) }
+              disabled={ !isStep2Valid }
+            >
+              다음 · { state.selectedIds.length }장
+            </Button>
+          ) }
+
+          { state.step === 3 && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={ handleStartAnalysis }
+              disabled={ !isStep3Valid }
+            >
+              분석 시작 →
+            </Button>
+          ) }
+
+          { state.step === 4 && state.analysisState === 'done' && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={ () => onComplete?.({
+                form: state.form,
+                referenceIds: state.selectedIds,
+                selectedRefs: state.selectedRefs,
+                analysis: null,
+              }) }
+            >
+              프로젝트 열기
+            </Button>
+          ) }
+        </Box>
       </Box>
     </Box>
   );

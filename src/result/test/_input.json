@@ -1,0 +1,21 @@
+{
+  "projectName": "retro mood dashboard",
+  "intent": "functional dashboard with retro mood and paper texture",
+  "refs": [
+    {
+      "id": "248c3094-8bca-47b7-9d2f-c65dd51081bf",
+      "note": "use retro style paper grained background with fixed position\n- paper texture",
+      "useLayers": []
+    },
+    {
+      "id": "88fd6205-e3d4-4cd2-9748-65941efcfaf5",
+      "note": "bold & contrast typography Hierarchy",
+      "useLayers": []
+    },
+    {
+      "id": "6c113186-bbca-4010-9250-38e1a087f1ce",
+      "note": "Editorial Dashboard Layout\n- blend grid and gradient background",
+      "useLayers": []
+    }
+  ]
+}

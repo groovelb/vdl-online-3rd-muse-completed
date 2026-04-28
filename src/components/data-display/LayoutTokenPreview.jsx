@@ -7,31 +7,40 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { TokenListItem } from './TokenListItem.jsx';
 import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
 
+const toNum = (v, fallback) => {
+  const n = typeof v === 'number' ? v : (typeof v === 'string' ? Number(v) : NaN);
+  return Number.isFinite(n) ? n : fallback;
+};
+
 /** 그리드 mini-diagram — 컬럼 수 시각화 */
-const GridDiagram = ({ columns = 4 }) => (
-  <Box
-    sx={ {
-      width: 48,
-      height: 48,
-      display: 'grid',
-      gridTemplateColumns: `repeat(${columns}, 1fr)`,
-      gap: '2px',
-      p: '3px',
-      borderRadius: 1.5,
-      border: '1px solid',
-      borderColor: 'divider',
-    } }
-  >
-    { Array.from({ length: columns }, (_, i) => (
-      <Box key={ i } sx={ { bgcolor: 'action.selected', borderRadius: 0.5 } } />
-    )) }
-  </Box>
-);
+const GridDiagram = ({ columns = 4 }) => {
+  const cols = Math.max(1, Math.min(toNum(columns, 4), 24));
+  return (
+    <Box
+      sx={ {
+        width: 48,
+        height: 48,
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: '2px',
+        p: '3px',
+        borderRadius: 1.5,
+        border: '1px solid',
+        borderColor: 'divider',
+      } }
+    >
+      { Array.from({ length: cols }, (_, i) => (
+        <Box key={ i } sx={ { bgcolor: 'action.selected', borderRadius: 0.5 } } />
+      )) }
+    </Box>
+  );
+};
 
 /** 스페이싱 mini-diagram — 두 블록 사이 간격 시각화 */
 const SpacingDiagram = ({ px = 16 }) => {
   // 4 ~ 64px 범위 안에 매핑
-  const visible = Math.max(2, Math.min(px / 2, 24));
+  const pxNum = toNum(px, 16);
+  const visible = Math.max(2, Math.min(pxNum / 2, 24));
   return (
     <Box
       sx={ {
@@ -53,29 +62,32 @@ const SpacingDiagram = ({ px = 16 }) => {
 };
 
 /** 컨테이너 mini-diagram — 너비 비율 시각화 */
-const ContainerDiagram = ({ ratio = 0.7 }) => (
-  <Box
-    sx={ {
-      width: 48,
-      height: 48,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 1.5,
-      border: '1px solid',
-      borderColor: 'divider',
-    } }
-  >
+const ContainerDiagram = ({ ratio = 0.7 }) => {
+  const r = Math.max(0.05, Math.min(toNum(ratio, 0.7), 1));
+  return (
     <Box
       sx={ {
-        width: `${ratio * 100}%`,
-        height: 18,
-        bgcolor: 'action.selected',
-        borderRadius: 0.5,
+        width: 48,
+        height: 48,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 1.5,
+        border: '1px solid',
+        borderColor: 'divider',
       } }
-    />
-  </Box>
-);
+    >
+      <Box
+        sx={ {
+          width: `${r * 100}%`,
+          height: 18,
+          bgcolor: 'action.selected',
+          borderRadius: 0.5,
+        } }
+      />
+    </Box>
+  );
+};
 
 const DIAGRAM_BY_KIND = {
   grid: GridDiagram,
@@ -83,16 +95,23 @@ const DIAGRAM_BY_KIND = {
   container: ContainerDiagram,
 };
 
+const safeText = (v) => {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  try { return JSON.stringify(v); } catch { return ''; }
+};
+
 const formatLayoutValue = (token) => {
   switch (token.kind) {
     case 'grid':
-      return `${token.columns} columns · gap ${token.gap ?? '-'}px`;
+      return `${safeText(token.columns)} columns · gap ${safeText(token.gap ?? '-')}px`;
     case 'spacing':
-      return `${token.px}px`;
+      return `${safeText(token.px)}px`;
     case 'container':
-      return `${Math.round((token.ratio ?? 0) * 100)}% · max ${token.maxWidth ?? '-'}`;
+      return `${Math.round((typeof token.ratio === 'number' ? token.ratio : 0) * 100)}% · max ${safeText(token.maxWidth ?? '-')}`;
     default:
-      return token.value || '';
+      // LLM schema 위반 (e.g. DTCG-style nested $value object) 방어
+      return safeText(token.value);
   }
 };
 
@@ -128,8 +147,8 @@ export function LayoutTokenPreview({ tokens, onChange, references = [], sx }) {
           <Box key={ token.id }>
             <Box sx={ { position: 'relative' } }>
               <TokenListItem
-                preview={ <Diagram { ...token } /> }
-                label={ token.label }
+                preview={ <Diagram columns={ token.columns } gap={ token.gap } px={ token.px } ratio={ token.ratio } maxWidth={ token.maxWidth } /> }
+                label={ safeText(token.label) }
                 value={ formatLayoutValue(token) }
                 isEnabled={ token.isEnabled }
                 emphasis={ token.emphasis }

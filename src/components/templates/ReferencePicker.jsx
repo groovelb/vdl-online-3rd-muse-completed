@@ -165,7 +165,7 @@ export function ReferencePicker({
         hasMore={ tab === 'archive' ? hasMore : false }
         isLoading={ tab === 'archive' ? isLoading : false }
         onLoadMore={ tab === 'archive' ? onLoadMore : undefined }
-        columns={ { xs: 2, sm: 3, md: 4 } }
+        columns={ { xs: 2, sm: 3, md: 4, lg: 5, xl: 6 } }
         spacing={ 2 }
         emptyContent={
           tab === 'recommended'

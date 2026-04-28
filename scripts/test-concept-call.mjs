@@ -11,6 +11,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,43 @@ const ROOT = path.resolve(__dirname, '..');
 const envText = fs.readFileSync(path.join(ROOT, '.env.local'), 'utf-8');
 const apiKey = envText.match(/^ANTHROPIC_API_KEY=(.+)$/m)?.[1]?.trim();
 if (!apiKey) throw new Error('ANTHROPIC_API_KEY not found in .env.local');
+const supabaseUrl = envText.match(/^VITE_SUPABASE_URL=(.+)$/m)?.[1]?.trim();
+if (!supabaseUrl) throw new Error('VITE_SUPABASE_URL not found in .env.local');
+
+// 1b) Fetch service_role key via supabase CLI (already linked → no user action needed)
+const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1];
+if (!projectRef) throw new Error('Cannot extract project ref from VITE_SUPABASE_URL');
+
+console.log('[test-concept-call] fetching service_role key via supabase CLI ...');
+const apiKeysOutput = execSync(`pnpm supabase projects api-keys --project-ref ${projectRef}`, {
+  encoding: 'utf-8',
+  cwd: ROOT,
+});
+const serviceRoleKey = apiKeysOutput.match(/service_role\s*\|\s*(eyJ[A-Za-z0-9._-]+)/)?.[1];
+if (!serviceRoleKey) throw new Error('service_role key not found in supabase CLI output');
+console.log('[test-concept-call] service_role key obtained.');
+
+// 1c) Fetch real reference_items from Supabase (production-identical data)
+const refIds = [
+  '248c3094-8bca-47b7-9d2f-c65dd51081bf',
+  '88fd6205-e3d4-4cd2-9748-65941efcfaf5',
+  '6c113186-bbca-4010-9250-38e1a087f1ce',
+];
+const idsCsv = refIds.map((id) => `"${id}"`).join(',');
+const supabaseQuery = `${supabaseUrl}/rest/v1/reference_items?id=in.(${idsCsv})&select=id,title,tags,dominant_colors,extracted`;
+console.log('[test-concept-call] fetching reference_items from Supabase ...');
+const supabaseRes = await fetch(supabaseQuery, {
+  headers: {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+  },
+});
+if (!supabaseRes.ok) {
+  throw new Error(`Supabase ${supabaseRes.status}: ${await supabaseRes.text()}`);
+}
+const refRows = await supabaseRes.json();
+console.log('[test-concept-call] fetched', refRows.length, 'reference_items rows');
+const rowById = Object.fromEntries(refRows.map((r) => [r.id, r]));
 
 // 2) Read aiTasks.js source and extract TASK_ANALYZE_CONCEPT.systemPrompt as plain string
 const aiTasksSrc = fs.readFileSync(path.join(ROOT, 'src/data/muse/aiTasks.js'), 'utf-8');
@@ -54,42 +92,38 @@ while (i < aiTasksSrc.length) {
 const intent = 'functional dashboard with retro mood and paper texture';
 const projectName = 'retro mood dashboard';
 
-const refs = [
-  {
-    id: '248c3094-8bca-47b7-9d2f-c65dd51081bf',
-    title: 'Grainy Ethereal Gradient',
-    note: 'use retro style paper grained background with fixed position\n- paper texture',
-    useLayers: [],
-    attachIdx: 1,
-    attachFile: '01-248c3094-8bca-47b7-9d2f-c65dd51081bf.jpg',
-  },
-  {
-    id: '88fd6205-e3d4-4cd2-9748-65941efcfaf5',
-    title: 'Typographic Weight Specimen',
-    note: 'bold & contrast typography Hierarchy',
-    useLayers: [],
-    attachIdx: 2,
-    attachFile: '02-88fd6205-e3d4-4cd2-9748-65941efcfaf5.jpg',
-  },
-  {
-    id: '6c113186-bbca-4010-9250-38e1a087f1ce',
-    title: 'Minimalist Dashboard Structure',
-    note: 'Editorial Dashboard Layout\n- blend grid and gradient background',
-    useLayers: [],
-    attachIdx: 3,
-    attachFile: '03-6c113186-bbca-4010-9250-38e1a087f1ce.jpg',
-  },
-];
+// per-ref user notes from chat (UI input)
+const noteOverrides = {
+  '248c3094-8bca-47b7-9d2f-c65dd51081bf': 'use retro style paper grained background with fixed position\n- paper texture',
+  '88fd6205-e3d4-4cd2-9748-65941efcfaf5': 'bold & contrast typography Hierarchy',
+  '6c113186-bbca-4010-9250-38e1a087f1ce': 'Editorial Dashboard Layout\n- blend grid and gradient background',
+};
 
-// 4) Build extractedPool exactly like museAiTasks.runAnalyzeConcept does (extracted/tags/dominantColors empty since we don't have T1 results here — same as wizard sending placeholder for un-tagged refs)
+const refs = refIds.map((id, i) => {
+  const row = rowById[id];
+  if (!row) throw new Error(`reference_items row missing for id ${id}`);
+  return {
+    id: row.id,
+    title: row.title,
+    tags: row.tags || {},
+    dominantColors: row.dominant_colors || [],
+    extracted: row.extracted || {},
+    note: noteOverrides[id] || '',
+    useLayers: [],
+    attachIdx: i + 1,
+    attachFile: `${String(i + 1).padStart(2, '0')}-${id}.jpg`,
+  };
+});
+
+// 4) Build extractedPool exactly like museAiTasks.runAnalyzeConcept does — production-identical
 const extractedPool = refs.map((r) => ({
   id: r.id,
   attachIdx: r.attachIdx,
   attachFile: r.attachFile,
   title: r.title,
-  tags: {},
-  dominantColors: [],
-  extracted: {},
+  tags: r.tags,
+  dominantColors: r.dominantColors,
+  extracted: r.extracted,
 }));
 
 // 5) Build refNotesBlock (same as buildReferenceNotesBlock in museAiTasks)

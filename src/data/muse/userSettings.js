@@ -5,6 +5,6 @@
 export const defaultUserSettings = {
   aiModel: 'claude-sonnet-4-6',
   storageMode: 'local',
-  themeMode: 'light',
+  themeMode: 'system',
   isAutoTagEnabled: true,
 };

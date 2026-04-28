@@ -535,13 +535,17 @@ export function ProjectDetailPage({
               left={
                 <Box sx={ { py: 2 } }>
                   { renderEditor() }
-                  { layerDetails?.[activeLayer] && (
+                  { (() => {
+                    const raw = layerDetails?.[activeLayer];
+                    const text = typeof raw === 'string' ? raw : (raw == null ? '' : JSON.stringify(raw, null, 2));
+                    return text ? true : false;
+                  })() && (
                     <Box sx={ { mt: 3, p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' } }>
                       <Typography variant="overline" color="text.secondary" sx={ { display: 'block', mb: 1 } }>
                         Handoff 상세 — { LAYERS.find((l) => l.id === activeLayer)?.label }
                       </Typography>
                       <Box sx={ { whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.7 } }>
-                        { layerDetails[activeLayer] }
+                        { typeof layerDetails[activeLayer] === 'string' ? layerDetails[activeLayer] : JSON.stringify(layerDetails[activeLayer], null, 2) }
                       </Box>
                     </Box>
                   ) }

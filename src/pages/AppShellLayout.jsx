@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell.jsx';
 import { MuseNav } from './MuseNav.jsx';
 import { UserMenu } from './UserMenu.jsx';
+import { BetaNoticeDialog } from './auth/BetaNoticeDialog.jsx';
 
 /**
  * AppShellLayout — Protected 라우트 공통 레이아웃
@@ -18,6 +19,7 @@ export function AppShellLayout() {
       headerPersistent={ <UserMenu /> }
     >
       <Outlet />
+      <BetaNoticeDialog />
     </AppShell>
   );
 }

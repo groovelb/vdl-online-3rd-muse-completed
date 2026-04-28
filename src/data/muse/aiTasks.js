@@ -739,20 +739,52 @@ The prompt MUST cover ALL FIVE bands in a natural flowing Korean paragraph (no b
 
 userNotes 가 있으면 그 내용을 반드시 prompt 안에 자연스럽게 녹여라 (verbatim 인용 X, 의미 반영).
 
-=== OUTPUT prompt — style rules ===
+=== OUTPUT prompt — FORMAT rules (포맷 금지) ===
 - 한글 자연스러운 문장. "~한 ~의 ~" 식 묘사.
 - 구체적: HEX 코드, 폰트명, 픽셀/rem 수치 직접 명시.
 - 200자 미만이면 너무 빈약, 800자 초과면 자르기.
-- 절대 포함 금지: token id (col-ink, typo-h1 등), JSON, 코드블록(\`\`\`), 변수명, "primary:", "h1:" 같은 라벨.
+- 절대 포함 금지 (포맷): token id (col-ink, typo-h1 등), JSON, 코드블록(\`\`\`), 변수명, "primary:", "h1:" 같은 라벨.
 - 자연어로만. 사용자가 그대로 복사해 다른 AI 에 붙여넣음.
 
+=== AI SLOPE — Visual Clichés to AVOID (시각 차단) ===
+포맷 금지와 별개로, 결과물이 "AI 가 만든 듯한 generic" 으로 회귀하지 않도록 다음을 묘사에서 배제:
+
+**Product-conditional 차단** (intent 의 product type 에 따라 회귀 패턴 차단):
+- intent 가 "dashboard" / "metric" / "analytics" 류일 때: magazine cover layout / editorial article spread / weather almanac / daily journal cover / news bulletin 풍 묘사 금지. mood 가 "editorial" 이어도 본질은 functional dashboard 유지.
+- intent 가 "landing" / "marketing" 일 때: 평범한 blog post / app screen 풍 묘사 금지.
+- intent 가 "mobile" / "app" 일 때: 데스크톱 1440px 풀폭 레이아웃 묘사 금지.
+
+**Generic AI 폰트 회피** (Anthropic Cookbook 명시):
+- Inter / Roboto / Open Sans / Lato / SF Pro / Helvetica 단독 사용 묘사 금지.
+- 대신 distinctive choice 권장: editorial(Playfair Display, Crimson Pro, Fraunces) / display(Clash Display, Bricolage, Newsreader) / technical(IBM Plex, Space Grotesk) / code(JetBrains Mono).
+
+**Cliché 배경**:
+- flat solid cream/white background without any texture/gradient (배경 = 단색만 절대 금지)
+- purple-on-white gradients (overused AI default)
+- generic glass morphism (uniform translucent cards)
+
+**AI-generated look 패턴**:
+- uniform spacing everywhere (모든 간격이 똑같음)
+- generic Lucide/Heroicons style icons everywhere
+- soft drop shadows everywhere (그림자 남용)
+- 4-card 균등 metric grid 만 단조롭게 반복 (단 dashboard 의 metric card 자체는 본질로 보존 — 균등 4-카드 무한반복만 차단)
+- 컨테이너 / 카드 / 섹션의 좌측 line border (좌측 세로 강조선, blockquote 식 좌측 보더) — magazine·editorial 톤으로 끌리는 흔한 AI cliché
+- italic / 이탤릭체 사용 — 강조나 인용 위한 italic 남용 금지 (magazine cover / editorial article spread 회귀 신호. 강조는 weight·size·color 로만)
+
+이 차단 룰은 "explicit avoidance" — Claude / Gemini 가 받는 직접 신호. 자연어 안에 "~를 피하고", "단순한 ~ 와 다르게" 식으로 1-2회 녹이면 효과 ↑.
+
 === EXAMPLE (참고용, 절대 그대로 출력 X) ===
-"흑백 대비가 강한 매거진 톤의 랜딩페이지. 잉크처럼 깊은 #14132B 를 주조색으로,
-크림빛 #FAF6E8 표면에 차분한 머스타드 #D4A857 액센트가 포인트로 흩어진 구성.
-Display 는 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 Inter sans-serif
-1rem 1.6 lineHeight 로 안정적. 12-col modular grid 24px gap, 컨테이너 max-width
-1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고,
-Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다."
+
+(a) Landing — 매거진 톤:
+"흑백 대비가 강한 매거진 톤의 랜딩페이지. 잉크처럼 깊은 #14132B 를 주조색으로, 크림빛 #FAF6E8 표면에 차분한 머스타드 #D4A857 액센트가 포인트로 흩어진 구성. Display 는 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 Crimson Pro 1rem 1.6 lineHeight 로 안정적. 12-col modular grid 24px gap, 컨테이너 max-width 1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고, Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다. 평범한 blog post 식 단조 카드 그리드와 다르게 비대칭 hierarchy 로 시선을 유도한다."
+
+(b) Dashboard — functional + retro accent (intent: "functional dashboard with retro mood"):
+"기능 중심의 메트릭 대시보드에 1970s 에디토리얼 무드를 액센트로 입힌 구성. 잉크 #1F1F1F 텍스트, 크림 #E8E5DC 표면, 머스타드 #C8A574 액센트로 따뜻한 대비. Display 는 Fraunces serif 28px 메트릭 큰 숫자에, 본문은 IBM Plex Sans 13px 라벨에 적용. 12-col grid 16px gap, max 1280px. 배경은 retro paper-grain 텍스처를 fixed 로 깔되 metric card / line chart / data table 같은 dashboard 의 기능 컴포넌트는 그대로 유지. magazine cover / weather almanac 풍이 아닌 functional readability 가 우선이며 sticky header nav 에 fontWeight 강조 hierarchy 만 editorial 에서 차용한다."
+
+(c) Mobile — Y2K 글리치 무드:
+"Y2K 글리치 감성의 모바일 앱. 메탈릭 #C0C7D1 표면에 형광 #B8FF3D 액센트, 깊은 보라 #2B1A4E 텍스트. Display 는 Bricolage Grotesque 32px 굵게, 본문은 Space Grotesk 14px. 4-col mobile grid 12px gap, viewport 390px. 배경에는 미세한 chromatic aberration 과 노이즈 텍스처가 흐르고, 카드는 1px sharp border 로 떠 있는 듯 배치. 데스크톱 풀폭 레이아웃 / 부드러운 drop shadow / 균일 간격 같은 generic AI 모바일 룩과 거리를 두고 글리치 디테일로 캐릭터를 만든다."
+
+(예시 3개의 공통: 5 band 풀이 + 1-2회 "~ 와 다르게" 식 negative 명시 + ref 출처 0-2회 짧게 녹임)
 
 === Per-Reference Notes (있을 시 HIGHEST PRIORITY per ref) ===
 사용자가 ref 별로 적은 차용 의도가 user message 끝에 있을 수 있다 (예: "ref-002: hero 색감만 차용").

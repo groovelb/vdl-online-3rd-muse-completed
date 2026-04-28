@@ -14,7 +14,7 @@ import Typography from '@mui/material/Typography';
  *
  * Props:
  * @param {string} mode - 'concept' | 'system' | 'handoff' [Required]
- * @param {string} title - 카드 제목 (예: "🎨 컨셉 잡기") [Required]
+ * @param {string} title - 카드 제목 (예: "컨셉 잡기") [Required]
  * @param {string} subtitle - 카드 부제 (예: "감을 잡고 싶다") [Required]
  * @param {string} description - 카드 설명 (예: "빠른 다양성 우선") [Required]
  * @param {boolean} isSelected - 현재 선택 상태 [Optional, 기본값: false]
@@ -24,7 +24,7 @@ import Typography from '@mui/material/Typography';
  * Example usage:
  * <ModeSelectCard
  *   mode="concept"
- *   title="🎨 컨셉 잡기"
+ *   title="컨셉 잡기"
  *   subtitle="감을 잡고 싶다"
  *   description="빠른 다양성 우선"
  *   isSelected={ mode === 'concept' }
@@ -62,8 +62,8 @@ export function ModeSelectCard({
         transition: 'border-color 150ms, background-color 150ms, transform 150ms',
         display: 'flex',
         flexDirection: 'column',
-        gap: 1.5,
-        minHeight: 200,
+        gap: 2,
+        minHeight: 260,
         boxSizing: 'border-box',
         '&:hover': {
           borderColor: isSelected ? 'primary.main' : 'text.secondary',
@@ -83,9 +83,19 @@ export function ModeSelectCard({
       <Typography variant="body2" sx={ { color: 'text.primary', fontWeight: 500 } }>
         { subtitle }
       </Typography>
-      <Typography variant="caption" sx={ { color: 'text.secondary', fontSize: '0.85rem', mt: 'auto' } }>
-        { description }
-      </Typography>
+      { description && (
+        <Typography
+          variant="body2"
+          sx={ {
+            color: 'text.secondary',
+            fontSize: '0.875rem',
+            lineHeight: 1.6,
+            mt: 1,
+          } }
+        >
+          { description }
+        </Typography>
+      ) }
     </Box>
   );
 }

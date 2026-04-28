@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -10,6 +10,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import AddIcon from '@mui/icons-material/Add';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { isSimilarColor } from '../../utils/colorSimilarity';
@@ -64,6 +65,8 @@ export function ArchivePage({
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteState, setDeleteState] = useState({ isDeleting: false, error: null });
   const [detailTarget, setDetailTarget] = useState(null);
+  const [isAddRefOpen, setIsAddRefOpen] = useState(false);
+  const fileInputRef = useRef(null);
 
   const {
     references,
@@ -134,34 +137,24 @@ export function ArchivePage({
             variant="contained"
             color="primary"
             startIcon={ <AddIcon /> }
-            onClick={ onNewProject }
+            onClick={ () => setIsAddRefOpen(true) }
           >
-            새 프로젝트
+            레퍼런스 추가
           </Button>
         </Box>
 
-          {/* Upload dropzone */}
-          <Box sx={ { mb: 2 } }>
-            <FileDropzone
-              multiple
-              onFileSelect={ handleUploadFile }
-              onFilesSelect={ handleUploadFiles }
-              variant="compact"
-              isUploading={ uploadState.isUploading }
-            />
-            { uploadState.error && (
-              <Alert severity="error" sx={ { mt: 1 } }>{ uploadState.error }</Alert>
-            ) }
-            { useStoreMode && pendingCount > 0 && (
-              <Alert
-                severity="info"
-                icon={ <CircularProgress size={ 16 } thickness={ 5 } /> }
-                sx={ { mt: 1 } }
-              >
-                { pendingCount }장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
-              </Alert>
-            ) }
-          </Box>
+          { uploadState.error && (
+            <Alert severity="error" sx={ { mb: 2 } }>{ uploadState.error }</Alert>
+          ) }
+          { useStoreMode && pendingCount > 0 && (
+            <Alert
+              severity="info"
+              icon={ <CircularProgress size={ 16 } thickness={ 5 } /> }
+              sx={ { mb: 2 } }
+            >
+              { pendingCount }장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
+            </Alert>
+          ) }
 
           {/* Sticky 필터 바 */}
           <FilterPanel
@@ -254,6 +247,54 @@ export function ArchivePage({
         activeTags={ activeTags }
         activeColors={ activeColors }
       />
+
+      <Dialog
+        open={ isAddRefOpen }
+        onClose={ () => !uploadState.isUploading && setIsAddRefOpen(false) }
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>레퍼런스 추가</DialogTitle>
+        <DialogContent>
+          <FileDropzone
+            multiple
+            onFileSelect={ handleUploadFile }
+            onFilesSelect={ handleUploadFiles }
+            variant="default"
+            isUploading={ uploadState.isUploading }
+          />
+          <input
+            ref={ fileInputRef }
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            hidden
+            onChange={ (e) => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length) return;
+              if (files.length > 1) handleUploadFiles(files);
+              else handleUploadFile(files[0]);
+              e.target.value = '';
+            } }
+          />
+          { uploadState.error && (
+            <Alert severity="error" sx={ { mt: 2 } }>{ uploadState.error }</Alert>
+          ) }
+        </DialogContent>
+        <DialogActions sx={ { px: 3, pb: 2, justifyContent: 'space-between' } }>
+          <Button
+            variant="outlined"
+            startIcon={ <UploadFileIcon /> }
+            onClick={ () => fileInputRef.current?.click() }
+            disabled={ uploadState.isUploading }
+          >
+            파일 업로드
+          </Button>
+          <Button onClick={ () => setIsAddRefOpen(false) } disabled={ uploadState.isUploading }>
+            닫기
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

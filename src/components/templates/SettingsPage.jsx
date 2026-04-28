@@ -10,7 +10,9 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Radio from '@mui/material/Radio';
 import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { PageContainer } from '../layout/PageContainer.jsx';
+import { BETA_LIMITS } from '../../config/betaLimits';
 
 const AI_MODELS = [
   { value: 'claude-opus-4-7', label: 'Claude Opus 4.7 (최고 품질)' },
@@ -18,12 +20,8 @@ const AI_MODELS = [
   { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (빠름)' },
 ];
 
-const STORAGE_MODES = [
-  { value: 'local', label: 'Local (브라우저)', hint: '외부 전송 없이 내 기기에만 저장' },
-  { value: 'cloud', label: 'Cloud (계정)', hint: '다른 기기에서도 동기화 (계정 필요)' },
-];
-
 const THEME_MODES = [
+  { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
 ];
@@ -31,22 +29,24 @@ const THEME_MODES = [
 /**
  * SettingsPage 템플릿
  *
- * MUSE 설정 화면. AI 모델, 스토리지 모드, 테마 모드를 관리한다.
+ * MUSE 설정 화면. AI 모델, 자동 태깅, 테마 모드를 관리한다.
  *
  * Props:
- * @param {object} settings - { aiModel, storageMode, themeMode, isAutoTagEnabled } [Required]
+ * @param {object} settings - { aiModel, themeMode, isAutoTagEnabled } [Required]
  * @param {function} onChange - (patch) => void [Required]
  * @param {function} onSave - "저장" 클릭 [Optional]
+ * @param {object} usage - { references: number, projects: number } 베타 사용량 [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
  * <SettingsPage
  *   settings={ settings }
+ *   usage={ { references: 12, projects: 3 } }
  *   onChange={ (patch) => updateSettings(patch) }
  *   onSave={ () => api.save(settings) }
  * />
  */
-export function SettingsPage({ settings, onChange, onSave, sx }) {
+export function SettingsPage({ settings, onChange, onSave, usage, sx }) {
   const [dirty, setDirty] = useState(false);
 
   const patch = (next) => {
@@ -62,6 +62,31 @@ export function SettingsPage({ settings, onChange, onSave, sx }) {
       </Box>
 
         <Box sx={ { maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 5 } }>
+          {/* Beta usage */}
+          { usage && (
+            <>
+              <Section
+                title="베타 사용량"
+                description="정식 출시 전 계정당 한도가 적용됩니다"
+              >
+                <Stack spacing={ 1 }>
+                  <UsageRow
+                    label="레퍼런스"
+                    used={ usage.references ?? 0 }
+                    limit={ BETA_LIMITS.references }
+                  />
+                  <UsageRow
+                    label="프로젝트"
+                    used={ usage.projects ?? 0 }
+                    limit={ BETA_LIMITS.projects }
+                  />
+                </Stack>
+              </Section>
+
+              <Divider />
+            </>
+          ) }
+
           {/* AI Model */}
           <Section
             title="AI 모델"
@@ -95,28 +120,6 @@ export function SettingsPage({ settings, onChange, onSave, sx }) {
               }
               label={ settings.isAutoTagEnabled ? '활성' : '비활성' }
             />
-          </Section>
-
-          <Divider />
-
-          {/* Storage */}
-          <Section
-            title="스토리지"
-            description="레퍼런스와 프로젝트를 어디에 저장할지 선택"
-          >
-            <RadioGroup
-              value={ settings.storageMode || 'local' }
-              onChange={ (e) => patch({ storageMode: e.target.value }) }
-            >
-              { STORAGE_MODES.map((m) => (
-                <Box key={ m.value } sx={ { mb: 1 } }>
-                  <FormControlLabel value={ m.value } control={ <Radio /> } label={ m.label } />
-                  <Typography variant="caption" color="text.secondary" sx={ { display: 'block', pl: 4 } }>
-                    { m.hint }
-                  </Typography>
-                </Box>
-              )) }
-            </RadioGroup>
           </Section>
 
           <Divider />
@@ -162,6 +165,30 @@ export function SettingsPage({ settings, onChange, onSave, sx }) {
 
       <Box sx={ { height: 64 } } />
     </PageContainer>
+  );
+}
+
+/** 사용량 행 — 라벨 좌측, 카운트 우측 */
+function UsageRow({ label, used, limit }) {
+  const ratio = limit > 0 ? Math.min(used / limit, 1) : 0;
+  const color = ratio >= 1 ? 'error.main' : ratio >= 0.8 ? 'warning.main' : 'text.primary';
+  return (
+    <Box
+      sx={ {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 2,
+      } }
+    >
+      <Typography variant="body2" color="text.secondary">{ label }</Typography>
+      <Typography variant="body2" sx={ { fontWeight: 600, color, fontVariantNumeric: 'tabular-nums' } }>
+        { used }
+        <Box component="span" sx={ { color: 'text.disabled', fontWeight: 400, ml: 0.25 } }>
+          / { limit }
+        </Box>
+      </Typography>
+    </Box>
   );
 }
 

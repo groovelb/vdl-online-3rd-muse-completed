@@ -5,7 +5,6 @@ import Typography from '@mui/material/Typography';
 const NAV_ITEMS = [
   { to: '/archive', label: 'Archive' },
   { to: '/projects', label: 'Projects' },
-  { to: '/settings', label: 'Settings' },
 ];
 
 /**

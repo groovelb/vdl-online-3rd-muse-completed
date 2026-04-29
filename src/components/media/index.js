@@ -22,3 +22,6 @@ export { CarouselIndicator } from './CarouselIndicator.jsx';
 
 // FloatingImageGallery - Three.js z-depth 무한 갤러리 (hero/배경용)
 export { FloatingImageGallery } from './FloatingImageGallery.jsx';
+
+// RefImage - signed URL 만료 자동 재서명 이미지
+export { RefImage } from './RefImage.jsx';

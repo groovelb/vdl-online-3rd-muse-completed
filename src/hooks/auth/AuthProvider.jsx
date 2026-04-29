@@ -13,6 +13,7 @@ const AuthContext = createContext({
   user: null,
   loading: true,
   isAuthenticated: false,
+  isAdmin: false,
 });
 
 export function AuthProvider({ children }) {
@@ -39,11 +40,13 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  const role = session?.user?.app_metadata?.role || null;
   const value = {
     session,
     user: session?.user || null,
     loading,
     isAuthenticated: !!session?.user,
+    isAdmin: role === 'admin',
   };
 
   return <AuthContext.Provider value={ value }>{ children }</AuthContext.Provider>;

@@ -9,6 +9,7 @@ import { runRecommend, runAnalyzeTokens, runAnalyzeConcept, runAnalyzeHandoff } 
 const toPickerItem = (r) => ({
   id: r.id,
   src: r.thumbnailUrl,
+  storagePath: r.storagePath,
   title: r.title,
   tags: r.tags,
   dominantColors: r.dominantColors,

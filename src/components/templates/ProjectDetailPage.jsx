@@ -22,6 +22,7 @@ import { LayoutTokenPreview } from '../data-display/LayoutTokenPreview.jsx';
 import { GradientPreview } from '../data-display/GradientPreview.jsx';
 import { ThemeExportDialog } from '../overlay-feedback/ThemeExportDialog.jsx';
 import { ReferenceNotesDialog } from '../overlay-feedback/ReferenceNotesDialog.jsx';
+import { RefImage } from '../media/RefImage.jsx';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import {
   buildDtcgTokens,
@@ -423,16 +424,10 @@ export function ProjectDetailPage({
                       bgcolor: 'background.paper',
                     } }
                   >
-                    <Box
-                      component="img"
+                    <RefImage
                       src={ ref.thumbnailUrl || ref.src }
+                      storagePath={ ref.storagePath }
                       alt={ ref.title || ref.id }
-                      sx={ {
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                      } }
                     />
                     { hasNote && (
                       <Box

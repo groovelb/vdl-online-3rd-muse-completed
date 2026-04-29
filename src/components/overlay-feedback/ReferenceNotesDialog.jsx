@@ -8,6 +8,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Chip from '@mui/material/Chip';
+import { RefImage } from '../media/RefImage.jsx';
 
 const LAYER_LABEL = {
   color: '🎨 색',
@@ -116,11 +117,10 @@ export function ReferenceNotesDialog({
                   } }
                 >
                   { ref.thumbnailUrl && (
-                    <Box
-                      component="img"
+                    <RefImage
                       src={ ref.thumbnailUrl }
+                      storagePath={ ref.storagePath }
                       alt={ ref.title || ref.id }
-                      sx={ { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }
                     />
                   ) }
                 </Box>

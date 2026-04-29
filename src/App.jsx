@@ -12,6 +12,7 @@ import {
   ProjectCreateRoute,
   ProjectDetailRoute,
   SettingsRoute,
+  AdminRoute,
   AppShellLayout,
 } from './pages';
 import AuthPage from './pages/auth/AuthPage';
@@ -47,6 +48,7 @@ function App() {
                 <Route path="/projects/new" element={<ProjectCreateRoute />} />
                 <Route path="/projects/:id" element={<ProjectDetailRoute />} />
                 <Route path="/settings" element={<SettingsRoute />} />
+                <Route path="/admin" element={<AdminRoute />} />
               </Route>
               <Route path="*" element={<Navigate to="/archive" replace />} />
             </Routes>

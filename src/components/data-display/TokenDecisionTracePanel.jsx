@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
+import { RefImage } from '../media/RefImage.jsx';
 
 const LAYER_LABEL = {
   color: '색',
@@ -66,15 +67,13 @@ export function TokenDecisionTracePanel({ decisionRationale, references = [], sx
             { refsWithThumb.map((r) => (
               <Box key={ r.id } sx={ { display: 'inline-flex', alignItems: 'center', gap: 0.5 } }>
                 { r.thumbnailUrl && (
-                  <Box
-                    component="img"
-                    src={ r.thumbnailUrl }
-                    alt={ r.id }
-                    sx={ {
-                      width: 28, height: 28, borderRadius: 0.75, objectFit: 'cover',
-                      border: '1px solid', borderColor: 'divider',
-                    } }
-                  />
+                  <Box sx={ { width: 28, height: 28, borderRadius: 0.75, overflow: 'hidden', border: '1px solid', borderColor: 'divider', flexShrink: 0 } }>
+                    <RefImage
+                      src={ r.thumbnailUrl }
+                      storagePath={ r.storagePath }
+                      alt={ r.id }
+                    />
+                  </Box>
                 ) }
                 <Typography variant="caption" sx={ { fontFamily: 'monospace', fontSize: 11 } }>
                   { r.id }

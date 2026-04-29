@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { useAuth } from '../hooks/auth';
 
 const NAV_ITEMS = [
   { to: '/archive', label: 'Archive' },
@@ -13,6 +14,8 @@ const NAV_ITEMS = [
  * 유저 메뉴는 `<UserMenu>` 로 분리되어 AppShell 의 headerPersistent 로 우측 배치.
  */
 export function MuseNav() {
+  const { isAdmin } = useAuth();
+  const items = isAdmin ? [...NAV_ITEMS, { to: '/admin', label: 'Admin' }] : NAV_ITEMS;
   return (
     <Box sx={ { display: 'flex', alignItems: 'center', gap: 4 } }>
       <NavLink to="/archive" style={ { textDecoration: 'none' } }>
@@ -21,7 +24,7 @@ export function MuseNav() {
         </Typography>
       </NavLink>
       <Box sx={ { display: 'flex', gap: 3 } }>
-        { NAV_ITEMS.map((item) => (
+        { items.map((item) => (
           <NavLink
             key={ item.to }
             to={ item.to }

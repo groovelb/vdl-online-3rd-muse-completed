@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import CloseIcon from '@mui/icons-material/Close';
+import { RefImage } from '../media/RefImage.jsx';
 
 const TAG_GROUPS = [
   { key: 'color', label: '색상' },
@@ -124,9 +125,9 @@ export function ReferenceDetailDialog({
               zIndex: 0,
             } }
           >
-            <Box
-              component="img"
+            <RefImage
               src={ reference.thumbnailUrl || reference.src }
+              storagePath={ reference.storagePath }
               alt={ reference.title || 'Reference' }
               sx={ {
                 maxWidth: { xs: '100%', md: '33vw' },
@@ -134,7 +135,6 @@ export function ReferenceDetailDialog({
                 width: 'auto',
                 height: 'auto',
                 objectFit: 'contain',
-                display: 'block',
               } }
             />
           </Box>

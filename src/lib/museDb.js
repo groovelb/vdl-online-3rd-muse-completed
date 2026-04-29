@@ -8,7 +8,7 @@
 import { supabase } from './supabase';
 
 const BUCKET = 'references';
-const SIGNED_URL_TTL = 3600; // 1h
+const SIGNED_URL_TTL = 60 * 60 * 24 * 7; // 7d (Supabase 최대치). 세션 중 만료로 라우트 이동 시 깨지는 현상 방지.
 
 export async function getSignedUrl(storagePath) {
   if (!storagePath) return null;

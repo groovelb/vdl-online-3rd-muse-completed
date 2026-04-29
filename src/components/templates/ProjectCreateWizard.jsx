@@ -11,6 +11,7 @@ import { ReferencePicker } from './ReferencePicker.jsx';
 import { AnalysisProgress } from '../overlay-feedback/AnalysisProgress.jsx';
 import { ModeSelectCard } from '../card/ModeSelectCard.jsx';
 import { IntentGuideField } from '../input/IntentGuideField.jsx';
+import { RefImage } from '../media/RefImage.jsx';
 import Chip from '@mui/material/Chip';
 
 const STEPS = ['모드', '제목+의도', '레퍼런스', '활용 노트', '분석'];
@@ -326,7 +327,7 @@ export function ProjectCreateWizard({
       const selectedFullRefs = state.selectedIds
         .map((id) => archive.find((a) => a.id === id))
         .filter(Boolean)
-        .map((a) => ({ id: a.id, thumbnailUrl: a.src || a.thumbnailUrl, title: a.title }));
+        .map((a) => ({ id: a.id, thumbnailUrl: a.src || a.thumbnailUrl, storagePath: a.storagePath, title: a.title }));
       const useLayersByRef = Object.fromEntries(
         state.selectedRefs.map((sr) => [sr.id, sr.useLayers || []]),
       );
@@ -370,11 +371,10 @@ export function ProjectCreateWizard({
                     } }
                   >
                     { ref.thumbnailUrl && (
-                      <Box
-                        component="img"
+                      <RefImage
                         src={ ref.thumbnailUrl }
+                        storagePath={ ref.storagePath }
                         alt={ ref.title || ref.id }
-                        sx={ { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }
                       />
                     ) }
                   </Box>

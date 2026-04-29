@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import { RefImage } from '../media/RefImage.jsx';
 
 /** 모드별 최소 글자수 — concept=0(스킵 가능), system=30, handoff=50 */
 const MIN_LENGTH_BY_MODE = { concept: 0, system: 30, handoff: 50 };
@@ -90,11 +91,10 @@ export function RefinementNotesField({
                 } }
               >
                 { r.thumbnailUrl && (
-                  <Box
-                    component="img"
+                  <RefImage
                     src={ r.thumbnailUrl }
+                    storagePath={ r.storagePath }
                     alt={ r.id }
-                    sx={ { width: '100%', height: '100%', objectFit: 'cover' } }
                   />
                 ) }
               </Box>

@@ -131,7 +131,12 @@ export async function uploadReferenceImage(file, userId, referenceId) {
   const path = `${userId}/${referenceId}.${ext}`;
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+    .upload(path, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg',
+      // 7d 브라우저/CDN 캐시 — 라우트 이동 시 동일 이미지 재다운로드 방지
+      cacheControl: '604800',
+    });
   if (error) throw error;
   return path;
 }

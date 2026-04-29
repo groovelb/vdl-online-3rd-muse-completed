@@ -22,6 +22,8 @@ import {
   buildCssVariables,
   buildCursorRules,
   buildDesignSystemMd,
+  buildDesignMd,
+  buildDecisionTraceMd,
   buildAiPasteBlock,
   buildAttachmentTable,
   inferImageExt,
@@ -120,13 +122,33 @@ export function buildUniversalJson({ project, analysis, references }) {
     },
 
     layout: {
-      description: '레이아웃 토큰. kind는 grid(columns+gap) / spacing(px) / container(ratio+maxWidth).',
+      description: '레이아웃 토큰. kind는 grid(columns+gap) / container(ratio+maxWidth). spacing 은 별도 axis.',
       tokens: pickEnabledTokens(analysis?.layout),
     },
 
     gradient: {
       description: '그라디언트 토큰. gradient 필드에 CSS gradient 문자열 그대로 적용 가능.',
       tokens: pickEnabledTokens(analysis?.gradient),
+    },
+
+    spacing: {
+      description: 'spacing scale 토큰 (xs/sm/md/lg/xl 형태의 object map). DESIGN.md spacing 과 1:1.',
+      scale: analysis?.spacing || {},
+    },
+
+    rounded: {
+      description: 'border radius scale 토큰 (object map). DESIGN.md rounded 와 1:1.',
+      scale: analysis?.rounded || {},
+    },
+
+    elevation: {
+      description: 'shadow 토큰 (optional). 빈 배열은 평면 디자인 의미. DESIGN.md x-elevation 과 1:1.',
+      tokens: pickEnabledTokens(Array.isArray(analysis?.elevation) ? analysis.elevation : []),
+    },
+
+    components: {
+      description: 'UI component 결합. 모든 값은 {a.b} token reference. DESIGN.md components 와 1:1.',
+      specs: analysis?.components || {},
     },
 
     visualDirection: {
@@ -383,12 +405,22 @@ export async function exportHandoffBundle({ project, analysis, references }) {
     typography: analysis?.typography || [],
     layout: analysis?.layout || [],
     gradient: analysis?.gradient || [],
+    spacing: analysis?.spacing || {},
+    rounded: analysis?.rounded || {},
+    elevation: Array.isArray(analysis?.elevation) ? analysis.elevation : [],
+    components: analysis?.components || {},
   };
   const visualDirection = analysis?.visualDirection || { markdown: '', tags: {} };
   const layerDetails = analysis?.layerDetails || null;
 
-  // 1) DTCG (source of truth)
+  // 1) DTCG (source of truth, 8 axes 포함)
   zip.file('tokens.dtcg.json', JSON.stringify(buildDtcgTokens(tokens), null, 2));
+
+  // 1.5) DESIGN.md (Google Labs alpha spec — front-matter + 8 prose section)
+  zip.file('DESIGN.md', buildDesignMd({ project, layers: analysis }));
+
+  // 1.6) decision-trace.md (TP6 결정 추적 export)
+  zip.file('decision-trace.md', buildDecisionTraceMd({ project, layers: analysis }));
 
   // 2) Frameworks
   const fw = zip.folder('frameworks');
@@ -396,7 +428,7 @@ export async function exportHandoffBundle({ project, analysis, references }) {
   fw.file('mui-theme.js', buildMuiTheme(tokens));
   fw.file('tokens.css', buildCssVariables(tokens));
 
-  // 3) DESIGN_SYSTEM.md (5 layer 상세 + 전환 가이드 + 정확한 ref 파일명 매칭표)
+  // 3) DESIGN_SYSTEM.md (8 layer 상세 + 전환 가이드 + 정확한 ref 파일명 매칭표)
   zip.file('DESIGN_SYSTEM.md', buildDesignSystemMd({ project, tokens, visualDirection, layerDetails, references }));
 
   // 4) .cursorrules — references 포함하여 매칭 표 박힘
@@ -431,6 +463,76 @@ export async function exportHandoffBundle({ project, analysis, references }) {
   const slug = slugify(project.name);
   const date = new Date().toISOString().slice(0, 10);
   const filename = `muse-handoff-${slug}-${date}.zip`;
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  return { filename, size: blob.size };
+}
+
+/**
+ * system 모드 전용 — DESIGN.md 중심의 가벼운 ZIP.
+ *
+ * ZIP 구조:
+ *   muse-system-{slug}-{date}.zip
+ *   ├── DESIGN.md            ← Google Labs alpha spec, front-matter + 8 prose section
+ *   ├── decision-trace.md    ← TP6 결정 추적 (whichReferences / whyChosen / appliedUserNotes)
+ *   ├── muse.json            ← universal tokens (호환용)
+ *   ├── tokens.dtcg.json     ← DTCG (선택 — 추가 도구 호환)
+ *   ├── visual-direction.md  ← VD markdown 단독
+ *   ├── README.md            ← 사용 가이드 + 매칭 표
+ *   └── references/
+ *       └── {ref-id}.{ext}
+ *
+ * @returns {Promise<{ filename: string, size: number }>}
+ */
+export async function exportSystemBundle({ project, analysis, references }) {
+  const zip = new JSZip();
+  const tokens = {
+    color: analysis?.color || [],
+    typography: analysis?.typography || [],
+    layout: analysis?.layout || [],
+    gradient: analysis?.gradient || [],
+    spacing: analysis?.spacing || {},
+    rounded: analysis?.rounded || {},
+    elevation: Array.isArray(analysis?.elevation) ? analysis.elevation : [],
+    components: analysis?.components || {},
+  };
+
+  zip.file('DESIGN.md', buildDesignMd({ project, layers: analysis }));
+  zip.file('decision-trace.md', buildDecisionTraceMd({ project, layers: analysis }));
+  zip.file('muse.json', JSON.stringify(buildUniversalJson({ project, analysis, references }), null, 2));
+  zip.file('tokens.dtcg.json', JSON.stringify(buildDtcgTokens(tokens), null, 2));
+  zip.file('visual-direction.md', analysis?.visualDirection?.markdown || '_(visual direction 없음)_');
+  zip.file('README.md', buildReadme(project, references));
+
+  const projectRefs = (project.referenceIds || [])
+    .map((id) => (references || []).find((r) => r.id === id))
+    .filter(Boolean);
+  const refsFolder = zip.folder('references');
+  await Promise.all(projectRefs.map(async (ref, i) => {
+    const prefix = String(i + 1).padStart(2, '0');
+    const filename = `${prefix}-${ref.id}${inferImageExt(ref.thumbnailUrl)}`;
+    try {
+      const res = await fetch(ref.thumbnailUrl);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const blob = await res.blob();
+      refsFolder.file(filename, blob);
+    } catch (e) {
+      refsFolder.file(`${prefix}-${ref.id}.error.txt`, `Failed to include image: ${e?.message || String(e)}`);
+    }
+  }));
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const slug = slugify(project.name);
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `muse-system-${slug}-${date}.zip`;
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

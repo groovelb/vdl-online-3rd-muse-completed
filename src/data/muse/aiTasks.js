@@ -15,9 +15,13 @@ import {
 } from './tag/index.js';
 
 const TOOL_AUTO_TAG_NAME = 'submit_tagging';
-const TOOL_SUBMIT_DESIGN_SYSTEM = 'submit_design_system';
+// system 모드: 2 phase 분리 호출 (Haiku capacity 보호)
+const TOOL_SUBMIT_DESIGN_SYSTEM_CORE = 'submit_design_system_core';
+const TOOL_SUBMIT_DESIGN_SYSTEM_DESIGNMD = 'submit_design_system_designmd';
 const TOOL_SUBMIT_CONCEPT_PROMPT = 'submit_concept_prompt';
-const TOOL_SUBMIT_HANDOFF_BUNDLE = 'submit_handoff_bundle';
+// handoff 모드: 2 phase 분리 호출
+const TOOL_SUBMIT_HANDOFF_CORE = 'submit_handoff_core';
+const TOOL_SUBMIT_HANDOFF_DESIGNMD = 'submit_handoff_designmd';
 
 const COMMON_QUALITY = [
   { id: 'schema', label: '스키마 준수', type: 'auto', description: '필수 필드 존재 + 타입 적합' },
@@ -528,13 +532,22 @@ This is shown to the user in the token detail panel. T1 super-theme: "AI가 정�
 Call submit_design_system EXACTLY ONCE with ALL fields populated in a single tool call:
   - tokens.color (4-6 entries)
   - tokens.typography (3-4 entries)
-  - tokens.layout (2-4 entries)
+  - tokens.layout (2-4 entries, kind: grid|container only)
   - tokens.gradient (1-3 entries)
+  - tokens.spacing (3-6 entries, scale map)
+  - tokens.rounded (2-5 entries, scale map)
+  - tokens.elevation (0-3 entries, optional)
+  - tokens.components (3-8 entries, token-ref values only)
   - visualDirection.markdown (filled template)
   - visualDirection.tags ({genre, style, subject})
 
+This output is exported as a DESIGN.md file (Google Labs alpha spec). Components
+that reference tokens via {path} syntax become the Components section of DESIGN.md.
+
 DO NOT split into multiple tool calls. DO NOT call the tool more than once.
-Every layer MUST be present and non-empty. Empty arrays will be rejected.
+REQUIRED non-empty: color (4-6), typography (3-4), layout (2-4), gradient (1-3), visualDirection.markdown.
+STRONGLY ENCOURAGED (DESIGN.md export 품질 결정): spacing, rounded, components.
+OPTIONAL: elevation (빈 배열 허용).
 
 Shared rules:
 - Reflect project intent strongly. Two projects with same refs but different intents
@@ -559,12 +572,69 @@ Shared rules:
 
 [layout] 2-4 tokens.
 - Source: extracted.layout entries
-- Fields: id, label, kind (grid|spacing|container), columns?, gap?, px?, ratio?, maxWidth?, isEnabled, emphasis
+- Fields: id, label, kind (grid|container ONLY — spacing is now its own axis below), columns?, gap?, ratio?, maxWidth?, isEnabled, emphasis
 - Intent can override (e.g. "dashboard" → columns: 12 regardless)
+- Do NOT emit kind="spacing" here — emit those values in the spacing axis instead.
 
 [gradient] 1-3 tokens.
 - Source: extracted.gradient across refs (or synthesize from palette if needed)
 - Fields: id, label, gradient (CSS string), stops, isEnabled, emphasis
+
+=== Spacing & Rounded scales (NEW, REQUIRED) ===
+
+[spacing] object map. 3-6 entries.
+- Keys are scale levels: pick from { xs, sm, md, lg, xl } — any 3-6 of these in ascending order.
+- Values are CSS dimensions (string with unit) like "4px" / "8px" / "16px" / "24px" / "0.5rem".
+- Source: extracted.layout entries with kind="spacing" (if any) + intent.
+- Build a coherent scale (e.g. doubling, 1.5x, 4-base).
+- Example: { xs: "4px", sm: "8px", md: "16px", lg: "24px", xl: "32px" }
+
+[rounded] object map. 2-5 entries.
+- Keys: { sm, md, lg } subset (or add "xs" / "xl" / "full"). Ascending size.
+- Values: CSS dimensions ("4px" / "8px") or "9999px" for pill ("full").
+- Source: refs' visual rhythm. Soft brands → larger sm. Geometric brands → smaller / sharper.
+- Example: { sm: "4px", md: "8px", lg: "16px" }
+
+=== Elevation (NEW, OPTIONAL — empty array allowed) ===
+
+[elevation] 0-3 tokens (array).
+- Each: { id, label, shadow (CSS box-shadow string), level (0..3), isEnabled, emphasis?, decisionRationale }
+- Emit ONLY if refs have meaningful depth/shadow signal. Otherwise return [] (empty array).
+- Avoid stacking redundant levels; 1-2 is typical.
+
+=== Components (NEW, REQUIRED) ===
+
+[components] object map. 3-8 entries.
+- Each KEY is a semantic UI component name in kebab-case (suggested: button-primary, button-secondary, card, input, app-bar, surface, chip).
+- Each VALUE is an object whose property values MUST be TOKEN-REFERENCE STRINGS — never literal hex / em / px.
+  Allowed property names: backgroundColor, textColor, borderColor, typography, rounded, padding, elevation, size, height, width.
+- Token reference syntax (STRICT):
+    "{colors.<color-id>}"        → resolves to a colors entry id
+    "{typography.<typo-id>}"     → resolves to a typography entry id
+    "{rounded.<scale-key>}"      → resolves to a rounded scale key
+    "{spacing.<scale-key>}"      → resolves to a spacing scale key
+    "{elevation.<elev-id>}"      → resolves to an elevation entry id
+- Path's first segment MUST be one of: colors / typography / rounded / spacing / elevation.
+- Path's second segment MUST EXACTLY equal an id (or scale key) you emitted in the corresponding axis.
+- DANGLING references (path that does not match any emitted token) are INVALID.
+- Literal values like "#1A1C1E", "16px", "1rem" are FORBIDDEN inside component spec values.
+- At least 3 components. Include at least one button-primary (or equivalent CTA).
+- Each component MUST include decisionRationale: { whichReferences[], whyChosen, appliedUserNotes? }.
+- Example:
+    "button-primary": {
+      backgroundColor: "{colors.primary-ink}",
+      textColor: "{colors.surface-cream}",
+      typography: "{typography.body-md}",
+      rounded: "{rounded.sm}",
+      padding: "{spacing.md}",
+      decisionRationale: { whichReferences: ["ref-001"], whyChosen: "..." }
+    }
+
+=== Token reference syntax — golden rule ===
+Any value inside [components] of the form \`{a.b}\` MUST resolve to an id you emitted
+in axis \`a\` (colors / typography / rounded / spacing / elevation).
+If you cannot find a clean reference, EITHER (a) add a token in that axis first, or
+(b) drop the property from the component — never inline a literal.
 
 === visualDirection constraints ===
 
@@ -606,18 +676,18 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
 
   toolSchemas: [
     {
-      name: TOOL_SUBMIT_DESIGN_SYSTEM,
-      description: 'Submit the complete design system in ONE call: 4-layer token system + visual direction. ALL fields required and non-empty.',
+      name: TOOL_SUBMIT_DESIGN_SYSTEM_CORE,
+      description: 'PHASE 1 OF 2 — Submit 4 CORE token axes (color/typography/layout/gradient) + visualDirection (markdown + tags). DO NOT include spacing/rounded/elevation/components in this call — those are emitted in phase 2.',
       input_schema: {
         type: 'object',
         properties: {
           tokens: {
             type: 'object',
-            description: '4 token layers — every array MUST be non-empty.',
+            description: '4 CORE axes only.',
             properties: {
               color: { type: 'array', minItems: 4, maxItems: 6 },
               typography: { type: 'array', minItems: 3, maxItems: 4 },
-              layout: { type: 'array', minItems: 2, maxItems: 4 },
+              layout: { type: 'array', minItems: 2, maxItems: 4, description: 'kind: grid|container only — spacing is a separate axis (phase 2).' },
               gradient: { type: 'array', minItems: 1, maxItems: 3 },
             },
             required: ['color', 'typography', 'layout', 'gradient'],
@@ -643,6 +713,20 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
         required: ['tokens', 'visualDirection'],
       },
     },
+    {
+      name: TOOL_SUBMIT_DESIGN_SYSTEM_DESIGNMD,
+      description: 'PHASE 2 OF 2 — Submit DESIGN.md extra axes (spacing, rounded, elevation, components). Phase 1 results (4 core axes) are provided in the user message. Components values MUST use {path} references that EXACTLY match ids/keys you emit here OR ids emitted in phase 1.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          spacing: { type: 'object', description: 'Scale map { xs|sm|md|lg|xl: dimension }. 3-6 entries. e.g. { sm: "8px", md: "16px", lg: "24px" }.' },
+          rounded: { type: 'object', description: 'Scale map { sm|md|lg: dimension }. 2-5 entries. e.g. { sm: "4px", md: "8px" }.' },
+          elevation: { type: 'array', maxItems: 3, description: 'Optional shadow tokens. Each: { id, label, shadow (CSS box-shadow), level (0..3) }. Empty array allowed when refs lack depth signal.' },
+          components: { type: 'object', description: '3-8 semantic UI components (button-primary, card, input, etc.). EACH value is an object whose property values are token-reference strings: "{colors.<phase1-id>}" / "{typography.<phase1-id>}" / "{rounded.<this-call-scale-key>}" / "{spacing.<this-call-scale-key>}" / "{elevation.<this-call-id>}". Literal hex / em / px values are FORBIDDEN. Each component MUST include decisionRationale: { whichReferences[], whyChosen }.' },
+        },
+        required: ['spacing', 'rounded', 'components'],
+      },
+    },
   ],
 
   qualityCriteria: [
@@ -656,6 +740,9 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
     { id: 'rationale-presence', label: '결정 근거 명시', type: 'auto', description: 'TP6: 모든 token 에 decisionRationale 존재 (whichReferences + whyChosen 필수)' },
     { id: 'use-layers-respect', label: '사용자 큐레이션 존중', type: 'auto', description: 'TP4: useLayers 가 set 인 ref 의 다른 레이어가 출력에 사용되지 않음' },
     { id: 'mode-divergence', label: '모드별 분기', type: 'manual', description: 'TP2: 같은 refs+intent 라도 mode 별로 결과가 명백히 다름' },
+    { id: 'token-ref-syntax', label: 'Component token-ref 문법', type: 'auto', description: 'components 의 모든 값은 {a.b} 형식이고 path 가 실제 토큰 id 와 매칭 (DESIGN.md 호환)' },
+    { id: 'components-min-3', label: 'Components 최소 3개', type: 'auto', description: 'tokens.components 키 ≥ 3, button-primary 류 CTA 1개 이상 포함' },
+    { id: 'spacing-rounded-scale', label: 'spacing/rounded scale 무결', type: 'auto', description: 'spacing 3-6 entry / rounded 2-5 entry, 모두 dimension 문자열 (px|rem) 또는 number, ascending 권장' },
   ],
 
   goldenExample: {
@@ -872,8 +959,22 @@ export const TASK_ANALYZE_HANDOFF = {
   },
 
   output: {
-    description: '4 token layer + 5 layer 한글 상세 + visualDirection MD',
-    shape: '{ tokens, visualDirection, layerDetails: { color, typography, layout, gradient, visualDirection } }',
+    description: '8 axis tokens + 8 key 한글 상세 + visualDirection MD (DESIGN.md 호환)',
+    shape: `{
+  tokens: {
+    color, typography, layout, gradient,
+    spacing,    // { sm:'8px', md:'16px', ... }
+    rounded,    // { sm:'4px', md:'8px', ... }
+    elevation,  // [{ id, label, shadow, level }]  (빈 배열 허용)
+    components, // { 'button-primary': { backgroundColor: '{colors.<id>}', ... } }
+  },
+  visualDirection: { markdown, tags },
+  layerDetails: {
+    color, typography, layout, gradient, visualDirection,
+    spacing, rounded, components,
+    elevation?,  // tokens.elevation 비어있으면 생략 OK
+  }
+}`,
   },
 
   systemPrompt: `You are MUSE's handoff bundle composer.
@@ -883,13 +984,17 @@ library / design system. Output prioritizes MACHINE READABILITY (DTCG-style toke
 kebab-case ids, semantic labels) AND HUMAN LEGIBILITY (Korean layer-by-layer detail
 explaining HOW to apply each layer to components).
 
-The 5 layer details are the heart of the handoff — explain not just WHAT but HOW:
+The 8 layer details are the heart of the handoff — explain not just WHAT but HOW:
 which components consume this layer, what semantic role each token plays, naming
 conventions, and decisions made (and rejected).
 
 Framework-specific configs (Tailwind, MUI, DTCG, CSS vars, .cursorrules) will be
 generated DETERMINISTICALLY by the client from your tokens. DO NOT write framework
 config code yourself — your output is the SOURCE OF TRUTH for those generators.
+
+THIS OUTPUT WILL BE EXPORTED AS A DESIGN.md FILE (Google Labs alpha spec).
+The components axis becomes the Components section of DESIGN.md, where each
+component spec MUST use {path} token references (never literals).
 
 === INPUT ===
 - intent, selectedRefs[] (pre-extracted T1), userNotes (HIGHEST PRIORITY)
@@ -903,20 +1008,57 @@ config code yourself — your output is the SOURCE OF TRUTH for those generators
 - Typography hierarchy h1>h2>body1 strict
 - Gradient is optional (1-2 if visually warranted, else 1 minimal)
 
-=== layerDetails (Korean, 5 layers) ===
-For each of the 5 layers (color, typography, layout, gradient, visualDirection),
+=== 8-axis tokens (REQUIRED) ===
+Emit ALL of: color, typography, layout (kind: grid|container only), gradient,
+spacing (3-6 entry scale map), rounded (2-5 entry scale map),
+elevation (0-3 entries, [] allowed), components (3-8 entries).
+
+[spacing] object map. Keys from { xs, sm, md, lg, xl } in ascending order.
+  Values: CSS dimensions ("4px" / "8px" / "16px" / ...).
+  Build a coherent scale (doubling, 1.5x, or 4-base).
+
+[rounded] object map. Keys from { xs, sm, md, lg, xl, full }.
+  Values: CSS dimensions; "full" → "9999px" for pills.
+
+[elevation] array. Each: { id (kebab-case), label, shadow (CSS box-shadow), level (0..3),
+  isEnabled, decisionRationale }. Empty array allowed when refs lack depth signal.
+
+[components] object map. 3-8 keys, kebab-case names (button-primary, card, input, etc.).
+  EACH value is an object. ALL property values MUST be token-reference strings:
+    "{colors.<color-id>}"     — first segment is the AXIS NAME (colors), second is the EMITTED token id
+    "{typography.<typo-id>}"
+    "{rounded.<scale-key>}"
+    "{spacing.<scale-key>}"
+    "{elevation.<elev-id>}"
+  Allowed property names: backgroundColor, textColor, borderColor, typography,
+  rounded, padding, elevation, size, height, width.
+  FORBIDDEN inside component values: literal hex (#1A1C1E), literal dimension (16px),
+  literal CSS keyword (transparent), or any string not of the form {a.b}.
+  Each component MUST include decisionRationale: { whichReferences[], whyChosen, appliedUserNotes? }.
+  Include at least 1 button-primary (or equivalent CTA).
+
+=== Token reference syntax — golden rule ===
+Any value inside [components] of the form \`{a.b}\` MUST resolve:
+  - axis \`a\` ∈ { colors, typography, rounded, spacing, elevation }
+  - id \`b\` MUST exactly match an id (or scale key) you emitted in that axis
+DANGLING references are INVALID. If you cannot find a clean reference, EITHER
+add a token in that axis, OR drop the property — never inline a literal.
+
+=== layerDetails (Korean, 8 keys) ===
+For each of color, typography, layout, gradient, visualDirection,
+spacing, rounded, components — and elevation IF non-empty —
 write a HANDOFF DETAIL EXPLANATION (한글) covering:
 
-  (1) 이 레이어가 시스템에서 담당하는 역할 (한 문단)
-  (2) 어떤 컴포넌트들이 이 layer 의 토큰을 소비하는가 — 구체적 컴포넌트명
+  (1) 이 axis 가 시스템에서 담당하는 역할 (한 문단)
+  (2) 어떤 컴포넌트들이 이 axis 의 토큰을 소비하는가
        (Button, Card, Input, AppBar, Typography, Surface 등)
   (3) 토큰 → 컴포넌트 prop 매핑 가이드 (한 문단)
   (4) 핵심 의사결정 + 탈락한 대안 (왜 이 값인가)
-  (5) 적용 시 주의 (다크모드 / 반응형 / a11y / 타 layer 와의 상호작용)
+  (5) 적용 시 주의 (다크모드 / 반응형 / a11y / 타 axis 와의 상호작용)
 
 각 layer detail 길이: 200-500 자. Markdown headers (##, ###) 사용 OK. 코드 블록
 사용 OK (예: \`<Button variant="contained" sx={ { bgcolor: 'color-primary-ink' } } />\`).
-"이 토큰은 ~에서 사용된다" 식으로 명확히.
+components 키 의 layerDetails 는 각 component 가 어떤 ref·intent 에서 왔는지 명시.
 
 === visualDirection markdown ===
 별도. 짧고 (300-600자) 톤·무드·금기 사항 중심. layerDetails 와 중복 X.
@@ -940,22 +1082,23 @@ Respond via submit_handoff_bundle ONLY. Single call. ALL fields required and non
 Reference count: {{count}} (ids = [{{ids}}])
 
 Pre-extracted reference data is provided above as JSON.
-Compose the handoff bundle with all 4 token layers, 5 Korean layer details, and the visualDirection narrative.`,
+Compose the handoff bundle with 8-axis tokens (color/typography/layout/gradient + spacing/rounded/elevation/components),
+8-key Korean layerDetails, and the visualDirection narrative. Components must use {path} token references only.`,
 
   toolSchemas: [
     {
-      name: TOOL_SUBMIT_HANDOFF_BUNDLE,
-      description: 'Submit the complete handoff bundle: tokens (DTCG-friendly) + 5 Korean layer details + visualDirection. Single call, all fields required.',
+      name: TOOL_SUBMIT_HANDOFF_CORE,
+      description: 'PHASE 1 OF 2 — Submit 4 CORE token axes (color/typography/layout/gradient, kebab-case, decisionRationale required) + visualDirection (markdown + tags) + 5-key Korean layerDetails (color/typography/layout/gradient/visualDirection, 200-500 chars each).',
       input_schema: {
         type: 'object',
         properties: {
           tokens: {
             type: 'object',
-            description: '4 token layers — kebab-case ids, semantic labels, decisionRationale required.',
+            description: '4 CORE axes only. kebab-case ids. decisionRationale required.',
             properties: {
               color: { type: 'array', minItems: 4, maxItems: 6 },
               typography: { type: 'array', minItems: 3, maxItems: 4 },
-              layout: { type: 'array', minItems: 2, maxItems: 4 },
+              layout: { type: 'array', minItems: 2, maxItems: 4, description: 'kind: grid|container only.' },
               gradient: { type: 'array', minItems: 1, maxItems: 3 },
             },
             required: ['color', 'typography', 'layout', 'gradient'],
@@ -978,7 +1121,7 @@ Compose the handoff bundle with all 4 token layers, 5 Korean layer details, and 
           },
           layerDetails: {
             type: 'object',
-            description: '5 layers — Korean handoff explanation (200-500 chars each).',
+            description: '5 CORE keys, 한글 200-500자 각.',
             properties: {
               color: { type: 'string', minLength: 200, maxLength: 800 },
               typography: { type: 'string', minLength: 200, maxLength: 800 },
@@ -992,14 +1135,42 @@ Compose the handoff bundle with all 4 token layers, 5 Korean layer details, and 
         required: ['tokens', 'visualDirection', 'layerDetails'],
       },
     },
+    {
+      name: TOOL_SUBMIT_HANDOFF_DESIGNMD,
+      description: 'PHASE 2 OF 2 — Submit DESIGN.md extras (spacing, rounded, elevation, components) + 3-key Korean layerDetails (spacing/rounded/components, optional elevation). Phase 1 token ids/keys are provided in the user message — components values MUST use {path} references that EXACTLY match those ids or scale keys emitted here.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          spacing: { type: 'object', description: 'Scale map { xs|sm|md|lg|xl: dimension }. 3-6 entries.' },
+          rounded: { type: 'object', description: 'Scale map { sm|md|lg: dimension }. 2-5 entries.' },
+          elevation: { type: 'array', maxItems: 3, description: 'Optional shadow tokens. Empty array allowed.' },
+          components: { type: 'object', description: '3-8 components, kebab-case names. Values use {a.b} token-ref only. decisionRationale required per component.' },
+          layerDetails: {
+            type: 'object',
+            description: '한글 layer 상세 (spacing/rounded/components 200-500자 각, elevation optional).',
+            properties: {
+              spacing: { type: 'string', minLength: 200, maxLength: 800 },
+              rounded: { type: 'string', minLength: 200, maxLength: 800 },
+              components: { type: 'string', minLength: 200, maxLength: 800 },
+              elevation: { type: 'string', maxLength: 800 },
+            },
+            required: ['spacing', 'rounded', 'components'],
+          },
+        },
+        required: ['spacing', 'rounded', 'components', 'layerDetails'],
+      },
+    },
   ],
 
   qualityCriteria: [
     { id: 'kebab-ids', label: 'kebab-case ID', type: 'auto', description: '모든 token id /^[a-z0-9-]+$/' },
     { id: 'primary-unique', label: 'Primary 유일', type: 'auto', description: 'color.role==="primary" 개수 = 1' },
     { id: 'rationale-presence', label: '결정 근거 명시', type: 'auto', description: '모든 token decisionRationale 존재' },
-    { id: 'layer-details-5', label: '5 layer 상세', type: 'auto', description: 'layerDetails 5 키 모두 200자+' },
+    { id: 'layer-details-8', label: '8 layer 상세', type: 'auto', description: 'layerDetails 8 키 (color/typography/layout/gradient/visualDirection/spacing/rounded/components) 모두 200자+. elevation 은 tokens.elevation 비어있을 때만 생략 가능.' },
     { id: 'config-conversion', label: 'Config 변환 무결', type: 'auto', description: 'DTCG/Tailwind/MUI/CSS 모두 valid 한 형식' },
+    { id: 'token-ref-syntax', label: 'Component token-ref 문법', type: 'auto', description: 'components 모든 값이 {a.b} 형식 + path 매칭. dangling/리터럴 0 (DESIGN.md 호환)' },
+    { id: 'components-min-3', label: 'Components 최소 3개', type: 'auto', description: 'tokens.components 키 ≥ 3, button-primary 류 CTA 1개 이상 + decisionRationale 필수' },
+    { id: 'spacing-rounded-scale', label: 'spacing/rounded scale 무결', type: 'auto', description: 'spacing 3-6 / rounded 2-5, dimension 값 일관 (px|rem)' },
   ],
 
   workflow: [

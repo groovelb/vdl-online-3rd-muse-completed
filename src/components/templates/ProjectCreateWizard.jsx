@@ -347,6 +347,7 @@ export function ProjectCreateWizard({
             onUseLayersChange={ (id, layers) =>
               dispatch({ type: 'SET_USE_LAYERS', payload: { id, layers } })
             }
+            mode={ state.form.mode }
           />
         </Box>
       );
@@ -566,7 +567,8 @@ export function ProjectCreateWizard({
           <Box
             sx={ {
               width: '100%',
-              my: 'auto',
+              // Step 2(레퍼런스 선택)는 상단 정렬, 나머지는 viewport 중앙 정렬
+              my: state.step === 2 ? 0 : 'auto',
             } }
           >
             { renderStep() }

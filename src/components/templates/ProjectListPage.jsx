@@ -36,10 +36,10 @@ export function ProjectListPage({
   sx,
 }) {
   return (
-    <PageContainer sx={sx}>
+    <PageContainer variant="fluid" sx={sx}>
       {/* Hero */}
-      <Box sx={{ py: { xs: 3, md: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>Projects</Typography>
+      <Box sx={{ py: { xs: 4, md: 8 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        <Typography variant="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em' }}>Projects</Typography>
         <Button
           variant="contained"
           color="primary"
@@ -70,7 +70,7 @@ export function ProjectListPage({
       ) : (
         <Grid container spacing={3}>
           {projects.map((project) => (
-            <Grid key={project.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+            <Grid key={project.id} size={{ xs: 12, sm: 6, md: 4, lg: 3, xl: 2 }}>
               <Box sx={{ position: 'relative' }}>
                 <MoodboardCard
                   id={project.id}

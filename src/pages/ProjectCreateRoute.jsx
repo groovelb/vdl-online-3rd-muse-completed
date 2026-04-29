@@ -117,9 +117,16 @@ export function ProjectCreateRoute() {
                     typography: tokens.typography || [],
                     layout: tokens.layout || [],
                     gradient: tokens.gradient || [],
+                    spacing: tokens.spacing || {},
+                    rounded: tokens.rounded || {},
+                    elevation: Array.isArray(tokens.elevation) ? tokens.elevation : [],
+                    components: tokens.components || {},
                     visualDirection: vd,
                   };
-                  // handoff: 5 layer 한글 상세 추가 저장 (jsonb 자유 형식)
+                  if (analysisResult?._refValidation) {
+                    layers._refValidation = analysisResult._refValidation;
+                  }
+                  // handoff: 8 key 한글 상세 추가 저장 (jsonb 자유 형식)
                   if (form.mode === 'handoff' && analysisResult?.layerDetails) {
                     layers.layerDetails = analysisResult.layerDetails;
                   }

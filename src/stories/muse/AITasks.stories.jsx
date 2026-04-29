@@ -563,16 +563,29 @@ const T2_IO = {
 const T3_IO = {
   input: [
     { name: 'intent', desc: '사용자 의도 (T2와 동일값)', example: '"차분한 다크 무드"' },
-    { name: 'type', desc: '프로젝트 카테고리', example: "'dashboard'" },
-    { name: 'selectedRefs', desc: '선택된 레퍼런스 (≤4)의 메타데이터만 — 이미지는 보내지 않고 T1이 추출해둔 텍스트 토큰만 전달', example: '[{ id, title, tags, dominantColors, extracted }]  // thumbnailUrl 없음' },
+    { name: 'mode', desc: 'concept | system | handoff (TP2)', example: "'system'" },
+    { name: 'selectedRefs', desc: '선택된 레퍼런스 (≤4)의 메타데이터만 — 이미지는 보내지 않고 T1이 추출해둔 텍스트 토큰만 전달', example: '[{ id, title, tags, dominantColors, extracted, useLayers? }]  // thumbnailUrl 없음' },
+    { name: 'userNotes (Step 3)', desc: '레퍼런스 본 후 보강 노트 (HIGHEST PRIORITY). system=30+ / handoff=50+', example: '"엣지 라인 강하게, 첨자만 매그놀리아"' },
+    { name: 'referenceNotes[refId]', desc: 'ref 별 차용 노트 (선택). 명시한 layer 외 무시', example: '{ "ref-002": "hero 영역 색감만 차용" }' },
   ],
   output: [
-    { name: 'tokens.color', desc: 'role 부여된 색 토큰 (primary 정확히 1개)', example: '[{ id, hex, role: "primary", group: "Brand" }]' },
-    { name: 'tokens.typography', desc: 'h1>h2>body 위계 강제', example: '[{ hierarchy: "h1", fontFamily, fontWeight }]' },
-    { name: 'tokens.layout', desc: 'grid 합성값', example: '[{ kind: "grid", columns: 12, gap: 16 }]' },
-    { name: 'tokens.gradient', desc: '그라디언트 stops (있을 때만)', example: '[{ gradient, stops }]' },
+    { name: 'tokens.color', desc: 'role 부여된 색 토큰 (primary 정확히 1개)', example: '[{ id, hex, role: "primary", group: "Brand", decisionRationale }]' },
+    { name: 'tokens.typography', desc: 'h1>h2>body 위계 강제', example: '[{ variant: "h1", fontFamily, fontWeight, decisionRationale }]' },
+    { name: 'tokens.layout', desc: 'grid|container 만 (spacing 분리)', example: '[{ kind: "grid", columns: 12, gap: 16 }]' },
+    { name: 'tokens.gradient', desc: '그라디언트 stops', example: '[{ gradient, stops }]' },
+    { name: '★ tokens.spacing', desc: 'NEW — scale map (DESIGN.md 호환)', example: '{ xs: "4px", sm: "8px", md: "16px", lg: "24px" }' },
+    { name: '★ tokens.rounded', desc: 'NEW — radius scale map', example: '{ sm: "4px", md: "8px", lg: "16px" }' },
+    { name: '★ tokens.elevation', desc: 'NEW — shadow tokens (optional, 빈 배열 허용)', example: '[{ id: "elev-1", shadow: "0 1px 2px rgba(0,0,0,0.08)", level: 1 }]' },
+    { name: '★ tokens.components', desc: 'NEW — UI components, 모든 값은 {a.b} token-ref (DESIGN.md 핵심)', example: '{ "button-primary": { backgroundColor: "{colors.primary-ink}", padding: "{spacing.md}", rounded: "{rounded.sm}", decisionRationale } }' },
     { name: 'visualDirection.markdown', desc: '디자인 디렉션 본문 (필수 섹션 1~6)', example: '"# Visual Direction\\n## 1. Mood…"' },
     { name: 'visualDirection.tags', desc: '집계 태그 3종', example: '{ genre: [...], style: [...], subject: [...] }' },
+    { name: '★ layerDetails (handoff only)', desc: 'NEW — 8 키 한글 상세 (color/typography/layout/gradient/visualDirection + spacing/rounded/components, elevation 은 토큰 있을 때만)', example: '{ color: "한글 200-500자…", spacing: "...", components: "..." }' },
+  ],
+  notes: [
+    'concept 모드는 별도 함수 (runAnalyzeConcept) — 위 출력 shape 무관, conceptPrompt(string) 단일 산출.',
+    'system 모드: token-ref dangling 시 1회 retry → fallback (components 빈 객체).',
+    'handoff 모드: STRICT — token-ref 위반 시 에러 표면화. kebab-case 강제.',
+    'Export: system → DESIGN.md ZIP / handoff → DESIGN.md + DTCG + 4 framework + decision-trace 풀세트 ZIP.',
   ],
 };
 

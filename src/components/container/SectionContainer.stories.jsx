@@ -54,8 +54,31 @@ export const Default = {
 };
 
 /**
+ * ## variant — fluid / focus
+ *
+ * 섹션의 콘텐츠 폭 모드. fluid 는 100% 너비 (기본 동작),
+ * focus 는 좁은 maxWidth 로 중앙 집중 (좁은 폼·설정 섹션).
+ */
+export const Variants = {
+  name: 'variant (fluid / focus)',
+  render: () => (
+    <Box sx={{ py: 4, bgcolor: 'grey.100' }}>
+      <SectionTitle>variant 비교</SectionTitle>
+
+      <SectionContainer variant="fluid" sx={{ bgcolor: 'background.paper', mb: 2 }}>
+        <Placeholder.Box label='variant="fluid" — 100% 너비 그리드/탐색 섹션' height={ 80 } />
+      </SectionContainer>
+
+      <SectionContainer variant="focus" sx={{ bgcolor: 'background.paper' }}>
+        <Placeholder.Box label='variant="focus" — focusMaxWidth 720px 중앙 폼 섹션' height={ 80 } />
+      </SectionContainer>
+    </Box>
+  ),
+};
+
+/**
  * ## 여러 섹션 쌓기
- * 
+ *
  * SectionContainer를 연속으로 배치하여 섹션을 구분합니다.
  */
 export const StackingSections = {
@@ -146,6 +169,18 @@ export const Props = {
                 <td><Typography variant="body2" color="text.secondary">node</Typography></td>
                 <td><Typography variant="body2" color="text.secondary">-</Typography></td>
                 <td><Typography variant="body2">섹션 내부 콘텐츠</Typography></td>
+              </tr>
+              <tr>
+                <td><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>variant</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">'fluid' | 'focus'</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">-</Typography></td>
+                <td><Typography variant="body2">섹션 폭 모드. fluid=100% / focus=중앙 좁은 maxWidth</Typography></td>
+              </tr>
+              <tr>
+                <td><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>focusMaxWidth</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">number</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">720</Typography></td>
+                <td><Typography variant="body2">focus variant 의 max-width(px)</Typography></td>
               </tr>
               <tr>
                 <td><Typography variant="body2" sx={{ fontFamily: 'monospace' }}>sx</Typography></td>

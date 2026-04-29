@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import Fab from '@mui/material/Fab';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
@@ -66,7 +67,20 @@ export function ArchivePage({
   const [deleteState, setDeleteState] = useState({ isDeleting: false, error: null });
   const [detailTarget, setDetailTarget] = useState(null);
   const [isAddRefOpen, setIsAddRefOpen] = useState(false);
+  const [isHeroVisible, setIsHeroVisible] = useState(true);
+  const heroRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return undefined;
+    const obs = new IntersectionObserver(
+      ([entry]) => setIsHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const {
     references,
@@ -129,10 +143,10 @@ export function ArchivePage({
 
   return (
     <>
-      <PageContainer sx={ sx }>
+      <PageContainer variant="fluid" sx={ sx }>
         {/* Hero */}
-        <Box sx={ { py: { xs: 3, md: 5 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 } }>
-          <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Archive</Typography>
+        <Box ref={ heroRef } sx={ { py: { xs: 4, md: 8 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 } }>
+          <Typography variant="h2" sx={ { fontWeight: 600, letterSpacing: '-0.02em' } }>Archive</Typography>
           <Button
             variant="contained"
             color="primary"
@@ -143,70 +157,102 @@ export function ArchivePage({
           </Button>
         </Box>
 
-          { uploadState.error && (
-            <Alert severity="error" sx={ { mb: 2 } }>{ uploadState.error }</Alert>
-          ) }
-          { useStoreMode && pendingCount > 0 && (
-            <Alert
-              severity="info"
-              icon={ <CircularProgress size={ 16 } thickness={ 5 } /> }
-              sx={ { mb: 2 } }
-            >
-              { pendingCount }장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
-            </Alert>
-          ) }
+        { uploadState.error && (
+          <Alert severity="error" sx={ { mb: 2 } }>{ uploadState.error }</Alert>
+        ) }
+        { useStoreMode && pendingCount > 0 && (
+          <Alert
+            severity="info"
+            icon={ <CircularProgress size={ 16 } thickness={ 5 } /> }
+            sx={ { mb: 2 } }
+          >
+            { pendingCount }장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
+          </Alert>
+        ) }
 
-          {/* Sticky 필터 바 */}
-          <FilterPanel
-            references={ references }
-            searchTerm={ searchTerm }
-            onSearchTermChange={ setSearchTerm }
-            activeTags={ activeTags }
-            onToggleTag={ toggleTag }
-            activeColors={ activeColors }
-            onToggleColor={ toggleColor }
-            onResetColors={ resetColors }
-            onResetFilters={ resetAllFilters }
-            filteredCount={ filtered.length }
-            totalCount={ references.length }
+        {/* 좌측 sticky 필터 사이드바 + 우측 fluid 그리드 */}
+        <Box
+          sx={ {
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: { xs: 2, md: 4 },
+            alignItems: 'flex-start',
+          } }
+        >
+          <Box
             sx={ {
-              position: 'sticky',
-              top: 64,
-              zIndex: 10,
-              bgcolor: 'background.default',
-              py: 2,
-              mb: 3,
+              width: { xs: '100%', md: 240 },
+              flexShrink: 0,
+              position: { md: 'sticky' },
+              top: { md: 88 },
+              alignSelf: { md: 'flex-start' },
             } }
-          />
+          >
+            <FilterPanel
+              references={ references }
+              searchTerm={ searchTerm }
+              onSearchTermChange={ setSearchTerm }
+              activeTags={ activeTags }
+              onToggleTag={ toggleTag }
+              activeColors={ activeColors }
+              onToggleColor={ toggleColor }
+              onResetColors={ resetColors }
+              onResetFilters={ resetAllFilters }
+              filteredCount={ filtered.length }
+              totalCount={ references.length }
+            />
+          </Box>
 
-          {/* Grid */}
-          <InfiniteMasonry
-            items={ filtered }
-            hasMore={ hasMore && !hasActiveFilters }
-            isLoading={ isLoading }
-            onLoadMore={ onLoadMore }
-            columns={ { xs: 2, sm: 3, md: 4, lg: 5 } }
-            spacing={ 2 }
-            emptyContent={
-              hasActiveFilters
-                ? '조건에 맞는 레퍼런스가 없습니다.'
-                : '아직 수집된 레퍼런스가 없습니다. 이미지를 드래그해서 추가해보세요.'
-            }
-            renderItem={ (item) => (
-              <ArchiveCard
-                item={ item }
-                useStoreMode={ useStoreMode }
-                onOpenDetail={ () => setDetailTarget(item) }
-                onRequestDelete={ () =>
-                  setDeleteTarget({ id: item.id, title: item.title || '(제목 없음)' })
-                }
-                onRetryTagging={ () => retryTagging(item) }
-              />
-            ) }
-          />
+          <Box sx={ { flex: 1, width: '100%', minWidth: 0 } }>
+            <InfiniteMasonry
+              items={ filtered }
+              hasMore={ hasMore && !hasActiveFilters }
+              isLoading={ isLoading }
+              onLoadMore={ onLoadMore }
+              columns={ { xs: 2, sm: 3, md: 3, lg: 4, xl: 6 } }
+              spacing={ 2 }
+              emptyContent={
+                hasActiveFilters
+                  ? '조건에 맞는 레퍼런스가 없습니다.'
+                  : '아직 수집된 레퍼런스가 없습니다. 이미지를 드래그해서 추가해보세요.'
+              }
+              renderItem={ (item) => (
+                <ArchiveCard
+                  item={ item }
+                  useStoreMode={ useStoreMode }
+                  onOpenDetail={ () => setDetailTarget(item) }
+                  onRequestDelete={ () =>
+                    setDeleteTarget({ id: item.id, title: item.title || '(제목 없음)' })
+                  }
+                  onRetryTagging={ () => retryTagging(item) }
+                />
+              ) }
+            />
+          </Box>
+        </Box>
 
         <Box sx={ { height: 64 } } />
       </PageContainer>
+
+      <Fab
+        color="primary"
+        variant="extended"
+        aria-label="레퍼런스 추가"
+        onClick={ () => setIsAddRefOpen(true) }
+        sx={ {
+          position: 'fixed',
+          bottom: { xs: 24, md: 32 },
+          right: { xs: 24, md: 32 },
+          zIndex: (theme) => theme.zIndex.fab,
+          opacity: isHeroVisible ? 0 : 1,
+          transform: isHeroVisible ? 'translateY(8px)' : 'translateY(0)',
+          pointerEvents: isHeroVisible ? 'none' : 'auto',
+          transition: 'opacity 200ms ease, transform 200ms ease',
+        } }
+      >
+        <AddIcon sx={ { mr: 1 } } />
+        레퍼런스 추가
+      </Fab>
 
       <Dialog
         open={ !!deleteTarget }
@@ -250,7 +296,7 @@ export function ArchivePage({
 
       <Dialog
         open={ isAddRefOpen }
-        onClose={ () => !uploadState.isUploading && setIsAddRefOpen(false) }
+        onClose={ () => setIsAddRefOpen(false) }
         maxWidth="sm"
         fullWidth
       >
@@ -258,10 +304,16 @@ export function ArchivePage({
         <DialogContent>
           <FileDropzone
             multiple
-            onFileSelect={ handleUploadFile }
-            onFilesSelect={ handleUploadFiles }
+            onFileSelect={ (file) => {
+              setIsAddRefOpen(false);
+              handleUploadFile(file);
+            } }
+            onFilesSelect={ (files) => {
+              setIsAddRefOpen(false);
+              handleUploadFiles(files);
+            } }
             variant="default"
-            isUploading={ uploadState.isUploading }
+            isUploading={ false }
           />
           <input
             ref={ fileInputRef }
@@ -271,10 +323,11 @@ export function ArchivePage({
             hidden
             onChange={ (e) => {
               const files = Array.from(e.target.files || []);
+              e.target.value = '';
               if (!files.length) return;
+              setIsAddRefOpen(false);
               if (files.length > 1) handleUploadFiles(files);
               else handleUploadFile(files[0]);
-              e.target.value = '';
             } }
           />
           { uploadState.error && (
@@ -286,11 +339,10 @@ export function ArchivePage({
             variant="outlined"
             startIcon={ <UploadFileIcon /> }
             onClick={ () => fileInputRef.current?.click() }
-            disabled={ uploadState.isUploading }
           >
             파일 업로드
           </Button>
-          <Button onClick={ () => setIsAddRefOpen(false) } disabled={ uploadState.isUploading }>
+          <Button onClick={ () => setIsAddRefOpen(false) }>
             닫기
           </Button>
         </DialogActions>

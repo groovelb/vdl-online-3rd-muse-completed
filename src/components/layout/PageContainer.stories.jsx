@@ -51,8 +51,37 @@ export const Default = {
 };
 
 /**
- * ## maxWidth 옵션
- * 
+ * ## variant — fluid / focus
+ *
+ * 페이지 폭 모드. fluid 는 뷰포트 전체를 사용(탐색·그리드 페이지),
+ * focus 는 좁은 maxWidth 로 중앙 집중(생성·입력·설정 페이지).
+ */
+export const Variants = {
+  name: 'variant (fluid / focus)',
+  render: () => (
+    <Box sx={ { py: 4, bgcolor: 'grey.100' } }>
+      <SectionTitle>variant 비교</SectionTitle>
+
+      <Box sx={ { mb: 3 } }>
+        <Typography variant="caption" sx={ { px: 2 } }>variant=&quot;fluid&quot; — 뷰포트 전체 폭 + clamp(24, 4vw, 64) padding</Typography>
+        <PageContainer variant="fluid">
+          <Placeholder.Box label="fluid — 레퍼런스 / 프로젝트 목록 / 상세 등 탐색 페이지" height={ 96 } />
+        </PageContainer>
+      </Box>
+
+      <Box>
+        <Typography variant="caption" sx={ { px: 2 } }>variant=&quot;focus&quot; — focusMaxWidth 720px (default), 중앙 정렬</Typography>
+        <PageContainer variant="focus">
+          <Placeholder.Box label="focus — 프로젝트 생성 / 설정 등 좁은 폼 페이지" height={ 96 } />
+        </PageContainer>
+      </Box>
+    </Box>
+  ),
+};
+
+/**
+ * ## maxWidth 옵션 (variant 미지정 시 호환 모드)
+ *
  * 다양한 maxWidth 값에 따른 컨테이너 너비 비교
  */
 export const MaxWidthOptions = {
@@ -117,6 +146,18 @@ export const Props = {
                 <td><Typography variant="body2" color="text.secondary">node</Typography></td>
                 <td><Typography variant="body2" color="text.secondary">-</Typography></td>
                 <td><Typography variant="body2">컨테이너 내부 콘텐츠</Typography></td>
+              </tr>
+              <tr>
+                <td><Typography variant="body2" sx={ { fontFamily: 'monospace' } }>variant</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">'fluid' | 'focus'</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">-</Typography></td>
+                <td><Typography variant="body2">페이지 폭 모드. fluid=뷰포트 전체+clamp padding / focus=중앙 좁은 maxWidth</Typography></td>
+              </tr>
+              <tr>
+                <td><Typography variant="body2" sx={ { fontFamily: 'monospace' } }>focusMaxWidth</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">number</Typography></td>
+                <td><Typography variant="body2" color="text.secondary">720</Typography></td>
+                <td><Typography variant="body2">focus variant 의 max-width(px)</Typography></td>
               </tr>
               <tr>
                 <td><Typography variant="body2" sx={ { fontFamily: 'monospace' } }>maxWidth</Typography></td>

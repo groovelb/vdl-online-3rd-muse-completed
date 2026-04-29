@@ -40,6 +40,7 @@ export function RefImage({ src, storagePath, alt, sx, ...rest }) {
       component="img"
       src={ currentSrc }
       alt={ alt }
+      decoding="async"
       onError={ handleError }
       sx={ {
         width: '100%',

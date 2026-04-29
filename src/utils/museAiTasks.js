@@ -72,6 +72,85 @@ function withAttachFiles(selectedRefs) {
   }));
 }
 
+/**
+ * Token reference syntax validator (DESIGN.md 호환).
+ *
+ * components 의 모든 property value 가 `{a.b}` 형식이고,
+ * path 의 첫 segment 는 colors|typography|rounded|spacing|elevation,
+ * 두번째 segment 는 실제 emit 된 token id / scale key 와 매칭되어야 함.
+ *
+ * @param {object} input — { tokens: { color, typography, layout, gradient, spacing, rounded, elevation, components, ... } }
+ * @returns {{ ok: boolean, errors: string[], danglingRefs: string[], literalProps: string[] }}
+ */
+function validateTokenRefs(input) {
+  const errors = [];
+  const danglingRefs = [];
+  const literalProps = [];
+  const t = input?.tokens || {};
+  const components = t.components;
+
+  if (!components || typeof components !== 'object' || Array.isArray(components)) {
+    errors.push('components-missing-or-not-object');
+    return { ok: false, errors, danglingRefs, literalProps };
+  }
+  const componentKeys = Object.keys(components);
+  if (componentKeys.length < 3) {
+    errors.push(`components-min-3-violated(got=${componentKeys.length})`);
+  }
+
+  const colorIds = new Set((t.color || []).map((x) => x?.id).filter(Boolean));
+  const typoIds = new Set((t.typography || []).map((x) => x?.id).filter(Boolean));
+  const elevIds = new Set((t.elevation || []).map((x) => x?.id).filter(Boolean));
+  const spacingKeys = new Set(Object.keys(t.spacing || {}));
+  const roundedKeys = new Set(Object.keys(t.rounded || {}));
+
+  const axisIds = {
+    colors: colorIds,
+    typography: typoIds,
+    elevation: elevIds,
+    spacing: spacingKeys,
+    rounded: roundedKeys,
+  };
+  const reservedProps = new Set([
+    'decisionRationale', 'whichReferences', 'whyChosen', 'appliedUserNotes',
+    'appliedReferenceNote', 'alternativesConsidered', 'sourceReferenceIds',
+  ]);
+
+  const refRegex = /^\{([a-z]+)\.([a-zA-Z0-9_-]+)\}$/;
+
+  for (const compKey of componentKeys) {
+    const spec = components[compKey];
+    if (!spec || typeof spec !== 'object') {
+      errors.push(`components.${compKey}-not-object`);
+      continue;
+    }
+    for (const propKey of Object.keys(spec)) {
+      if (reservedProps.has(propKey)) continue;
+      const val = spec[propKey];
+      if (typeof val !== 'string') continue;
+      const m = val.match(refRegex);
+      if (!m) {
+        literalProps.push(`${compKey}.${propKey}="${val}"`);
+        continue;
+      }
+      const [, axis, id] = m;
+      const idsForAxis = axisIds[axis];
+      if (!idsForAxis) {
+        danglingRefs.push(`${compKey}.${propKey} → unknown axis "${axis}"`);
+        continue;
+      }
+      if (!idsForAxis.has(id)) {
+        danglingRefs.push(`${compKey}.${propKey} → ${axis}.${id} (not emitted)`);
+      }
+    }
+  }
+
+  if (literalProps.length > 0) errors.push(`literal-values:${literalProps.length}`);
+  if (danglingRefs.length > 0) errors.push(`dangling-refs:${danglingRefs.length}`);
+
+  return { ok: errors.length === 0, errors, danglingRefs, literalProps };
+}
+
 function isRetryableError(err) {
   if (!err) return false;
   const status = err.status;
@@ -234,79 +313,263 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     },
   ];
 
-  // 진행 상태 시작 — 호출 전 레이어 모두 running
+  const PROGRESS_KEYS_SYSTEM = [
+    'color', 'typography', 'layout', 'gradient',
+    'spacing', 'rounded', 'components', 'visualDirection',
+  ];
+  // 진행 상태 시작
   onProgress?.(
-    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key, i) => ({
+    PROGRESS_KEYS_SYSTEM.map((key, i) => ({
       key,
       status: i === 0 ? 'running' : 'pending',
     })),
   );
 
-  const toolName = TASK_ANALYZE_TOKENS.toolSchemas[0].name;
+  const MAX_TOKENS = 8192;
+  const [coreSchema, designmdSchema] = TASK_ANALYZE_TOKENS.toolSchemas;
+  const baseModel = model || TASK_ANALYZE_TOKENS.model;
 
-  // 단일 tool 강제 호출 → 모델이 분할 호출할 수 없음 (tool_choice.type='tool').
-  // 빈 레이어 발생 시 1회 재시도 (Haiku 가 간헐적으로 minItems 위반).
-  const callOnce = async (extraInstruction = '') => {
+  // ========== Phase 1: CORE 4축 + visualDirection ==========
+
+  const phase1Content = [
+    ...content,
+    {
+      type: 'text',
+      text: `=== PHASE 1 OF 2 ===
+This call emits ONLY tokens.{color, typography, layout, gradient} + visualDirection.{markdown, tags}.
+DO NOT include spacing/rounded/elevation/components in this call — those go in phase 2.
+Required non-empty: color (4-6), typography (3-4), layout (2-4 with kind grid|container only), gradient (1-3).
+visualDirection.markdown must be 200+ chars filling sections 1-6 of the template.`,
+    },
+  ];
+
+  const callPhase1 = async (extraInstruction = '') => {
     const messagesContent = extraInstruction
-      ? [...content, { type: 'text', text: extraInstruction }]
-      : content;
+      ? [...phase1Content, { type: 'text', text: extraInstruction }]
+      : phase1Content;
     const res = await callAnthropic({
-      model: model || TASK_ANALYZE_TOKENS.model,
-      max_tokens: 8192,
+      model: baseModel,
+      max_tokens: MAX_TOKENS,
       system: TASK_ANALYZE_TOKENS.systemPrompt,
-      tools: TASK_ANALYZE_TOKENS.toolSchemas,
-      tool_choice: { type: 'tool', name: toolName },
+      tools: [coreSchema],
+      tool_choice: { type: 'tool', name: coreSchema.name },
       messages: [{ role: 'user', content: messagesContent }],
     });
-    const input = extractToolInput(res, toolName);
+    const input = extractToolInput(res, coreSchema.name);
     return { res, input };
   };
 
-  const checkEmpties = (input) => {
+  const checkCoreEmpties = (input) => {
     const t = input?.tokens || {};
-    return ['color', 'typography', 'layout', 'gradient'].filter((k) => !(Array.isArray(t[k]) && t[k].length > 0));
+    const empties = ['color', 'typography', 'layout', 'gradient']
+      .filter((k) => !(Array.isArray(t[k]) && t[k].length > 0));
+    const md = input?.visualDirection?.markdown;
+    if (!md || md.length < 200) empties.push('visualDirection.markdown');
+    return empties;
+  };
+  const summarizePhase1 = (input) => {
+    const t = input?.tokens || {};
+    return {
+      core: {
+        color: Array.isArray(t.color) ? t.color.length : 0,
+        typography: Array.isArray(t.typography) ? t.typography.length : 0,
+        layout: Array.isArray(t.layout) ? t.layout.length : 0,
+        gradient: Array.isArray(t.gradient) ? t.gradient.length : 0,
+      },
+      visualDirection: {
+        markdownLen: input?.visualDirection?.markdown?.length || 0,
+        tags: input?.visualDirection?.tags ? Object.keys(input.visualDirection.tags) : [],
+      },
+    };
   };
 
-  let { res: response, input: result } = await callOnce();
-
-  if (!result) {
-    throw new Error(`T3 tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  let { res: p1Res, input: phase1 } = await callPhase1();
+  if (!phase1) throw new Error(`T3 phase1 tool_use 응답 없음. text: ${extractText(p1Res) || '(empty)'}`);
+  if (p1Res?.stop_reason === 'max_tokens') {
+    throw new Error(`T3 phase1 응답이 max_tokens(${MAX_TOKENS})에서 잘렸습니다.`);
   }
+  // eslint-disable-next-line no-console
+  console.log('[runAnalyzeTokens] Phase 1 결과:', summarizePhase1(phase1));
 
-  if (response?.stop_reason === 'max_tokens') {
-    throw new Error('T3 응답이 max_tokens(8192)에서 잘렸습니다. 레퍼런스 개수를 줄이거나 다시 시도해주세요.');
-  }
-
-  let empties = checkEmpties(result);
-  if (empties.length > 0) {
+  let p1Empties = checkCoreEmpties(phase1);
+  if (p1Empties.length > 0) {
     // eslint-disable-next-line no-console
-    console.warn('[runAnalyzeTokens] 빈 layer 감지 → 재시도:', empties);
-    const retryInstruction = `[CRITICAL RETRY] Your previous response left these layers empty: ${empties.join(', ')}. ` +
-      'Re-emit the COMPLETE design system. Every tokens.{color,typography,layout,gradient} array MUST be non-empty per schema minItems. ' +
-      'Use the pre-extracted pool above as the source.';
-    const retry = await callOnce(retryInstruction);
+    console.warn('[runAnalyzeTokens] Phase 1 검증 실패 → 재시도:', p1Empties);
+    const retry = await callPhase1(
+      `[CRITICAL RETRY] Phase 1 missing/short: ${p1Empties.join(', ')}. Re-emit COMPLETE phase 1: tokens (color 4-6, typography 3-4, layout 2-4, gradient 1-3) + visualDirection (markdown 200+ chars, tags).`
+    );
     if (retry.input) {
-      result = retry.input;
-      response = retry.res;
-      empties = checkEmpties(result);
-      if (empties.length > 0) {
-        // eslint-disable-next-line no-console
-        console.error('[runAnalyzeTokens] 재시도 후에도 빈 layer:', empties);
-      }
+      phase1 = retry.input;
+      p1Res = retry.res;
+      p1Empties = checkCoreEmpties(phase1);
     }
+    // eslint-disable-next-line no-console
+    console.log('[runAnalyzeTokens] Phase 1 재시도 결과:', summarizePhase1(phase1));
+  }
+  if (p1Empties.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error('[runAnalyzeTokens] Phase 1 재시도 후에도 비어있음:', p1Empties);
   }
 
-  // 완료 상태 전달
+  // 진행 상태 — phase 1 axes done
   onProgress?.(
-    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key) => ({
-      key,
-      status: 'done',
-    })),
+    PROGRESS_KEYS_SYSTEM.map((key) => {
+      if (['color', 'typography', 'layout', 'gradient', 'visualDirection'].includes(key)) {
+        return { key, status: 'done' };
+      }
+      return { key, status: key === 'spacing' ? 'running' : 'pending' };
+    }),
   );
 
+  // ========== Phase 2: spacing / rounded / elevation / components ==========
+
+  const phase1Color = phase1?.tokens?.color || [];
+  const phase1Typo = phase1?.tokens?.typography || [];
+  const phase1Layout = phase1?.tokens?.layout || [];
+  const phase1Gradient = phase1?.tokens?.gradient || [];
+
+  const phase2Content = [
+    ...content,
+    {
+      type: 'text',
+      text: `=== PHASE 2 OF 2 ===
+Phase 1 emitted these tokens — use these EXACT ids when building component {path} references.
+
+colors (use as "{colors.<id>}"):
+${phase1Color.map((c) => `  - ${c.id}  (${c.hex}, role=${c.role || '?'})`).join('\n') || '  (none)'}
+
+typography (use as "{typography.<id>}"):
+${phase1Typo.map((t) => `  - ${t.id}  (variant=${t.variant || '?'}, ${t.fontFamily || '?'})`).join('\n') || '  (none)'}
+
+layout entries (FYI, not directly referenced):
+${phase1Layout.map((l) => `  - ${l.id}  (kind=${l.kind})`).join('\n') || '  (none)'}
+
+gradient entries (FYI):
+${phase1Gradient.map((g) => `  - ${g.id}`).join('\n') || '  (none)'}
+
+THIS CALL emits ONLY:
+  - spacing: object map (3-6 entries, e.g. { sm: "8px", md: "16px", lg: "24px" })
+  - rounded: object map (2-5 entries, e.g. { sm: "4px", md: "8px" })
+  - elevation: array (0-3 entries, may be empty)
+  - components: object map (3-8 entries) — kebab-case names. EACH value's properties MUST be "{a.b}" token-ref strings:
+      "{colors.<id>}"      → use phase 1 color ids exactly
+      "{typography.<id>}"  → use phase 1 typography ids exactly
+      "{spacing.<key>}"    → use scale keys you emit in this call's spacing
+      "{rounded.<key>}"    → use scale keys you emit in this call's rounded
+      "{elevation.<id>}"   → use ids you emit in this call's elevation
+    NEVER use literal values like "#1A1C1E" or "16px" inside component spec values.
+    EACH component MUST include decisionRationale: { whichReferences[], whyChosen }.
+    Include at least one button-primary (or equivalent CTA).`,
+    },
+  ];
+
+  const callPhase2 = async (extraInstruction = '') => {
+    const messagesContent = extraInstruction
+      ? [...phase2Content, { type: 'text', text: extraInstruction }]
+      : phase2Content;
+    const res = await callAnthropic({
+      model: baseModel,
+      max_tokens: MAX_TOKENS,
+      system: TASK_ANALYZE_TOKENS.systemPrompt,
+      tools: [designmdSchema],
+      tool_choice: { type: 'tool', name: designmdSchema.name },
+      messages: [{ role: 'user', content: messagesContent }],
+    });
+    const input = extractToolInput(res, designmdSchema.name);
+    return { res, input };
+  };
+
+  // phase2 결과를 합쳐서 validateTokenRefs 가 phase1 ids 를 알 수 있게 한다.
+  const buildMergedForRefCheck = (phase2) => ({
+    tokens: {
+      color: phase1Color,
+      typography: phase1Typo,
+      spacing: phase2?.spacing || {},
+      rounded: phase2?.rounded || {},
+      elevation: Array.isArray(phase2?.elevation) ? phase2.elevation : [],
+      components: phase2?.components || {},
+    },
+  });
+  const summarizePhase2 = (phase2) => ({
+    spacing: phase2?.spacing && typeof phase2.spacing === 'object' ? Object.keys(phase2.spacing).length : 0,
+    rounded: phase2?.rounded && typeof phase2.rounded === 'object' ? Object.keys(phase2.rounded).length : 0,
+    elevation: Array.isArray(phase2?.elevation) ? phase2.elevation.length : 0,
+    components: phase2?.components && typeof phase2.components === 'object' ? Object.keys(phase2.components).length : 0,
+  });
+
+  let { res: p2Res, input: phase2 } = await callPhase2();
+  if (p2Res?.stop_reason === 'max_tokens') {
+    // eslint-disable-next-line no-console
+    console.error('[runAnalyzeTokens] Phase 2 응답이 max_tokens 에서 잘림 — phase 2 결과 무시하고 phase 1 만으로 진행');
+    phase2 = null;
+  }
+  // eslint-disable-next-line no-console
+  console.log('[runAnalyzeTokens] Phase 2 결과:', phase2 ? summarizePhase2(phase2) : '(없음)');
+
+  let refCheck = phase2 ? validateTokenRefs(buildMergedForRefCheck(phase2)) : { ok: true, literalProps: [], danglingRefs: [], errors: [] };
+  const hasComponents = phase2?.components && typeof phase2.components === 'object'
+    && !Array.isArray(phase2.components) && Object.keys(phase2.components).length > 0;
+  const needsRefRetry = hasComponents && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
+
+  if (needsRefRetry) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeTokens] Phase 2 ref 위반 → 재시도:', { literals: refCheck.literalProps.slice(0, 3), danglings: refCheck.danglingRefs.slice(0, 3) });
+    const parts = ['[CRITICAL RETRY] Phase 2 components contained invalid references.'];
+    if (refCheck.literalProps.length > 0) {
+      parts.push(`Literal values found (must be {a.b} token-ref): ${refCheck.literalProps.slice(0, 5).join(' | ')}.`);
+    }
+    if (refCheck.danglingRefs.length > 0) {
+      parts.push(`Dangling references: ${refCheck.danglingRefs.slice(0, 5).join(' | ')}. Use ONLY ids that exist in phase 1 (color, typography) or this call's spacing/rounded/elevation keys.`);
+    }
+    const retry = await callPhase2(parts.join(' '));
+    if (retry.input) {
+      phase2 = retry.input;
+      p2Res = retry.res;
+      refCheck = validateTokenRefs(buildMergedForRefCheck(phase2));
+    }
+    // eslint-disable-next-line no-console
+    console.log('[runAnalyzeTokens] Phase 2 재시도 결과:', summarizePhase2(phase2));
+  }
+
+  // system 모드 fallback: 재시도 후에도 ref 위반이면 components 만 빈 객체로 강등.
+  let phase2Final = phase2;
+  let refValidation = null;
+  const stillHasInvalidComponents = phase2Final?.components && Object.keys(phase2Final.components).length > 0
+    && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
+  if (stillHasInvalidComponents) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeTokens] components ref 위반 지속 → 빈 객체로 fallback (system mode)');
+    phase2Final = { ...phase2Final, components: {} };
+    refValidation = {
+      fallback: true,
+      errors: refCheck.errors,
+      danglingRefs: refCheck.danglingRefs,
+      literalProps: refCheck.literalProps,
+    };
+  }
+
+  // 완료 상태
+  onProgress?.(
+    PROGRESS_KEYS_SYSTEM.map((key) => ({ key, status: 'done' })),
+  );
+
+  // ========== Merge & return ==========
+
+  const mergedTokens = {
+    color: phase1Color,
+    typography: phase1Typo,
+    layout: phase1Layout,
+    gradient: phase1Gradient,
+    spacing: phase2Final?.spacing || {},
+    rounded: phase2Final?.rounded || {},
+    elevation: Array.isArray(phase2Final?.elevation) ? phase2Final.elevation : [],
+    components: phase2Final?.components || {},
+  };
+
   return {
-    tokens: result.tokens || null,
-    visualDirection: result.visualDirection || null,
+    tokens: mergedTokens,
+    visualDirection: phase1?.visualDirection || null,
+    _refValidation: refValidation,
   };
 }
 
@@ -466,25 +729,56 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     },
   ];
 
-  const toolName = TASK_ANALYZE_HANDOFF.toolSchemas[0].name;
+  const MAX_TOKENS = 8192;
+  const [coreSchema, designmdSchema] = TASK_ANALYZE_HANDOFF.toolSchemas;
+  const baseModel = model || TASK_ANALYZE_HANDOFF.model;
 
-  const callOnce = async (extraInstruction = '') => {
+  const PROGRESS_KEYS_HANDOFF = [
+    'color', 'typography', 'layout', 'gradient',
+    'spacing', 'rounded', 'components', 'visualDirection',
+  ];
+
+  onProgress?.(
+    PROGRESS_KEYS_HANDOFF.map((key, i) => ({
+      key,
+      status: i === 0 ? 'running' : 'pending',
+    })),
+  );
+
+  // ========== Phase 1: CORE 4축 + visualDirection + layerDetails 5키 ==========
+
+  const phase1Content = [
+    ...content,
+    {
+      type: 'text',
+      text: `=== PHASE 1 OF 2 ===
+This call emits ONLY:
+- tokens.{color, typography, layout, gradient} — kebab-case ids, decisionRationale required
+- visualDirection.{markdown 200+ chars, tags}
+- layerDetails.{color, typography, layout, gradient, visualDirection} — 한글 200-500자 각
+
+DO NOT include spacing/rounded/elevation/components in this call (phase 2).
+DO NOT include layerDetails.{spacing, rounded, components, elevation} in this call.`,
+    },
+  ];
+
+  const callPhase1 = async (extraInstruction = '') => {
     const messagesContent = extraInstruction
-      ? [...content, { type: 'text', text: extraInstruction }]
-      : content;
+      ? [...phase1Content, { type: 'text', text: extraInstruction }]
+      : phase1Content;
     const res = await callAnthropic({
-      model: model || TASK_ANALYZE_HANDOFF.model,
-      max_tokens: 8192,
+      model: baseModel,
+      max_tokens: MAX_TOKENS,
       system: TASK_ANALYZE_HANDOFF.systemPrompt,
-      tools: TASK_ANALYZE_HANDOFF.toolSchemas,
-      tool_choice: { type: 'tool', name: toolName },
+      tools: [coreSchema],
+      tool_choice: { type: 'tool', name: coreSchema.name },
       messages: [{ role: 'user', content: messagesContent }],
     });
-    const input = extractToolInput(res, toolName);
+    const input = extractToolInput(res, coreSchema.name);
     return { res, input };
   };
 
-  const validate = (input) => {
+  const validatePhase1 = (input) => {
     const errors = [];
     const t = input?.tokens || {};
     for (const k of ['color', 'typography', 'layout', 'gradient']) {
@@ -500,52 +794,195 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     return errors;
   };
 
-  onProgress?.(
-    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key, i) => ({
-      key,
-      status: i === 0 ? 'running' : 'pending',
-    })),
-  );
+  const summarizePhase1 = (input) => ({
+    core: {
+      color: Array.isArray(input?.tokens?.color) ? input.tokens.color.length : 0,
+      typography: Array.isArray(input?.tokens?.typography) ? input.tokens.typography.length : 0,
+      layout: Array.isArray(input?.tokens?.layout) ? input.tokens.layout.length : 0,
+      gradient: Array.isArray(input?.tokens?.gradient) ? input.tokens.gradient.length : 0,
+    },
+    visualDirection: { markdownLen: input?.visualDirection?.markdown?.length || 0 },
+    layerDetailsKeys: input?.layerDetails ? Object.keys(input.layerDetails) : [],
+  });
 
-  let { res: response, input: result } = await callOnce();
-  if (!result) {
-    throw new Error(`T3(handoff) tool_use 응답 없음. text: ${extractText(response) || '(empty)'}`);
+  let { res: p1Res, input: phase1 } = await callPhase1();
+  if (!phase1) throw new Error(`T3(handoff) phase1 tool_use 응답 없음. text: ${extractText(p1Res) || '(empty)'}`);
+  if (p1Res?.stop_reason === 'max_tokens') {
+    throw new Error(`T3(handoff) phase1 응답이 max_tokens(${MAX_TOKENS})에서 잘렸습니다.`);
   }
+  // eslint-disable-next-line no-console
+  console.log('[runAnalyzeHandoff] Phase 1 결과:', summarizePhase1(phase1));
 
-  if (response?.stop_reason === 'max_tokens') {
-    throw new Error('T3(handoff) 응답이 max_tokens(8192)에서 잘렸습니다. 레퍼런스 개수를 줄여보세요.');
-  }
-
-  let errors = validate(result);
-  if (errors.length > 0) {
+  let p1Errors = validatePhase1(phase1);
+  if (p1Errors.length > 0) {
     // eslint-disable-next-line no-console
-    console.warn('[runAnalyzeHandoff] 검증 실패 → 재시도:', errors);
-    const retryInstruction = `[CRITICAL RETRY] Previous handoff bundle failed: ${errors.join(', ')}. ` +
-      'Re-emit COMPLETE bundle. ALL 4 token layers non-empty. ALL 5 layerDetails keys present (200+ chars each). ' +
-      'visualDirection.markdown 200+ chars. Use the pre-extracted pool as source.';
-    const retry = await callOnce(retryInstruction);
+    console.warn('[runAnalyzeHandoff] Phase 1 검증 실패 → 재시도:', p1Errors);
+    const retry = await callPhase1(
+      `[CRITICAL RETRY] Phase 1 errors: ${p1Errors.join(', ')}. Re-emit COMPLETE phase 1: tokens (4 core axes non-empty, kebab-case ids, decisionRationale), visualDirection (markdown 200+ chars), layerDetails (5 keys 200-500자 each).`
+    );
     if (retry.input) {
-      result = retry.input;
-      response = retry.res;
-      errors = validate(result);
-      if (errors.length > 0) {
-        // eslint-disable-next-line no-console
-        console.error('[runAnalyzeHandoff] 재시도 후에도 검증 실패:', errors);
-      }
+      phase1 = retry.input;
+      p1Res = retry.res;
+      p1Errors = validatePhase1(phase1);
     }
+    // eslint-disable-next-line no-console
+    console.log('[runAnalyzeHandoff] Phase 1 재시도 결과:', summarizePhase1(phase1));
+  }
+  if (p1Errors.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error('[runAnalyzeHandoff] Phase 1 재시도 후에도 검증 실패:', p1Errors);
   }
 
   onProgress?.(
-    ['color', 'typography', 'layout', 'gradient', 'visualDirection'].map((key) => ({
-      key,
-      status: 'done',
-    })),
+    PROGRESS_KEYS_HANDOFF.map((key) => {
+      if (['color', 'typography', 'layout', 'gradient', 'visualDirection'].includes(key)) {
+        return { key, status: 'done' };
+      }
+      return { key, status: key === 'spacing' ? 'running' : 'pending' };
+    }),
   );
+
+  // ========== Phase 2: spacing / rounded / elevation / components + layerDetails 3키 ==========
+
+  const phase1Color = phase1?.tokens?.color || [];
+  const phase1Typo = phase1?.tokens?.typography || [];
+  const phase1Layout = phase1?.tokens?.layout || [];
+  const phase1Gradient = phase1?.tokens?.gradient || [];
+
+  const phase2Content = [
+    ...content,
+    {
+      type: 'text',
+      text: `=== PHASE 2 OF 2 ===
+Phase 1 emitted these tokens — use these EXACT ids in component {path} references.
+
+colors:
+${phase1Color.map((c) => `  - ${c.id}  (${c.hex})`).join('\n') || '  (none)'}
+
+typography:
+${phase1Typo.map((t) => `  - ${t.id}  (variant=${t.variant || '?'})`).join('\n') || '  (none)'}
+
+THIS CALL emits ONLY:
+  - spacing (3-6 entries object map)
+  - rounded (2-5 entries object map)
+  - elevation (0-3 array, may be empty)
+  - components (3-8 entries) — kebab-case names, decisionRationale per component, all values "{a.b}" token-ref
+  - layerDetails.{spacing, rounded, components} 한글 200-500자 each, layerDetails.elevation optional
+
+Token reference syntax (STRICT):
+  "{colors.<phase1-id>}"      → exact phase 1 color id
+  "{typography.<phase1-id>}"  → exact phase 1 typography id
+  "{spacing.<this-key>}"      → key from this call's spacing object
+  "{rounded.<this-key>}"      → key from this call's rounded object
+  "{elevation.<this-id>}"     → id from this call's elevation array
+NEVER inline literal hex / dimension / px values. Include at least one button-primary CTA.`,
+    },
+  ];
+
+  const callPhase2 = async (extraInstruction = '') => {
+    const messagesContent = extraInstruction
+      ? [...phase2Content, { type: 'text', text: extraInstruction }]
+      : phase2Content;
+    const res = await callAnthropic({
+      model: baseModel,
+      max_tokens: MAX_TOKENS,
+      system: TASK_ANALYZE_HANDOFF.systemPrompt,
+      tools: [designmdSchema],
+      tool_choice: { type: 'tool', name: designmdSchema.name },
+      messages: [{ role: 'user', content: messagesContent }],
+    });
+    const input = extractToolInput(res, designmdSchema.name);
+    return { res, input };
+  };
+
+  const buildMergedForRefCheck = (phase2) => ({
+    tokens: {
+      color: phase1Color,
+      typography: phase1Typo,
+      spacing: phase2?.spacing || {},
+      rounded: phase2?.rounded || {},
+      elevation: Array.isArray(phase2?.elevation) ? phase2.elevation : [],
+      components: phase2?.components || {},
+    },
+  });
+  const summarizePhase2 = (phase2) => ({
+    spacing: phase2?.spacing && typeof phase2.spacing === 'object' ? Object.keys(phase2.spacing).length : 0,
+    rounded: phase2?.rounded && typeof phase2.rounded === 'object' ? Object.keys(phase2.rounded).length : 0,
+    elevation: Array.isArray(phase2?.elevation) ? phase2.elevation.length : 0,
+    components: phase2?.components && typeof phase2.components === 'object' ? Object.keys(phase2.components).length : 0,
+    layerDetailsKeys: phase2?.layerDetails ? Object.keys(phase2.layerDetails) : [],
+  });
+
+  let { res: p2Res, input: phase2 } = await callPhase2();
+  if (p2Res?.stop_reason === 'max_tokens') {
+    // eslint-disable-next-line no-console
+    console.error('[runAnalyzeHandoff] Phase 2 응답이 max_tokens 에서 잘림 — phase 2 결과 무시');
+    phase2 = null;
+  }
+  // eslint-disable-next-line no-console
+  console.log('[runAnalyzeHandoff] Phase 2 결과:', phase2 ? summarizePhase2(phase2) : '(없음)');
+
+  let refCheck = phase2 ? validateTokenRefs(buildMergedForRefCheck(phase2)) : { ok: true, literalProps: [], danglingRefs: [], errors: [] };
+  const hasComponents = phase2?.components && typeof phase2.components === 'object'
+    && !Array.isArray(phase2.components) && Object.keys(phase2.components).length > 0;
+  const needsRefRetry = hasComponents && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
+
+  if (needsRefRetry) {
+    // eslint-disable-next-line no-console
+    console.warn('[runAnalyzeHandoff] Phase 2 ref 위반 → 재시도:', { literals: refCheck.literalProps.slice(0, 3), danglings: refCheck.danglingRefs.slice(0, 3) });
+    const parts = ['[CRITICAL RETRY] Phase 2 components contained invalid references.'];
+    if (refCheck.literalProps.length > 0) {
+      parts.push(`Literal values: ${refCheck.literalProps.slice(0, 5).join(' | ')}.`);
+    }
+    if (refCheck.danglingRefs.length > 0) {
+      parts.push(`Dangling references: ${refCheck.danglingRefs.slice(0, 5).join(' | ')}.`);
+    }
+    parts.push('Use ONLY ids from phase 1 (colors, typography) or keys from this call (spacing, rounded, elevation).');
+    const retry = await callPhase2(parts.join(' '));
+    if (retry.input) {
+      phase2 = retry.input;
+      p2Res = retry.res;
+      refCheck = validateTokenRefs(buildMergedForRefCheck(phase2));
+    }
+    // eslint-disable-next-line no-console
+    console.log('[runAnalyzeHandoff] Phase 2 재시도 결과:', summarizePhase2(phase2));
+  }
+
+  // handoff strict — 재시도 후에도 ref 위반이면 에러 표면화 (components 누락은 통과)
+  const stillHasInvalidComponents = phase2?.components && Object.keys(phase2.components).length > 0
+    && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
+  if (stillHasInvalidComponents) {
+    // eslint-disable-next-line no-console
+    console.error('[runAnalyzeHandoff] components ref 위반 지속 (strict):', refCheck);
+    throw new Error(
+      `T3(handoff) phase 2 components token-reference 검증 실패. ` +
+      `Dangling: ${refCheck.danglingRefs.slice(0, 3).join(' | ')}. ` +
+      `Literals: ${refCheck.literalProps.slice(0, 3).join(' | ')}.`
+    );
+  }
+
+  onProgress?.(
+    PROGRESS_KEYS_HANDOFF.map((key) => ({ key, status: 'done' })),
+  );
+
+  // ========== Merge ==========
+
+  const mergedTokens = {
+    color: phase1Color,
+    typography: phase1Typo,
+    layout: phase1Layout,
+    gradient: phase1Gradient,
+    spacing: phase2?.spacing || {},
+    rounded: phase2?.rounded || {},
+    elevation: Array.isArray(phase2?.elevation) ? phase2.elevation : [],
+    components: phase2?.components || {},
+  };
+  const mergedLayerDetails = { ...(phase1?.layerDetails || {}), ...(phase2?.layerDetails || {}) };
 
   return {
-    tokens: result.tokens || null,
-    visualDirection: result.visualDirection || null,
-    layerDetails: result.layerDetails || null,
+    tokens: mergedTokens,
+    visualDirection: phase1?.visualDirection || null,
+    layerDetails: mergedLayerDetails,
   };
 }
 

@@ -43,8 +43,9 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route element={<AuthGuard><AppShellLayout /></AuthGuard>}>
                 <Route path="/" element={<Navigate to="/archive" replace />} />
-                <Route path="/archive" element={<ArchiveRoute />} />
-                <Route path="/projects" element={<ProjectListRoute />} />
+                {/* /archive, /projects 는 AppShellLayout 안에서 keep-alive 마운트되므로 여기서 element 미지정 */}
+                <Route path="/archive" element={null} />
+                <Route path="/projects" element={null} />
                 <Route path="/projects/new" element={<ProjectCreateRoute />} />
                 <Route path="/projects/:id" element={<ProjectDetailRoute />} />
                 <Route path="/settings" element={<SettingsRoute />} />

@@ -19,22 +19,29 @@
 - 중간 단계에서 "잘 됐다"고 한 뒤 사용자가 물어봐서야 "사실 미작동이었다"고 번복하지 않기.
 - "X 반영했다"고 말하기 전에: 데이터 모델 / 시스템 프롬프트 / 호출 시점 / UI 노출 — 4계층 모두 통합됐는지 확인 후 보고.
 
-## Current Status (2026-04-28)
+## Current Status (2026-04-29)
 
 ### ✅ 작동 중 — 5-step Progressive Narrowing 흐름
 - **Step 0 TP2 모드 선택** — concept / system / handoff 카드, 모든 후속 분기 기준
 - **Step 1 TP3 제목+한줄의도** — IntentGuideField (가이드 박스 제거, placeholder만)
-- **Step 2 TP4 레퍼런스+layer chip** — ReferencePicker + ReferenceLayerChipRow → T3 useLayers strict
-- **Step 3 활용 노트 (NEW)** — RefinementNotesField. 모드별 minLength 차등 (concept=0 / system=30 / handoff=50). T3 합성 HIGHEST PRIORITY 입력
-- **Step 4 분석** — T3 호출, AnalysisProgress
-- **TP6 결정 추적** — ColorSwatchList / TypographyPreview / LayoutTokenPreview / GradientPreview 4개 모두 ❓ 펼침 → TokenDecisionTracePanel (출처 + 의도 매칭 + ✋ appliedUserNotes 인용 + 탈락 후보)
+- **Step 2 TP4 레퍼런스+layer chip** — ReferencePicker + ReferenceLayerChipRow → T3 useLayers strict. system/handoff 모드면 `components` chip 추가 노출.
+- **Step 3 활용 노트 (NEW)** — RefinementNotesField. 모드별 minLength 차등 (concept=0 / system=30 / handoff=50). placeholder 도 mode 별 (system: spacing/elevation 힌트 / handoff: + primary CTA 컴포넌트 ref 매핑). T3 합성 HIGHEST PRIORITY 입력.
+- **Step 4 분석** — T3 호출, AnalysisProgress (system/handoff 면 spacing/rounded/components 진행도 추가).
+- **TP6 결정 추적** — ColorSwatchList / TypographyPreview / LayoutTokenPreview / GradientPreview 4개 모두 ❓ 펼침 → TokenDecisionTracePanel (출처 + 의도 매칭 + ✋ appliedUserNotes 인용 + 탈락 후보).
+
+### ✅ 작동 중 — DESIGN.md 호환 (2026-04-29 신규)
+- **T3 system/handoff 의 8-axis 토큰 산출**: color/typography/layout/gradient + **spacing/rounded/elevation/components** (concept 영향 0).
+- **Token reference 문법 강제**: components 의 모든 값은 `{colors.<id>}` / `{typography.<id>}` / `{rounded.<scale>}` / `{spacing.<scale>}` / `{elevation.<id>}`. dangling/리터럴 검출기 `validateTokenRefs`. system 은 1회 retry 후 fallback (components={}), handoff 는 strict (에러 표면화).
+- **Export: DESIGN.md (Google Labs alpha spec)** — `buildDesignMd` (YAML front-matter 8축 + prose 8 canonical sections, gradient/elevation 은 `x-` vendor extension). `buildDecisionTraceMd` 도 함께 생성. system → "DESIGN.md ZIP" / handoff → "Handoff ZIP (DESIGN.md + DTCG + 4 framework config + decision-trace + 8 layer 한글 상세)".
+- **max_tokens 16384** (Haiku 4.5, system/handoff 만). concept 은 1024 그대로.
+- **DB 마이그레이션 0**: `analysis_results.layers` jsonb 자유형식 그대로 — 신규 키 추가만.
 
 ### ❌ 폐기됨 (2026-04-28)
 - **TP1 userIntent (업로드 시 chip)**: T1 은 이미지가 정보 원천이라 사용자 chip 답이 정확도 향상에 기여 안 함. TP4 와 다운스트림 가치 중복. 화면 변화 없는 chip 은 신뢰 손상.
 - **TP5 AnalysisConfirmBox**: Step 3 하단 "분석 시작 →" 버튼이 곧 confirm 으로 흡수. 별도 step 불필요.
 
-### ⚠️ 미완료
-- **ThemeExportDialog 모드별 default + 4가지 산출물**: DTCG / DESIGN.md / decision-trace.md 신규 생성기 필요. 현재 MUI theme 만 export.
+### ⚠️ 미완료 / 검증 필요
 - **WizardContextBar (단계 컨텍스트 누적 카드)**: 각 step 상단 이전 결정 표시. 현재 미구현.
-- **AITasks.stories.jsx T3 IO 섹션 업데이트**: userNotes 입력 + appliedUserNotes 출력 표시.
-- **TP2/TP4/Step 3 실제 결과 차이 검증 안 됨**: AI Playground 에서 mode 3종 / userNotes 3 케이스 호출 비교 검증 필요. LLM 자율 분기에 의존.
+- **TP2/TP4/Step 3 실제 결과 차이 검증 안 됨**: AI Playground 에서 mode 3종 / userNotes 3 케이스 호출 비교 검증 필요.
+- **DESIGN.md 호환 실측 검증**: scripts/cli-test/{system,handoff}.mjs 신규 작성 완료 — 9 케이스 (mode 3종 × 의도 3개) baseline 캡처는 사용자 실행 필요.
+- **ProjectDetailPage 신규 4 axis 시각화**: spacing/rounded/elevation/components 토큰 미리보기 컴포넌트 미생성 (export 만 가능, 결과 화면 옵셔널 fallback 으로 깨짐 0).

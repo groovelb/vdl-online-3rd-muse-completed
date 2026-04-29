@@ -207,6 +207,7 @@ const CustomCard = forwardRef(function CustomCard({
             component="img"
             src={mediaSrc}
             alt={mediaAlt}
+            decoding="async"
             sx={imgStyles}
           />
         )}

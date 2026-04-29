@@ -333,9 +333,9 @@ export function ProjectDetailPage({
   };
 
   return (
-    <PageContainer sx={ sx }>
+    <PageContainer variant="fluid" sx={ sx }>
       {/* Project header */}
-      <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, py: 3 } }>
+      <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, py: { xs: 3, md: 6 } } }>
         { onBack && (
           <IconButton onClick={ onBack } aria-label="뒤로">
             <ArrowBackIcon />

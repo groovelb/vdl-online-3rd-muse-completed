@@ -9,6 +9,10 @@ const LAYER_LABEL = {
   layout: '레이아웃',
   gradient: '그라디언트',
   visualDirection: '무드',
+  spacing: '간격',
+  rounded: '라운드',
+  elevation: '그림자',
+  components: '컴포넌트',
 };
 
 /**

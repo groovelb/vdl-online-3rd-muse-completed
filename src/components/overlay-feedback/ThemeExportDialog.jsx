@@ -20,8 +20,11 @@ import DataObjectIcon from '@mui/icons-material/DataObject';
 import {
   buildUniversalJson,
   exportProjectAsZip,
+  exportSystemBundle,
+  exportHandoffBundle,
   downloadUniversalJson,
 } from '../../utils/museExport.js';
+import { buildDesignMd } from '../../utils/handoffConverters.js';
 
 /**
  * ThemeExportDialog — Universal JSON 프리뷰 + ZIP 번들 / 단독 JSON 다운로드
@@ -79,12 +82,25 @@ export function ThemeExportDialog({
     }
   };
 
+  // mode 별 default exporter — concept 은 ThemeExportDialog 진입하지 않음 (별도 핸들러)
+  const mode = project?.mode || 'system';
+  const primaryExporter = mode === 'handoff'
+    ? exportHandoffBundle
+    : mode === 'system'
+      ? exportSystemBundle
+      : exportProjectAsZip;
+  const primaryLabel = mode === 'handoff'
+    ? 'Handoff ZIP 다운로드'
+    : mode === 'system'
+      ? 'DESIGN.md ZIP 다운로드'
+      : 'ZIP 번들 다운로드';
+
   const handleDownloadZip = async () => {
     setError(null);
     setIsZipping(true);
     setZipResult(null);
     try {
-      const result = await exportProjectAsZip({ project, analysis, references });
+      const result = await primaryExporter({ project, analysis, references });
       setZipResult(result);
     } catch (e) {
       setError(e?.message || String(e));
@@ -96,6 +112,23 @@ export function ThemeExportDialog({
   const handleDownloadJson = () => {
     try {
       downloadUniversalJson({ project, analysis, references });
+    } catch (e) {
+      setError(e?.message || String(e));
+    }
+  };
+
+  const handleDownloadDesignMd = () => {
+    try {
+      const md = buildDesignMd({ project, layers: analysis });
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(project?.name || 'design').toLowerCase().replace(/\s+/g, '-')}.DESIGN.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (e) {
       setError(e?.message || String(e));
     }
@@ -126,10 +159,15 @@ export function ThemeExportDialog({
       <DialogContent dividers>
         {/* 요약 */}
         <Box sx={ { mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 } }>
+          <Chip size="small" label={ `mode: ${mode}` } color="primary" variant="outlined" />
           <Chip size="small" label={ `color ${universal.color?.tokens?.length || 0}` } />
           <Chip size="small" label={ `typography ${universal.typography?.tokens?.length || 0}` } />
           <Chip size="small" label={ `layout ${universal.layout?.tokens?.length || 0}` } />
           <Chip size="small" label={ `gradient ${universal.gradient?.tokens?.length || 0}` } />
+          <Chip size="small" label={ `spacing ${Object.keys(universal.spacing?.scale || {}).length}` } />
+          <Chip size="small" label={ `rounded ${Object.keys(universal.rounded?.scale || {}).length}` } />
+          <Chip size="small" label={ `elevation ${universal.elevation?.tokens?.length || 0}` } />
+          <Chip size="small" label={ `components ${Object.keys(universal.components?.specs || {}).length}` } />
           <Chip
             size="small"
             color={ universal.visualDirection?.markdown ? 'default' : 'warning' }
@@ -209,16 +247,26 @@ export function ThemeExportDialog({
         </Typography>
       </DialogContent>
 
-      <DialogActions sx={ { justifyContent: 'space-between', px: 3, py: 2 } }>
-        <Button
-          variant="text"
-          color="inherit"
-          startIcon={ <DataObjectIcon /> }
-          onClick={ handleDownloadJson }
-          disabled={ isZipping }
-        >
-          muse.json만
-        </Button>
+      <DialogActions sx={ { justifyContent: 'space-between', px: 3, py: 2, flexWrap: 'wrap', gap: 1 } }>
+        <Box sx={ { display: 'flex', gap: 1, flexWrap: 'wrap' } }>
+          <Button
+            variant="text"
+            color="inherit"
+            startIcon={ <DataObjectIcon /> }
+            onClick={ handleDownloadJson }
+            disabled={ isZipping }
+          >
+            muse.json만
+          </Button>
+          <Button
+            variant="text"
+            color="inherit"
+            onClick={ handleDownloadDesignMd }
+            disabled={ isZipping }
+          >
+            DESIGN.md만
+          </Button>
+        </Box>
 
         <Box sx={ { display: 'flex', gap: 1 } }>
           <Button onClick={ onClose } color="inherit" variant="text">닫기</Button>
@@ -229,7 +277,7 @@ export function ThemeExportDialog({
             startIcon={ isZipping ? <CircularProgress size={ 16 } color="inherit" /> : <FolderZipIcon /> }
             disabled={ isZipping }
           >
-            { isZipping ? '패키징 중…' : 'ZIP 번들 다운로드' }
+            { isZipping ? '패키징 중…' : primaryLabel }
           </Button>
         </Box>
       </DialogActions>

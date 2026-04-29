@@ -55,13 +55,13 @@ export function SettingsPage({ settings, onChange, onSave, usage, sx }) {
   };
 
   return (
-    <PageContainer sx={ sx }>
+    <PageContainer variant="focus" focusMaxWidth={ 640 } sx={ sx }>
       {/* Hero */}
-      <Box sx={ { py: { xs: 3, md: 5 } } }>
-        <Typography variant="h3" sx={ { fontWeight: 700, letterSpacing: '-0.02em' } }>Settings</Typography>
+      <Box sx={ { py: { xs: 4, md: 8 } } }>
+        <Typography variant="h2" sx={ { fontWeight: 600, letterSpacing: '-0.02em' } }>Settings</Typography>
       </Box>
 
-        <Box sx={ { maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 5 } }>
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 5 } }>
           {/* Beta usage */}
           { usage && (
             <>

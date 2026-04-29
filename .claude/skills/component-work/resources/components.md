@@ -23,7 +23,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 
 ## 2. Container — 시각적 경계와 그룹핑
 
-- SectionContainer: 페이지 섹션 컨테이너. MUI Container 기반 (`components/container/SectionContainer.jsx`)
+- SectionContainer: 페이지 섹션 컨테이너. `variant: 'fluid' | 'focus'` 로 폭 모드 분리 (focus 시 maxWidth=720 기본, focusMaxWidth 로 조정) (`components/container/SectionContainer.jsx`)
 - CarouselContainer: 캐로셀 컨테이너 (`components/container/CarouselContainer.jsx`)
 - RatioContainer: 비율 기반 컨테이너 (`components/container/RatioContainer.jsx`)
 
@@ -31,7 +31,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 
 - CardContainer: 카드 기본 컨테이너. variant, padding, elevation (`components/card/CardContainer.jsx`)
 - CustomCard: 미디어+콘텐츠 카드. vertical/horizontal/overlay 레이아웃 (`components/card/CustomCard.jsx`)
-- ImageCard: 이미지 카드. 태그 배지, 선택 체크박스(`isSelectable`/`isSelected`/`onToggleSelect`), 기본 좋아요 액션 (`components/card/ImageCard.jsx`)
+- ImageCard: 이미지 카드. 태그 배지, 선택 체크박스(`isSelectable`/`isSelected`/`onToggleSelect`), 기본 좋아요 액션, `mediaRatio` prop(default 'auto', 고정 aspect 시 grid jitter 방지) (`components/card/ImageCard.jsx`)
 - MoodboardCard: 무드보드 컬렉션 카드. 2x2 썸네일 그리드 (`components/card/MoodboardCard.jsx`)
 - ModeSelectCard: TP2 — 프로젝트 생성 첫 화면 모드 카드 (concept/system/handoff). 한 번의 선택이 T2 추천·T3 합성·Export 기본을 모두 분기 (`components/card/ModeSelectCard.jsx`)
 - ReferenceLayerChipRow: TP4 — 추천 카드별 "이 ref에서 어느 레이어를 가져올지" chip 토글. T2 referenceLayer 자동 / 사용자 수동 (`components/card/ReferenceLayerChipRow.jsx`)
@@ -79,7 +79,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - BentoGrid: 벤토 그리드 레이아웃 (`components/layout/BentoGrid.jsx`)
 - LineGrid: 그리드 아이템 사이 1px 라인 자동 삽입 (`components/layout/LineGrid.jsx`)
 - FullPageContainer: 전체 페이지 컨테이너 (`components/layout/FullPageContainer.jsx`)
-- PageContainer: 반응형 페이지 컨테이너. PC maxWidth 고정, 모바일 100% (`components/layout/PageContainer.jsx`)
+- PageContainer: 반응형 페이지 컨테이너. `variant: 'fluid' | 'focus'` 로 폭 모드 분리 (fluid=뷰포트 전체+clamp padding / focus=중앙 좁은 maxWidth, 기본 720px). 미지정 시 기존 MUI maxWidth 동작 유지 (`components/layout/PageContainer.jsx`)
 - AppShell: 반응형 앱 셸. GNB + 메인 콘텐츠 영역 (`components/layout/AppShell.jsx`)
 - StickyAsideCenterLayout: 대칭 3열 그리드. sticky aside + 페이지 정중앙 콘텐츠 + 빈 대칭 칼럼 (`components/layout/StickyAsideCenterLayout.jsx`)
 - InfiniteMasonry: MUI Masonry 기반 인피니트 스크롤 그리드. IntersectionObserver sentinel + 로딩/빈/끝 상태 내장 (`components/layout/InfiniteMasonry.jsx`)

@@ -54,6 +54,7 @@ export function ImageCard({
   title,
   tags = [],
   dominantColors = [],
+  mediaRatio = 'auto',
   onLike,
   hideActions = false,
   customOverlay,
@@ -147,7 +148,7 @@ export function ImageCard({
       layout="vertical"
       mediaSrc={ src }
       mediaAlt={ title || 'Image asset' }
-      mediaRatio="auto"
+      mediaRatio={ mediaRatio }
       contentPadding={ hasContent ? 'sm' : 'none' }
       overlaySlot={ overlaySlot }
       onClick={ isSelectable ? handleToggle : props.onClick }

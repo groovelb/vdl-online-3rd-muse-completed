@@ -2,13 +2,16 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 
-const LAYER_DEFS = [
+const LAYER_DEFS_BASE = [
   { key: 'color', label: '🎨 색', short: '색' },
   { key: 'typography', label: '📝 타이포', short: '타이포' },
   { key: 'layout', label: '📐 레이아웃', short: '레이아웃' },
   { key: 'gradient', label: '🌈 그라디언트', short: '그라디언트' },
   { key: 'visualDirection', label: '🎭 무드', short: '무드' },
 ];
+
+// system / handoff 모드 한정 — 컴포넌트 결합 차용 chip (DESIGN.md components)
+const LAYER_DEF_COMPONENTS = { key: 'components', label: '🧩 컴포넌트', short: '컴포넌트' };
 
 /**
  * ReferenceLayerChipRow 컴포넌트 (TP4)
@@ -27,6 +30,7 @@ const LAYER_DEFS = [
  * @param {string[]} value - 현재 선택된 useLayers (빈 배열 = 자동) [Optional, 기본값: []]
  * @param {function} onChange - (nextLayers) => void [Required]
  * @param {boolean} locked - 분석 시작 후 잠김 [Optional, 기본값: false]
+ * @param {'concept'|'system'|'handoff'} mode - 활성 chip 셋 결정. system/handoff 면 'components' chip 추가 [Optional, 기본값: 'system']
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -34,6 +38,7 @@ const LAYER_DEFS = [
  *   autoLayers={ ['color', 'typography'] }
  *   value={ selectedRefs[id]?.useLayers || [] }
  *   onChange={ (layers) => setUseLayers(id, layers) }
+ *   mode="handoff"
  * />
  */
 export function ReferenceLayerChipRow({
@@ -41,8 +46,12 @@ export function ReferenceLayerChipRow({
   value = [],
   onChange,
   locked = false,
+  mode = 'system',
   sx,
 }) {
+  const LAYER_DEFS = mode === 'concept'
+    ? LAYER_DEFS_BASE
+    : [...LAYER_DEFS_BASE, LAYER_DEF_COMPONENTS];
   const isAuto = !value || value.length === 0;
   const effective = isAuto ? autoLayers : value;
 

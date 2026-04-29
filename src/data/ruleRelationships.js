@@ -5,7 +5,7 @@
  * 직접 수정하지 마세요. 수정이 필요하면 스크립트를 수정하세요.
  *
  * 생성: pnpm generate-rules
- * 생성일: 2026-04-15
+ * 생성일: 2026-04-29
  */
 
 export const priorityMeta = {
@@ -54,11 +54,25 @@ export const ruleNodes = [
     "description": "```jsx"
   },
   {
+    "id": "cli-test",
+    "name": "cli-test (Skill)",
+    "priority": "Skill",
+    "path": ".claude/skills/cli-test/SKILL.md",
+    "description": "T3 (concept / system / handoff) 의 production 동일 LLM 호출을 CLI 로 실행. wizard UI 거치지 않고 빠른 prompt 룰 검증. 사용자가 \"/cli-test\", \"production 동일 호출\", \"실제 LLM 호출 테스트\", \"cli 로 테스트\" 등으로 호출."
+  },
+  {
+    "id": "cli-test--input-schema",
+    "name": "input-schema.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/cli-test/resources/input-schema.md",
+    "description": "```json"
+  },
+  {
     "id": "component-work",
     "name": "component-work (Skill)",
     "priority": "Skill",
     "path": ".claude/skills/component-work/SKILL.md",
-    "description": "Creates, modifies, deletes UI components and their Storybook stories. Manages component taxonomy, design tokens, and interactive patterns for MUI-based design system."
+    "description": "ALWAYS invoke this skill when files under src/components/ are created, modified, or deleted. Do not edit component files directly — use this skill first. Also trigger for any story file (.stories.jsx) work. Manages component taxonomy, design tokens, and interactive patterns for MUI-based design system."
   },
   {
     "id": "component-work--components",
@@ -150,6 +164,104 @@ export const ruleNodes = [
     "priority": "Skill",
     "path": ".claude/skills/rule-visualization/SKILL.md",
     "description": "Syncs ruleRelationships.js data with actual .claude/ file structure and updates Storybook rule visualization. Run pnpm generate-rules instead for automated sync."
+  },
+  {
+    "id": "supabase-integration",
+    "name": "supabase-integration (Skill)",
+    "priority": "Skill",
+    "path": ".claude/skills/supabase-integration/SKILL.md",
+    "description": "Converts the data model in docs/{project}/02-ux-flow.md into a production-ready Supabase backend — schema, auth (email+password), RLS, client hooks, and Edge Functions for external API integration — so the user only has to think about UX and data."
+  },
+  {
+    "id": "supabase-integration--auth-flows",
+    "name": "auth-flows.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/auth-flows.md",
+    "description": "Phase 2, 4에서 참조. Email+Password 표준 플로우 + OAuth 확장 가이드."
+  },
+  {
+    "id": "supabase-integration--client-templates",
+    "name": "client-templates.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/client-templates.md",
+    "description": "Phase 4에서 참조. 이 템플릿을 그대로 복사해 프로젝트에 맞게 엔티티명만 바꾼다."
+  },
+  {
+    "id": "supabase-integration--doc-templates",
+    "name": "doc-templates.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/doc-templates.md",
+    "description": "Phase 1~5에서 산출할 4개 문서의 템플릿. 사용자에게 제시할 때는 반드시 이 구조를 따른다."
+  },
+  {
+    "id": "supabase-integration--edge-functions",
+    "name": "edge-functions.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/edge-functions.md",
+    "description": "> **핵심 원칙**: 외부 API(OpenAI, Stripe, 카카오, 결제, SMS 등)는 **로컬에서 기능을 먼저 검증**한 뒤, 검증이 끝나면 **Edge Function으로 반드시 옮긴다**. 프론트 번들에 비밀 키가 남으면 안 된다."
+  },
+  {
+    "id": "supabase-integration--error-catalog",
+    "name": "error-catalog.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/error-catalog.md",
+    "description": "Phase 4에서 `src/utils/errorMessages.js` 생성 시 사용. Supabase 에러 코드/메시지를 한국어로 매핑."
+  },
+  {
+    "id": "supabase-integration--mcp-cli-playbook",
+    "name": "mcp-cli-playbook.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/mcp-cli-playbook.md",
+    "description": "전 Phase에서 참조. Supabase MCP 서버와 Supabase CLI의 역할 분담 규칙."
+  },
+  {
+    "id": "supabase-integration--rls-patterns",
+    "name": "rls-patterns.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/rls-patterns.md",
+    "description": "Phase 3에서 참조. 사용자 답변을 아래 패턴 중 하나에 매핑한다."
+  },
+  {
+    "id": "supabase-integration--schema-patterns",
+    "name": "schema-patterns.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/schema-patterns.md",
+    "description": "Phase 1에서 반드시 참조. 모든 테이블에 공통 적용할 규칙과, 자주 쓰이는 엔티티 스키마 템플릿."
+  },
+  {
+    "id": "supabase-integration--storybook-mock",
+    "name": "storybook-mock.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/storybook-mock.md",
+    "description": "Phase 4에서 참조. 데이터 훅이 Supabase 서버를 실제로 호출하지 않도록 mock 주입."
+  },
+  {
+    "id": "supabase-integration--trigger-patterns",
+    "name": "trigger-patterns.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/trigger-patterns.md",
+    "description": "Phase 1, 2에서 참조. 반드시 생성해야 하는 트리거 템플릿."
+  },
+  {
+    "id": "supabase-integration--verification-checklist",
+    "name": "verification-checklist.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/supabase-integration/resources/verification-checklist.md",
+    "description": "Phase 3(RLS 검증), Phase 5(최종 검증), Phase 6(Edge Functions)에서 실행."
+  },
+  {
+    "id": "work-log",
+    "name": "work-log (Skill)",
+    "priority": "Skill",
+    "path": ".claude/skills/work-log/SKILL.md",
+    "description": "실습 교육용 작업 로그 기록 스킬. 사용자가 `/work-log` 또는 \"작업 로그 남겨줘\", \"로그 기록해줘\" 등으로 호출하면, 직전까지 진행된 주요 작업을 의도/의사결정/변경파일/컴포넌트작업/재현가이드 형태로 `docs/work-log/`에 마크다운 파일로 저장한다."
+  },
+  {
+    "id": "work-log--template",
+    "name": "template.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/work-log/resources/template.md",
+    "description": "---"
   }
 ];
 
@@ -181,6 +293,18 @@ export const ruleEdges = [
     "from": "claude-md",
     "to": "mui-grid-usage",
     "type": "loads"
+  },
+  {
+    "from": "claude-md",
+    "to": "cli-test",
+    "type": "activates",
+    "note": ""
+  },
+  {
+    "from": "cli-test",
+    "to": "cli-test--input-schema",
+    "type": "resources",
+    "note": ""
   },
   {
     "from": "claude-md",
@@ -264,6 +388,90 @@ export const ruleEdges = [
     "from": "claude-md",
     "to": "rule-visualization",
     "type": "activates",
+    "note": ""
+  },
+  {
+    "from": "claude-md",
+    "to": "supabase-integration",
+    "type": "activates",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--auth-flows",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--client-templates",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--doc-templates",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--edge-functions",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--error-catalog",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--mcp-cli-playbook",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--rls-patterns",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--schema-patterns",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--storybook-mock",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--trigger-patterns",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "supabase-integration",
+    "to": "supabase-integration--verification-checklist",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "claude-md",
+    "to": "work-log",
+    "type": "activates",
+    "note": ""
+  },
+  {
+    "from": "work-log",
+    "to": "work-log--template",
+    "type": "resources",
     "note": ""
   }
 ];

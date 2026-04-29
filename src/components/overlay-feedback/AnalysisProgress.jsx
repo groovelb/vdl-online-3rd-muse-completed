@@ -53,6 +53,24 @@ const LAYER_DETAIL = {
     pending: '톤 · 구현 가이드 · 피해야 할 요소를 서술할 예정',
     error: '비주얼 디렉션 작성 실패',
   },
+  spacing: {
+    running: 'spacing scale (xs/sm/md/lg/xl) 을 의도와 레퍼런스 리듬에서 도출합니다',
+    done: 'spacing scale 정의 완료',
+    pending: 'spacing 단위 (px/rem) 을 일관 스케일로 정렬할 예정',
+    error: 'spacing scale 합성 실패',
+  },
+  rounded: {
+    running: 'rounded scale (sm/md/lg) 를 브랜드 톤 (소프트 ↔ 기하학) 에 맞춰 결정합니다',
+    done: 'rounded scale 정의 완료',
+    pending: 'border radius 스케일을 결정할 예정',
+    error: 'rounded scale 합성 실패',
+  },
+  components: {
+    running: 'button-primary / card / input 등 UI 컴포넌트를 토큰 레퍼런스 ({path}) 로 결합합니다',
+    done: '컴포넌트 결합 완료 (DESIGN.md 호환)',
+    pending: '토큰 레퍼런스 문법으로 컴포넌트를 정의할 예정',
+    error: '컴포넌트 결합 실패 (token-ref 위반)',
+  },
 };
 
 /** 상태별 아이콘 — 크게 */

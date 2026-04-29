@@ -548,3 +548,65 @@ ${extractedPool.some((r) => r.useLayers.length > 0)
     layerDetails: result.layerDetails || null,
   };
 }
+
+/**
+ * 단일 reference 의 활용 노트 자동 생성.
+ *
+ * 프로젝트 의도 + 모드 + ref 의 tags / extracted 메타를 바탕으로
+ * "이 레퍼런스에서 무엇을 차용할지" 를 한 줄(≤100자) 한국어로 제안.
+ * Step 3 활용 노트 입력의 보조 — 사용자가 그대로 쓸 수도, 수정해서 쓸 수도 있다.
+ *
+ * @param {object} params
+ * @param {string} params.intent - 프로젝트 한 줄 의도
+ * @param {'concept'|'system'|'handoff'} [params.mode='system']
+ * @param {object} params.ref - { id, title?, tags?, dominantColors?, extracted?, useLayers? }
+ * @param {string[]} [params.useLayers] - 사용자가 큐레이션한 차용 layer (있으면 우선 반영)
+ * @param {string} [params.model]
+ * @returns {Promise<string>} 노트 문자열 (최대 100자, 양쪽 trim)
+ */
+export async function runSuggestRefNote({ intent, mode = 'system', ref, useLayers, model }) {
+  if (!ref?.id) throw new Error('ref 가 필요합니다');
+
+  const layers = Array.isArray(useLayers) && useLayers.length > 0
+    ? useLayers
+    : (Array.isArray(ref.useLayers) ? ref.useLayers : []);
+
+  const meta = {
+    id: ref.id,
+    title: ref.title || null,
+    tags: ref.tags || {},
+    dominantColors: ref.dominantColors || [],
+    extracted: ref.extracted || {},
+    useLayers: layers,
+  };
+
+  const system = `당신은 디자인 레퍼런스 큐레이터입니다. 사용자가 선택한 레퍼런스에서 어느 부분을 차용할지 한국어 한 줄(≤100자)로 구체적으로 제안하세요.
+
+규칙:
+- 100자 이내. 마침표/따옴표 없이 핵심만.
+- "hero 영역 색감" / "우측 사이드바 구조 모방" 처럼 어느 영역의 어느 layer 인지 명시.
+- useLayers 가 지정돼 있으면 그 layer 만 다룬다.
+- mode=concept 이면 무드/감성, mode=system 이면 토큰/role, mode=handoff 이면 naming/구현 디테일에 무게.
+- 출력은 노트 문자열만. 라벨/접두사/설명 금지.`;
+
+  const userText = `=== 프로젝트 의도 ===
+${intent || '(없음)'}
+
+=== 모드 ===
+${mode}
+
+=== 레퍼런스 메타 ===
+${JSON.stringify(meta, null, 2)}
+
+이 레퍼런스에서 차용할 부분을 한 줄로 제안하세요.`;
+
+  const response = await callAnthropic({
+    model: model || TASK_ANALYZE_TOKENS.model,
+    max_tokens: 200,
+    system,
+    messages: [{ role: 'user', content: userText }],
+  });
+
+  const text = (extractText(response) || '').trim().replace(/^["'`]|["'`]$/g, '').trim();
+  return text.slice(0, 100);
+}

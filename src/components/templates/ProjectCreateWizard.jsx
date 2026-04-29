@@ -7,11 +7,15 @@ import StepLabel from '@mui/material/StepLabel';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { ReferencePicker } from './ReferencePicker.jsx';
 import { AnalysisProgress } from '../overlay-feedback/AnalysisProgress.jsx';
 import { ModeSelectCard } from '../card/ModeSelectCard.jsx';
 import { IntentGuideField } from '../input/IntentGuideField.jsx';
 import { RefImage } from '../media/RefImage.jsx';
+import { runSuggestRefNote } from '../../utils/museAiTasks';
 import Chip from '@mui/material/Chip';
 
 const STEPS = ['모드', '제목+의도', '레퍼런스', '활용 노트', '분석'];
@@ -160,6 +164,32 @@ export function ProjectCreateWizard({
   const [loadedRecommended, setLoadedRecommended] = useState(null);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
   const [referenceLayerMap, setReferenceLayerMap] = useState({}); // T2 referenceLayer 결과 캐시
+  const [suggestingRefIds, setSuggestingRefIds] = useState({}); // { [refId]: true } — Step 3 노트 자동 생성 중
+
+  const handleSuggestNote = async (ref, useLayers) => {
+    if (!ref?.id || suggestingRefIds[ref.id]) return;
+    setSuggestingRefIds((prev) => ({ ...prev, [ref.id]: true }));
+    try {
+      const note = await runSuggestRefNote({
+        intent: state.form.intent,
+        mode: state.form.mode,
+        ref,
+        useLayers,
+      });
+      if (note) {
+        dispatch({ type: 'SET_REFERENCE_NOTE', payload: { id: ref.id, text: note } });
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('[suggest-ref-note] 실패', e?.message || e);
+    } finally {
+      setSuggestingRefIds((prev) => {
+        const next = { ...prev };
+        delete next[ref.id];
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (state.step === 2 && recommendedLoader && !loadedRecommended && !isLoadingRecommended) {
@@ -327,7 +357,15 @@ export function ProjectCreateWizard({
       const selectedFullRefs = state.selectedIds
         .map((id) => archive.find((a) => a.id === id))
         .filter(Boolean)
-        .map((a) => ({ id: a.id, thumbnailUrl: a.src || a.thumbnailUrl, storagePath: a.storagePath, title: a.title }));
+        .map((a) => ({
+          id: a.id,
+          thumbnailUrl: a.src || a.thumbnailUrl,
+          storagePath: a.storagePath,
+          title: a.title,
+          tags: a.tags,
+          dominantColors: a.dominantColors,
+          extracted: a.extracted,
+        }));
       const useLayersByRef = Object.fromEntries(
         state.selectedRefs.map((sr) => [sr.id, sr.useLayers || []]),
       );
@@ -404,20 +442,54 @@ export function ProjectCreateWizard({
                         차용 layer: 자동 (전체)
                       </Typography>
                     ) }
-                    <TextField
-                      fullWidth
-                      size="small"
-                      multiline
-                      minRows={ 2 }
-                      maxRows={ 3 }
-                      placeholder={ '예: hero 영역 색감만 차용 / 우측 사이드바 구조 모방' }
-                      value={ note }
-                      onChange={ (e) =>
-                        dispatch({ type: 'SET_REFERENCE_NOTE', payload: { id: ref.id, text: e.target.value } })
-                      }
-                      inputProps={ { maxLength: 100 } }
-                      helperText={ `${note.length} / 100` }
-                    />
+                    <Box sx={ { position: 'relative' } }>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        multiline
+                        minRows={ 2 }
+                        maxRows={ 3 }
+                        placeholder={ '예: hero 영역 색감만 차용 / 우측 사이드바 구조 모방' }
+                        value={ note }
+                        onChange={ (e) =>
+                          dispatch({ type: 'SET_REFERENCE_NOTE', payload: { id: ref.id, text: e.target.value } })
+                        }
+                        inputProps={ { maxLength: 100, style: { paddingRight: 32 } } }
+                        helperText={ `${note.length} / 100` }
+                      />
+                      <Tooltip title={ suggestingRefIds[ref.id] ? '생성 중…' : 'AI 로 활용 노트 자동 생성' } placement="top">
+                        <span style={ { position: 'absolute', top: 4, right: 4 } }>
+                          <IconButton
+                            size="small"
+                            aria-label="AI 노트 자동 생성"
+                            disabled={ !!suggestingRefIds[ref.id] }
+                            onClick={ () => handleSuggestNote(ref, layers) }
+                            sx={ {
+                              color: 'primary.main',
+                              '@keyframes refNoteAiPulse': {
+                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                                '50%': { opacity: 0.55, transform: 'scale(0.92)' },
+                              },
+                              '& .MuiSvgIcon-root': {
+                                animation: suggestingRefIds[ref.id]
+                                  ? 'refNoteAiPulse 900ms ease-in-out infinite'
+                                  : 'none',
+                                filter: suggestingRefIds[ref.id]
+                                  ? 'drop-shadow(0 0 6px rgba(99,102,241,0.6))'
+                                  : 'none',
+                              },
+                              '&:hover .MuiSvgIcon-root': {
+                                filter: 'drop-shadow(0 0 4px rgba(99,102,241,0.5))',
+                              },
+                            } }
+                          >
+                            { suggestingRefIds[ref.id]
+                              ? <CircularProgress size={ 16 } thickness={ 5 } />
+                              : <AutoAwesomeIcon fontSize="small" /> }
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Box>
               );

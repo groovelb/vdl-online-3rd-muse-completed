@@ -49,12 +49,6 @@ const MODE_DEFS = [
     subtitle: '개발 환경에서 계속 관리할 디자인 시스템 토큰 구성',
     description: '레퍼런스에서 추출한 색·타이포·레이아웃 토큰을 DTCG / MUI theme 형식으로 export 합니다. 새 프로젝트 저장소에 그대로 커밋해 시스템의 출발점으로 쓰세요.',
   },
-  {
-    mode: 'handoff',
-    title: '디자인 토큰 추출',
-    subtitle: '이미 작업 중인 디자인 시스템에 적용할 토큰 추출',
-    description: '이미 운영 중인 시스템에 추가할 토큰만 골라 patch 형태로 추출합니다. 기존 naming·role 규칙과 충돌 없이 부분 반영하기 좋습니다.',
-  },
 ];
 
 const initialState = {
@@ -284,18 +278,27 @@ export function ProjectCreateWizard({
         <Box sx={ { display: 'flex', flexDirection: 'column', gap: 5, maxWidth: 1200, mx: 'auto', width: '100%' } }>
           <Box
             sx={ {
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              alignItems: 'stretch',
               gap: { xs: 2, md: 4 },
             } }
           >
             { MODE_DEFS.map((m) => (
-              <ModeSelectCard
+              <Box
                 key={ m.mode }
-                { ...m }
-                isSelected={ state.form.mode === m.mode }
-                onSelect={ (mode) => dispatch({ type: 'SET_MODE', payload: mode }) }
-              />
+                sx={ {
+                  flex: { xs: '1 1 100%', md: '0 1 360px' },
+                  display: 'flex',
+                } }
+              >
+                <ModeSelectCard
+                  { ...m }
+                  isSelected={ state.form.mode === m.mode }
+                  onSelect={ (mode) => dispatch({ type: 'SET_MODE', payload: mode }) }
+                />
+              </Box>
             )) }
           </Box>
         </Box>

@@ -1,6 +1,10 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import { RefImage } from '../media/RefImage.jsx';
 
 const LAYER_LABEL = {
@@ -46,116 +50,141 @@ export function TokenDecisionTracePanel({ decisionRationale, references = [], sx
     .map((id) => references.find((r) => r.id === id))
     .filter(Boolean);
 
-  return (
-    <Box
-      sx={ {
-        mt: 1,
-        p: 2,
-        borderRadius: 1.5,
-        bgcolor: 'grey.50',
-        border: '1px dashed',
-        borderColor: 'divider',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1.5,
-        ...sx,
-      } }
-    >
-      { /* 출처 */ }
-      <Box>
-        <Typography variant="caption" sx={ { fontWeight: 600, color: 'text.secondary', mr: 1 } }>
-          📍 출처
-        </Typography>
-        { refsWithThumb.length > 0 ? (
-          <Box sx={ { display: 'inline-flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', verticalAlign: 'middle' } }>
-            { refsWithThumb.map((r) => (
-              <Box key={ r.id } sx={ { display: 'inline-flex', alignItems: 'center', gap: 0.5 } }>
+  const rows = [];
+
+  if (refsWithThumb.length > 0 || whichReferences.length > 0) {
+    rows.push({
+      key: 'sources',
+      label: '출처',
+      content: (
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 0.75 } }>
+          { refsWithThumb.length > 0 ? (
+            refsWithThumb.map((r) => (
+              <Box key={ r.id } sx={ { display: 'flex', alignItems: 'center', gap: 1 } }>
                 { r.thumbnailUrl && (
-                  <Box sx={ { width: 28, height: 28, borderRadius: 0.75, overflow: 'hidden', border: '1px solid', borderColor: 'divider', flexShrink: 0 } }>
+                  <Box sx={ { width: 32, height: 32, borderRadius: 0.75, overflow: 'hidden', border: '1px solid', borderColor: 'divider', flexShrink: 0 } }>
                     <RefImage
                       src={ r.thumbnailUrl }
                       storagePath={ r.storagePath }
-                      alt={ r.id }
+                      alt={ r.title || r.id }
                     />
                   </Box>
                 ) }
-                <Typography variant="caption" sx={ { fontFamily: 'monospace', fontSize: 11 } }>
-                  { r.id }
+                <Typography variant="body2" sx={ { fontSize: 13 } }>
+                  { r.title || r.id }
                 </Typography>
               </Box>
-            )) }
-          </Box>
-        ) : (
-          <Typography variant="caption" sx={ { fontFamily: 'monospace' } }>
-            { whichReferences.join(', ') }
-          </Typography>
-        ) }
-        { whichLayers.length > 0 && (
-          <Box sx={ { display: 'inline-flex', gap: 0.5, ml: 1.5 } }>
-            { whichLayers.map((l) => (
-              <Chip
-                key={ l }
-                label={ LAYER_LABEL[l] || l }
-                size="small"
-                sx={ { height: 18, fontSize: '0.65rem' } }
-              />
-            )) }
-          </Box>
-        ) }
-      </Box>
-
-      { /* 의도 매칭 이유 */ }
-      { whyChosen && (
-        <Box>
-          <Typography variant="caption" sx={ { fontWeight: 600, color: 'text.secondary', mr: 1 } }>
-            💡 의도 매칭
-          </Typography>
-          <Typography variant="body2" sx={ { display: 'inline', fontSize: 13 } }>
-            { whyChosen }
-          </Typography>
+            ))
+          ) : (
+            <Typography variant="body2" sx={ { fontSize: 13, color: 'text.secondary' } }>
+              { whichReferences.join(', ') }
+            </Typography>
+          ) }
+          { whichLayers.length > 0 && (
+            <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.25 } }>
+              { whichLayers.map((l) => (
+                <Chip
+                  key={ l }
+                  label={ LAYER_LABEL[l] || l }
+                  size="small"
+                  variant="outlined"
+                  sx={ { height: 20, fontSize: '0.7rem' } }
+                />
+              )) }
+            </Box>
+          ) }
         </Box>
-      ) }
+      ),
+    });
+  }
 
-      { /* 사용자 노트 반영 (Step 3 userNotes 직접 영향 토큰만) */ }
-      { appliedUserNotes && (
-        <Box
+  if (whyChosen) {
+    rows.push({
+      key: 'why',
+      label: '의도 매칭',
+      content: (
+        <Typography variant="body2" sx={ { fontSize: 13, lineHeight: 1.6 } }>
+          { whyChosen }
+        </Typography>
+      ),
+    });
+  }
+
+  if (appliedUserNotes) {
+    rows.push({
+      key: 'notes',
+      label: '사용자 노트',
+      content: (
+        <Typography
+          variant="body2"
           sx={ {
-            p: 1,
-            borderRadius: 1,
-            bgcolor: 'primary.50',
-            borderLeft: '3px solid',
-            borderColor: 'primary.main',
+            fontSize: 13,
+            lineHeight: 1.6,
+            fontStyle: 'italic',
+            color: 'primary.main',
           } }
         >
-          <Typography variant="caption" sx={ { fontWeight: 600, color: 'primary.main', mr: 1 } }>
-            ✋ 사용자 노트 반영
-          </Typography>
-          <Typography variant="body2" sx={ { display: 'inline', fontSize: 13, fontStyle: 'italic' } }>
-            "{ appliedUserNotes }"
-          </Typography>
-        </Box>
-      ) }
+          “{ appliedUserNotes }”
+        </Typography>
+      ),
+    });
+  }
 
-      { /* 탈락 후보 */ }
-      { alternativesConsidered.length > 0 && (
-        <Box>
-          <Typography variant="caption" sx={ { fontWeight: 600, color: 'text.secondary', display: 'block', mb: 0.5 } }>
-            🚫 다른 후보
-          </Typography>
-          <Box component="ul" sx={ { m: 0, pl: 2.5, display: 'flex', flexDirection: 'column', gap: 0.5 } }>
-            { alternativesConsidered.map((alt, i) => (
-              <Box component="li" key={ i }>
-                <Typography variant="caption" sx={ { fontFamily: 'monospace', fontSize: 11 } }>
-                  { alt.value }
-                </Typography>
-                <Typography variant="caption" sx={ { ml: 1, color: 'text.secondary', fontSize: 11 } }>
-                  ({ alt.reason })
-                </Typography>
-              </Box>
-            )) }
-          </Box>
+  if (alternativesConsidered.length > 0) {
+    rows.push({
+      key: 'alts',
+      label: '다른 후보',
+      content: (
+        <Box sx={ { display: 'flex', flexDirection: 'column', gap: 0.5 } }>
+          { alternativesConsidered.map((alt, i) => (
+            <Box key={ i } sx={ { display: 'flex', gap: 1.5, alignItems: 'baseline' } }>
+              <Typography variant="caption" sx={ { fontFamily: 'monospace', fontSize: 12, minWidth: 80 } }>
+                { alt.value }
+              </Typography>
+              <Typography variant="caption" sx={ { color: 'text.secondary', fontSize: 12, lineHeight: 1.6 } }>
+                { alt.reason }
+              </Typography>
+            </Box>
+          )) }
         </Box>
-      ) }
+      ),
+    });
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Box sx={ { mt: 1, ...sx } }>
+      <Table size="small" sx={ { '& td': { borderColor: 'divider' } } }>
+        <TableBody>
+          { rows.map((row, i) => (
+            <TableRow key={ row.key }>
+              <TableCell
+                sx={ {
+                  width: 110,
+                  verticalAlign: 'top',
+                  py: 1.25,
+                  px: 0,
+                  borderBottom: i < rows.length - 1 ? '1px solid' : 0,
+                } }
+              >
+                <Typography variant="caption" sx={ { fontWeight: 600, color: 'text.secondary', letterSpacing: '0.02em' } }>
+                  { row.label }
+                </Typography>
+              </TableCell>
+              <TableCell
+                sx={ {
+                  py: 1.25,
+                  px: 0,
+                  borderBottom: i < rows.length - 1 ? '1px solid' : 0,
+                } }
+              >
+                { row.content }
+              </TableCell>
+            </TableRow>
+          )) }
+        </TableBody>
+      </Table>
     </Box>
   );
 }

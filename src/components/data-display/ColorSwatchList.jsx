@@ -15,7 +15,7 @@ import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
  * 선택적으로 `groupBy`를 지정하면 그룹 헤더와 함께 섹션을 나눈다.
  *
  * Props:
- * @param {array} tokens - [{ id, label, hex, role?, group?, isEnabled, emphasis, decisionRationale? }] [Required]
+ * @param {array} tokens - [{ id, label, hex, role?, group?, isEnabled, decisionRationale? }] [Required]
  * @param {function} onChange - (id, patch) => void [Optional]
  * @param {boolean} isGrouped - group 필드 기준으로 섹션 분리 [Optional, 기본값: false]
  * @param {array} references - TP6 출처 썸네일용 reference 풀 [Optional]
@@ -23,7 +23,7 @@ import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
  *
  * Example usage:
  * <ColorSwatchList
- *   tokens={ [{ id: 'p', label: 'Primary', hex: '#14132B', isEnabled: true, emphasis: 2 }] }
+ *   tokens={ [{ id: 'p', label: 'Primary', hex: '#14132B', isEnabled: true }] }
  *   onChange={ (id, patch) => updateToken(id, patch) }
  * />
  */
@@ -35,36 +35,29 @@ export function ColorSwatchList({ tokens, onChange, isGrouped = false, reference
     const isExpanded = expandedId === token.id;
     return (
       <Box key={ token.id }>
-        <Box sx={ { position: 'relative' } }>
-          <TokenListItem
-            preview={
-              <Box
-                sx={ {
-                  width: 48,
-                  height: 48,
-                  borderRadius: 1.5,
-                  backgroundColor: token.hex,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                } }
-              />
-            }
-            label={ token.label }
-            value={ token.hex }
-            isEnabled={ token.isEnabled }
-            emphasis={ token.emphasis }
-            onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
-            onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
-          />
-          { hasRationale && (
+        <TokenListItem
+          preview={
+            <Box
+              sx={ {
+                width: 48,
+                height: 48,
+                borderRadius: 1.5,
+                backgroundColor: token.hex,
+                border: '1px solid',
+                borderColor: 'divider',
+              } }
+            />
+          }
+          label={ token.label }
+          value={ token.hex }
+          isEnabled={ token.isEnabled }
+          onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
+          trailing={ hasRationale ? (
             <IconButton
               size="small"
               aria-label={ isExpanded ? '결정 근거 닫기' : '결정 근거 보기' }
               onClick={ () => setExpandedId(isExpanded ? null : token.id) }
               sx={ {
-                position: 'absolute',
-                top: 8,
-                right: 8,
                 transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
                 transition: 'transform 150ms',
               } }
@@ -72,8 +65,8 @@ export function ColorSwatchList({ tokens, onChange, isGrouped = false, reference
             >
               <ExpandMoreIcon fontSize="small" />
             </IconButton>
-          ) }
-        </Box>
+          ) : null }
+        />
         <Collapse in={ isExpanded }>
           <TokenDecisionTracePanel
             decisionRationale={ token.decisionRationale || (token.sourceReferenceIds ? {

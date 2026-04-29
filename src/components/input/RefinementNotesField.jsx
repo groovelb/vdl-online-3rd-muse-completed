@@ -3,8 +3,8 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { RefImage } from '../media/RefImage.jsx';
 
-/** 모드별 최소 글자수 — concept=0(스킵 가능), system=30, handoff=50 */
-const MIN_LENGTH_BY_MODE = { concept: 0, system: 30, handoff: 50 };
+/** 모드별 최소 글자수 — concept=0(스킵 가능), system=30 */
+const MIN_LENGTH_BY_MODE = { concept: 0, system: 30 };
 
 const PLACEHOLDER_BY_MODE = {
   concept: `예:
@@ -16,19 +16,13 @@ const PLACEHOLDER_BY_MODE = {
 - 모듈형 그리드 사이를 부드러운 라운드(8/16px)로 모던하게
 - elevation 은 미세하게 (잔잔한 그림자 1단계)
 - spacing scale 은 8/16/24 기반`,
-  handoff: `예:
-- 에디토리얼 대시보드 레이아웃 (12컬럼 모듈 그리드)
-- 부드러운 라운드(8~12px)로 모던한 톤
-- 레트로 종이 질감 배경, fixed 포지션
-- primary CTA 컴포넌트는 ref-001 의 잉크 톤으로
-- elevation 1단(미세) + 2단(카드) 두 단계만`,
 };
 
 /**
  * RefinementNotesField 컴포넌트 (Step 3)
  *
  * 프로젝트 생성 위자드 Step 3 — 레퍼런스 본 후 활용 노트 textarea.
- * 모드별 최소 글자수 차등 (concept=0 / system=30 / handoff=50).
+ * 모드별 최소 글자수 차등 (concept=0 / system=30).
  * userNotes 는 T3 합성 시 HIGHEST PRIORITY 로 적용됨.
  *
  * 동작 흐름:
@@ -40,7 +34,7 @@ const PLACEHOLDER_BY_MODE = {
  * @param {string} value - 현재 활용 노트 [Required]
  * @param {function} onChange - (next) => void [Required]
  * @param {Array<{id, thumbnailUrl, title?}>} selectedRefs - 선택된 레퍼런스 [Optional]
- * @param {'concept'|'system'|'handoff'} mode - TP2 모드. minLength 차등 [Optional, 기본값: 'system']
+ * @param {'concept'|'system'} mode - TP2 모드. minLength 차등 [Optional, 기본값: 'system']
  * @param {boolean} disabled - 비활성 [Optional, 기본값: false]
  * @param {object} sx - 추가 스타일 [Optional]
  *

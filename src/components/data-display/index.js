@@ -16,6 +16,3 @@ export { GradientPreview } from './GradientPreview.jsx';
 
 // DESIGN.md (Google Labs alpha spec) preview — system / handoff 결과 화면 + components live render + scale 시각화
 export { DesignMdPreview } from './DesignMdPreview.jsx';
-
-// 각 layer 별 정형 가이드 (Purpose / Do / Don't) + 동적 결정 근거
-export { LayerGuide } from './LayerGuide.jsx';

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import { ProjectCreateWizard } from '../components/templates/ProjectCreateWizard.jsx';
 import { useProjectsSlice, useReferencesSlice, useAnalysesSlice } from '../store';
-import { runRecommend, runAnalyzeTokens, runAnalyzeConcept, runAnalyzeHandoff } from '../utils/museAiTasks';
+import { runRecommend, runAnalyzeTokens, runAnalyzeConcept } from '../utils/museAiTasks';
 
 /** Reference → ReferencePicker item 변환 */
 const toPickerItem = (r) => ({
@@ -72,13 +72,6 @@ export function ProjectCreateRoute() {
                   onProgress: updateLayers,
                 }); // { conceptPrompt }
               }
-              if (payload.form.mode === 'handoff') {
-                return runAnalyzeHandoff({
-                  intent: payload.form.intent,
-                  selectedRefs: enriched,
-                  onProgress: updateLayers,
-                }); // { tokens, visualDirection, layerDetails }
-              }
               return runAnalyzeTokens({
                 intent: payload.form.intent,
                 mode: payload.form.mode,
@@ -125,10 +118,6 @@ export function ProjectCreateRoute() {
                   };
                   if (analysisResult?._refValidation) {
                     layers._refValidation = analysisResult._refValidation;
-                  }
-                  // handoff: 8 key 한글 상세 추가 저장 (jsonb 자유 형식)
-                  if (form.mode === 'handoff' && analysisResult?.layerDetails) {
-                    layers.layerDetails = analysisResult.layerDetails;
                   }
                 }
 

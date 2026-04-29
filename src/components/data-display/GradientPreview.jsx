@@ -51,44 +51,37 @@ export function GradientPreview({ tokens, onChange, references = [], sx }) {
         const isExpanded = expandedId === token.id;
         return (
           <Box key={ token.id }>
-            <Box sx={ { position: 'relative' } }>
-              <TokenListItem
-                preview={
-                  <Box
-                    sx={ {
-                      width: 48,
-                      height: 48,
-                      borderRadius: 1.5,
-                      background: token.gradient,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                    } }
-                  />
-                }
-                label={ token.label }
-                value={ formatValue(token) }
-                isEnabled={ token.isEnabled }
-                emphasis={ token.emphasis }
-                onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
-                onChangeEmphasis={ (next) => onChange?.(token.id, { emphasis: next }) }
-              />
-              { hasRationale && (
+            <TokenListItem
+              preview={
+                <Box
+                  sx={ {
+                    width: 48,
+                    height: 48,
+                    borderRadius: 1.5,
+                    background: token.gradient,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  } }
+                />
+              }
+              label={ token.label }
+              value={ formatValue(token) }
+              isEnabled={ token.isEnabled }
+              onToggleEnabled={ (next) => onChange?.(token.id, { isEnabled: next }) }
+              trailing={ hasRationale ? (
                 <IconButton
                   size="small"
                   aria-label={ isExpanded ? '결정 근거 닫기' : '결정 근거 보기' }
                   onClick={ () => setExpandedId(isExpanded ? null : token.id) }
                   sx={ {
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
                     transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
                     transition: 'transform 150ms',
                   } }
                 >
                   <ExpandMoreIcon fontSize="small" />
                 </IconButton>
-              ) }
-            </Box>
+              ) : null }
+            />
             <Collapse in={ isExpanded }>
               <TokenDecisionTracePanel
                 decisionRationale={ token.decisionRationale }

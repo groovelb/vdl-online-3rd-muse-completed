@@ -18,7 +18,6 @@ import {
   TASK_RECOMMEND,
   TASK_ANALYZE_TOKENS,
   TASK_ANALYZE_CONCEPT,
-  TASK_ANALYZE_HANDOFF,
 } from '../data/muse';
 
 /**
@@ -215,7 +214,7 @@ export async function runAutoTag({ imageUrl, model, maxAttempts = 3 }) {
  * T2 · 의도 문장 + 모드 + 아카이브 메타 → top-N 추천 + 레이어 자동 추천
  * @param {object} params
  * @param {string} params.intent
- * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 모드 (정렬 분기)
+ * @param {'concept'|'system'} [params.mode='system'] - TP2 모드 (정렬 분기)
  * @param {Array} params.archive
  * @param {number} [params.n=6]
  * @param {string} [params.model]
@@ -256,7 +255,7 @@ export async function runRecommend({ intent, mode = 'system', archive, n = 6, mo
  * T3 · 사전 추출 N장 + 의도 + 모드 + 레이어 큐레이션 + 활용 노트 → tokens + visualDirection(MD)
  * @param {object} params
  * @param {string} params.intent
- * @param {'concept'|'system'|'handoff'} [params.mode='system'] - TP2 합성 톤
+ * @param {'concept'|'system'} [params.mode='system'] - TP2 합성 톤
  * @param {Array<{id, thumbnailUrl, tags?, dominantColors?, extracted?, useLayers?}>} params.selectedRefs
  * @param {string} [params.userNotes=''] - Step 3 활용 노트 (레퍼런스 본 후 명시 지시, HIGHEST PRIORITY)
  * @param {string} [params.model]
@@ -292,7 +291,6 @@ ${JSON.stringify(extractedPool, null, 2)}
 === Project Mode (TP2) ===
 mode: ${mode}
 ${mode === 'concept' ? 'BIAS toward distinctive choices. Bold primary. Lower role enforcement.'
-  : mode === 'handoff' ? 'OPTIMIZE naming for MUI/DTCG. Every token decisionRationale required.'
   : 'ENFORCE role uniqueness, AAA contrast for primary on bg, hierarchy strict.'}
 
 === Layer Curation (TP4) ===
@@ -682,309 +680,6 @@ ${JSON.stringify(extractedPool, null, 2)}
   return { conceptPrompt: result.prompt };
 }
 
-/**
- * T3 (handoff) — 토큰 + 5 layer 한글 상세 + VD MD
- *  - 프레임워크 config (Tailwind/MUI/DTCG/CSS-vars/.cursorrules) 는 클라이언트에서 토큰으로부터 결정론적 생성
- *  - 검증: 4 token layer 비어있지 않음 + layerDetails 5 키 모두 200자+
- *  - 검증 실패 시 1회 retry
- *
- * @returns {Promise<{ tokens, visualDirection, layerDetails }>}
- */
-export async function runAnalyzeHandoff({ intent, selectedRefs, model, onProgress }) {
-  if (!selectedRefs?.length) throw new Error('최소 1장 이상 필요');
-
-  const extractedPool = selectedRefs.map((ref, i) => ({
-    id: ref.id,
-    attachIdx: i + 1,
-    attachFile: inferRefAttachFile(ref, i),
-    title: ref.title || null,
-    tags: ref.tags || {},
-    dominantColors: ref.dominantColors || [],
-    extracted: ref.extracted || {},
-    useLayers: Array.isArray(ref.useLayers) ? ref.useLayers : [],
-  }));
-
-  const refNotesBlock = buildReferenceNotesBlock(selectedRefs);
-
-  const content = [
-    {
-      type: 'text',
-      text: `=== Pre-extracted references (${selectedRefs.length}) ===
-
-${JSON.stringify(extractedPool, null, 2)}
-
-=== End of references ===
-
-=== Layer Curation (TP4) ===
-${extractedPool.some((r) => r.useLayers.length > 0)
-  ? extractedPool.filter((r) => r.useLayers.length > 0).map((r) => `${r.id}: ONLY use [${r.useLayers.join(', ')}]`).join('\n')
-  : '(없음 — 모든 ref 의 모든 layer 자유 사용)'}${refNotesBlock}`,
-    },
-    {
-      type: 'text',
-      text: TASK_ANALYZE_HANDOFF.userMessageTemplate
-        .replace('{{intent}}', intent)
-        .replace('{{count}}', String(selectedRefs.length))
-        .replace('{{ids}}', selectedRefs.map((r) => r.id).join(', ')),
-    },
-  ];
-
-  const MAX_TOKENS = 8192;
-  const [coreSchema, designmdSchema] = TASK_ANALYZE_HANDOFF.toolSchemas;
-  const baseModel = model || TASK_ANALYZE_HANDOFF.model;
-
-  const PROGRESS_KEYS_HANDOFF = [
-    'color', 'typography', 'layout', 'gradient',
-    'spacing', 'rounded', 'components', 'visualDirection',
-  ];
-
-  onProgress?.(
-    PROGRESS_KEYS_HANDOFF.map((key, i) => ({
-      key,
-      status: i === 0 ? 'running' : 'pending',
-    })),
-  );
-
-  // ========== Phase 1: CORE 4축 + visualDirection + layerDetails 5키 ==========
-
-  const phase1Content = [
-    ...content,
-    {
-      type: 'text',
-      text: `=== PHASE 1 OF 2 ===
-This call emits ONLY:
-- tokens.{color, typography, layout, gradient} — kebab-case ids, decisionRationale required
-- visualDirection.{markdown 200+ chars, tags}
-- layerDetails.{color, typography, layout, gradient, visualDirection} — 한글 200-500자 각
-
-DO NOT include spacing/rounded/elevation/components in this call (phase 2).
-DO NOT include layerDetails.{spacing, rounded, components, elevation} in this call.`,
-    },
-  ];
-
-  const callPhase1 = async (extraInstruction = '') => {
-    const messagesContent = extraInstruction
-      ? [...phase1Content, { type: 'text', text: extraInstruction }]
-      : phase1Content;
-    const res = await callAnthropic({
-      model: baseModel,
-      max_tokens: MAX_TOKENS,
-      system: TASK_ANALYZE_HANDOFF.systemPrompt,
-      tools: [coreSchema],
-      tool_choice: { type: 'tool', name: coreSchema.name },
-      messages: [{ role: 'user', content: messagesContent }],
-    });
-    const input = extractToolInput(res, coreSchema.name);
-    return { res, input };
-  };
-
-  const validatePhase1 = (input) => {
-    const errors = [];
-    const t = input?.tokens || {};
-    for (const k of ['color', 'typography', 'layout', 'gradient']) {
-      if (!Array.isArray(t[k]) || t[k].length === 0) errors.push(`tokens.${k}-empty`);
-    }
-    const ld = input?.layerDetails || {};
-    for (const k of ['color', 'typography', 'layout', 'gradient', 'visualDirection']) {
-      if (!ld[k] || ld[k].length < 200) errors.push(`layerDetails.${k}-too-short`);
-    }
-    if (!input?.visualDirection?.markdown || input.visualDirection.markdown.length < 200) {
-      errors.push('visualDirection-markdown-too-short');
-    }
-    return errors;
-  };
-
-  const summarizePhase1 = (input) => ({
-    core: {
-      color: Array.isArray(input?.tokens?.color) ? input.tokens.color.length : 0,
-      typography: Array.isArray(input?.tokens?.typography) ? input.tokens.typography.length : 0,
-      layout: Array.isArray(input?.tokens?.layout) ? input.tokens.layout.length : 0,
-      gradient: Array.isArray(input?.tokens?.gradient) ? input.tokens.gradient.length : 0,
-    },
-    visualDirection: { markdownLen: input?.visualDirection?.markdown?.length || 0 },
-    layerDetailsKeys: input?.layerDetails ? Object.keys(input.layerDetails) : [],
-  });
-
-  let { res: p1Res, input: phase1 } = await callPhase1();
-  if (!phase1) throw new Error(`T3(handoff) phase1 tool_use 응답 없음. text: ${extractText(p1Res) || '(empty)'}`);
-  if (p1Res?.stop_reason === 'max_tokens') {
-    throw new Error(`T3(handoff) phase1 응답이 max_tokens(${MAX_TOKENS})에서 잘렸습니다.`);
-  }
-  // eslint-disable-next-line no-console
-  console.log('[runAnalyzeHandoff] Phase 1 결과:', summarizePhase1(phase1));
-
-  let p1Errors = validatePhase1(phase1);
-  if (p1Errors.length > 0) {
-    // eslint-disable-next-line no-console
-    console.warn('[runAnalyzeHandoff] Phase 1 검증 실패 → 재시도:', p1Errors);
-    const retry = await callPhase1(
-      `[CRITICAL RETRY] Phase 1 errors: ${p1Errors.join(', ')}. Re-emit COMPLETE phase 1: tokens (4 core axes non-empty, kebab-case ids, decisionRationale), visualDirection (markdown 200+ chars), layerDetails (5 keys 200-500자 each).`
-    );
-    if (retry.input) {
-      phase1 = retry.input;
-      p1Res = retry.res;
-      p1Errors = validatePhase1(phase1);
-    }
-    // eslint-disable-next-line no-console
-    console.log('[runAnalyzeHandoff] Phase 1 재시도 결과:', summarizePhase1(phase1));
-  }
-  if (p1Errors.length > 0) {
-    // eslint-disable-next-line no-console
-    console.error('[runAnalyzeHandoff] Phase 1 재시도 후에도 검증 실패:', p1Errors);
-  }
-
-  onProgress?.(
-    PROGRESS_KEYS_HANDOFF.map((key) => {
-      if (['color', 'typography', 'layout', 'gradient', 'visualDirection'].includes(key)) {
-        return { key, status: 'done' };
-      }
-      return { key, status: key === 'spacing' ? 'running' : 'pending' };
-    }),
-  );
-
-  // ========== Phase 2: spacing / rounded / elevation / components + layerDetails 3키 ==========
-
-  const phase1Color = phase1?.tokens?.color || [];
-  const phase1Typo = phase1?.tokens?.typography || [];
-  const phase1Layout = phase1?.tokens?.layout || [];
-  const phase1Gradient = phase1?.tokens?.gradient || [];
-
-  const phase2Content = [
-    ...content,
-    {
-      type: 'text',
-      text: `=== PHASE 2 OF 2 ===
-Phase 1 emitted these tokens — use these EXACT ids in component {path} references.
-
-colors:
-${phase1Color.map((c) => `  - ${c.id}  (${c.hex})`).join('\n') || '  (none)'}
-
-typography:
-${phase1Typo.map((t) => `  - ${t.id}  (variant=${t.variant || '?'})`).join('\n') || '  (none)'}
-
-THIS CALL emits ONLY:
-  - spacing (3-6 entries object map)
-  - rounded (2-5 entries object map)
-  - elevation (0-3 array, may be empty)
-  - components (3-8 entries) — kebab-case names, decisionRationale per component, all values "{a.b}" token-ref
-  - layerDetails.{spacing, rounded, components} 한글 200-500자 each, layerDetails.elevation optional
-
-Token reference syntax (STRICT):
-  "{colors.<phase1-id>}"      → exact phase 1 color id
-  "{typography.<phase1-id>}"  → exact phase 1 typography id
-  "{spacing.<this-key>}"      → key from this call's spacing object
-  "{rounded.<this-key>}"      → key from this call's rounded object
-  "{elevation.<this-id>}"     → id from this call's elevation array
-NEVER inline literal hex / dimension / px values. Include at least one button-primary CTA.`,
-    },
-  ];
-
-  const callPhase2 = async (extraInstruction = '') => {
-    const messagesContent = extraInstruction
-      ? [...phase2Content, { type: 'text', text: extraInstruction }]
-      : phase2Content;
-    const res = await callAnthropic({
-      model: baseModel,
-      max_tokens: MAX_TOKENS,
-      system: TASK_ANALYZE_HANDOFF.systemPrompt,
-      tools: [designmdSchema],
-      tool_choice: { type: 'tool', name: designmdSchema.name },
-      messages: [{ role: 'user', content: messagesContent }],
-    });
-    const input = extractToolInput(res, designmdSchema.name);
-    return { res, input };
-  };
-
-  const buildMergedForRefCheck = (phase2) => ({
-    tokens: {
-      color: phase1Color,
-      typography: phase1Typo,
-      spacing: phase2?.spacing || {},
-      rounded: phase2?.rounded || {},
-      elevation: Array.isArray(phase2?.elevation) ? phase2.elevation : [],
-      components: phase2?.components || {},
-    },
-  });
-  const summarizePhase2 = (phase2) => ({
-    spacing: phase2?.spacing && typeof phase2.spacing === 'object' ? Object.keys(phase2.spacing).length : 0,
-    rounded: phase2?.rounded && typeof phase2.rounded === 'object' ? Object.keys(phase2.rounded).length : 0,
-    elevation: Array.isArray(phase2?.elevation) ? phase2.elevation.length : 0,
-    components: phase2?.components && typeof phase2.components === 'object' ? Object.keys(phase2.components).length : 0,
-    layerDetailsKeys: phase2?.layerDetails ? Object.keys(phase2.layerDetails) : [],
-  });
-
-  let { res: p2Res, input: phase2 } = await callPhase2();
-  if (p2Res?.stop_reason === 'max_tokens') {
-    // eslint-disable-next-line no-console
-    console.error('[runAnalyzeHandoff] Phase 2 응답이 max_tokens 에서 잘림 — phase 2 결과 무시');
-    phase2 = null;
-  }
-  // eslint-disable-next-line no-console
-  console.log('[runAnalyzeHandoff] Phase 2 결과:', phase2 ? summarizePhase2(phase2) : '(없음)');
-
-  let refCheck = phase2 ? validateTokenRefs(buildMergedForRefCheck(phase2)) : { ok: true, literalProps: [], danglingRefs: [], errors: [] };
-  const hasComponents = phase2?.components && typeof phase2.components === 'object'
-    && !Array.isArray(phase2.components) && Object.keys(phase2.components).length > 0;
-  const needsRefRetry = hasComponents && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
-
-  if (needsRefRetry) {
-    // eslint-disable-next-line no-console
-    console.warn('[runAnalyzeHandoff] Phase 2 ref 위반 → 재시도:', { literals: refCheck.literalProps.slice(0, 3), danglings: refCheck.danglingRefs.slice(0, 3) });
-    const parts = ['[CRITICAL RETRY] Phase 2 components contained invalid references.'];
-    if (refCheck.literalProps.length > 0) {
-      parts.push(`Literal values: ${refCheck.literalProps.slice(0, 5).join(' | ')}.`);
-    }
-    if (refCheck.danglingRefs.length > 0) {
-      parts.push(`Dangling references: ${refCheck.danglingRefs.slice(0, 5).join(' | ')}.`);
-    }
-    parts.push('Use ONLY ids from phase 1 (colors, typography) or keys from this call (spacing, rounded, elevation).');
-    const retry = await callPhase2(parts.join(' '));
-    if (retry.input) {
-      phase2 = retry.input;
-      p2Res = retry.res;
-      refCheck = validateTokenRefs(buildMergedForRefCheck(phase2));
-    }
-    // eslint-disable-next-line no-console
-    console.log('[runAnalyzeHandoff] Phase 2 재시도 결과:', summarizePhase2(phase2));
-  }
-
-  // handoff strict — 재시도 후에도 ref 위반이면 에러 표면화 (components 누락은 통과)
-  const stillHasInvalidComponents = phase2?.components && Object.keys(phase2.components).length > 0
-    && (refCheck.literalProps.length > 0 || refCheck.danglingRefs.length > 0);
-  if (stillHasInvalidComponents) {
-    // eslint-disable-next-line no-console
-    console.error('[runAnalyzeHandoff] components ref 위반 지속 (strict):', refCheck);
-    throw new Error(
-      `T3(handoff) phase 2 components token-reference 검증 실패. ` +
-      `Dangling: ${refCheck.danglingRefs.slice(0, 3).join(' | ')}. ` +
-      `Literals: ${refCheck.literalProps.slice(0, 3).join(' | ')}.`
-    );
-  }
-
-  onProgress?.(
-    PROGRESS_KEYS_HANDOFF.map((key) => ({ key, status: 'done' })),
-  );
-
-  // ========== Merge ==========
-
-  const mergedTokens = {
-    color: phase1Color,
-    typography: phase1Typo,
-    layout: phase1Layout,
-    gradient: phase1Gradient,
-    spacing: phase2?.spacing || {},
-    rounded: phase2?.rounded || {},
-    elevation: Array.isArray(phase2?.elevation) ? phase2.elevation : [],
-    components: phase2?.components || {},
-  };
-  const mergedLayerDetails = { ...(phase1?.layerDetails || {}), ...(phase2?.layerDetails || {}) };
-
-  return {
-    tokens: mergedTokens,
-    visualDirection: phase1?.visualDirection || null,
-    layerDetails: mergedLayerDetails,
-  };
-}
 
 /**
  * 단일 reference 의 활용 노트 자동 생성.
@@ -995,7 +690,7 @@ NEVER inline literal hex / dimension / px values. Include at least one button-pr
  *
  * @param {object} params
  * @param {string} params.intent - 프로젝트 한 줄 의도
- * @param {'concept'|'system'|'handoff'} [params.mode='system']
+ * @param {'concept'|'system'} [params.mode='system']
  * @param {object} params.ref - { id, title?, tags?, dominantColors?, extracted?, useLayers? }
  * @param {string[]} [params.useLayers] - 사용자가 큐레이션한 차용 layer (있으면 우선 반영)
  * @param {string} [params.model]
@@ -1023,7 +718,7 @@ export async function runSuggestRefNote({ intent, mode = 'system', ref, useLayer
 - 100자 이내. 마침표/따옴표 없이 핵심만.
 - "hero 영역 색감" / "우측 사이드바 구조 모방" 처럼 어느 영역의 어느 layer 인지 명시.
 - useLayers 가 지정돼 있으면 그 layer 만 다룬다.
-- mode=concept 이면 무드/감성, mode=system 이면 토큰/role, mode=handoff 이면 naming/구현 디테일에 무게.
+- mode=concept 이면 무드/감성, mode=system 이면 토큰/role 에 무게.
 - 출력은 노트 문자열만. 라벨/접두사/설명 금지.`;
 
   const userText = `=== 프로젝트 의도 ===

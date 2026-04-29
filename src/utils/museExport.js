@@ -17,11 +17,6 @@
 import JSZip from 'jszip';
 import {
   buildDtcgTokens,
-  buildTailwindConfig,
-  buildMuiTheme,
-  buildCssVariables,
-  buildCursorRules,
-  buildDesignSystemMd,
   buildDesignMd,
   buildDecisionTraceMd,
   buildAiPasteBlock,
@@ -211,7 +206,7 @@ ${attachmentTable}
 ## muse.json 스키마 요약
 
 - \`meta\` — 프로젝트 메타 (name/intent/mode/createdAt)
-- \`color.tokens\` — \`[{ id, label, hex, role, group, emphasis }]\`
+- \`color.tokens\` — \`[{ id, label, hex, role, group }]\`
 - \`typography.tokens\` — \`[{ id, label, variant, fontFamily, fontWeight, fontSize, lineHeight, letterSpacing }]\`
 - \`layout.tokens\` — \`[{ id, label, kind, columns|gap|px|ratio|maxWidth }]\`
 - \`gradient.tokens\` — \`[{ id, label, gradient }]\` (CSS string)
@@ -317,10 +312,6 @@ export async function exportProjectAsZip({ project, analysis, references }) {
   if (project?.mode === 'concept') {
     return exportConceptPrompt({ project, analysis });
   }
-  // handoff 모드: 5 layer 상세 + 프레임워크 config 포함 번들
-  if (project?.mode === 'handoff') {
-    return exportHandoffBundle({ project, analysis, references });
-  }
 
   const zip = new JSZip();
   const universal = buildUniversalJson({ project, analysis, references });
@@ -369,100 +360,6 @@ export async function exportProjectAsZip({ project, analysis, references }) {
   const slug = slugify(project.name);
   const date = new Date().toISOString().slice(0, 10);
   const filename = `muse-${slug}-${date}.zip`;
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  return { filename, size: blob.size };
-}
-
-/**
- * handoff 모드 전용 번들. tokens 으로부터 framework config 를 결정론적으로 생성.
- *
- * ZIP 구조:
- *   muse-handoff-{slug}.zip
- *   ├── tokens.dtcg.json                   # 진실의 원천
- *   ├── DESIGN_SYSTEM.md                   # 5 layer 한글 상세 + 전환 가이드
- *   ├── .cursorrules                        # AI 코딩 도구 컨텍스트
- *   ├── README.md                           # 사용 가이드
- *   ├── frameworks/
- *   │   ├── tailwind.config.js
- *   │   ├── mui-theme.js
- *   │   └── tokens.css
- *   └── references/
- *       └── {ref-id}.{ext}
- */
-export async function exportHandoffBundle({ project, analysis, references }) {
-  const zip = new JSZip();
-  const tokens = {
-    color: analysis?.color || [],
-    typography: analysis?.typography || [],
-    layout: analysis?.layout || [],
-    gradient: analysis?.gradient || [],
-    spacing: analysis?.spacing || {},
-    rounded: analysis?.rounded || {},
-    elevation: Array.isArray(analysis?.elevation) ? analysis.elevation : [],
-    components: analysis?.components || {},
-  };
-  const visualDirection = analysis?.visualDirection || { markdown: '', tags: {} };
-  const layerDetails = analysis?.layerDetails || null;
-
-  // 1) DTCG (source of truth, 8 axes 포함)
-  zip.file('tokens.dtcg.json', JSON.stringify(buildDtcgTokens(tokens), null, 2));
-
-  // 1.5) DESIGN.md (Google Labs alpha spec — front-matter + 8 prose section)
-  zip.file('DESIGN.md', buildDesignMd({ project, layers: analysis }));
-
-  // 1.6) decision-trace.md (TP6 결정 추적 export)
-  zip.file('decision-trace.md', buildDecisionTraceMd({ project, layers: analysis }));
-
-  // 2) Frameworks
-  const fw = zip.folder('frameworks');
-  fw.file('tailwind.config.js', buildTailwindConfig(tokens));
-  fw.file('mui-theme.js', buildMuiTheme(tokens));
-  fw.file('tokens.css', buildCssVariables(tokens));
-
-  // 3) DESIGN_SYSTEM.md (8 layer 상세 + 전환 가이드 + 정확한 ref 파일명 매칭표)
-  zip.file('DESIGN_SYSTEM.md', buildDesignSystemMd({ project, tokens, visualDirection, layerDetails, references }));
-
-  // 4) .cursorrules — references 포함하여 매칭 표 박힘
-  zip.file('.cursorrules', buildCursorRules({ project, tokens, layerDetails, references }));
-
-  // 5) README — 짧은 사용 가이드 + 매칭 표
-  zip.file('README.md', buildHandoffReadme(project, references));
-
-  // 5.5) ai-paste-block.md — 외부 AI 도구 paste 용 (플랫폼 중립)
-  zip.file('ai-paste-block.md', buildAiPasteBlock({ project, analysis, references }));
-
-  // 6) references/ — 사용 이미지 바이너리 (첨부 순번 prefix, paste block 매칭 단서와 일치)
-  const projectRefs = (project.referenceIds || [])
-    .map((id) => (references || []).find((r) => r.id === id))
-    .filter(Boolean);
-  const refsFolder = zip.folder('references');
-  await Promise.all(projectRefs.map(async (ref, i) => {
-    const prefix = String(i + 1).padStart(2, '0');
-    const filename = `${prefix}-${ref.id}${inferImageExt(ref.thumbnailUrl)}`;
-    try {
-      const res = await fetch(ref.thumbnailUrl);
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const blob = await res.blob();
-      refsFolder.file(filename, blob);
-    } catch (e) {
-      refsFolder.file(`${prefix}-${ref.id}.error.txt`, `Failed to include image: ${e?.message || String(e)}`);
-    }
-  }));
-
-  // 7) Generate & download
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const slug = slugify(project.name);
-  const date = new Date().toISOString().slice(0, 10);
-  const filename = `muse-handoff-${slug}-${date}.zip`;
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -544,56 +441,6 @@ export async function exportSystemBundle({ project, analysis, references }) {
   URL.revokeObjectURL(url);
 
   return { filename, size: blob.size };
-}
-
-function buildHandoffReadme(project, references) {
-  const attachmentTable = buildAttachmentTable(project, references);
-  return `# ${project?.name || 'Handoff Bundle'}
-
-_Generated by MUSE on ${new Date().toISOString().slice(0, 10)} (mode: handoff)_
-
-## Reference Images (외부 AI 에 첨부할 정확한 파일명)
-
-${attachmentTable}
-
-## 파일 구성
-
-| 파일 | 용도 |
-|------|------|
-| \`tokens.dtcg.json\` | DTCG 표준 토큰 (진실의 원천) |
-| \`DESIGN_SYSTEM.md\` | 5 layer 한글 상세 + 프레임워크 전환 가이드 |
-| \`ai-paste-block.md\` | 외부 AI paste 용 (플랫폼 중립) |
-| \`.cursorrules\` | Cursor / Claude Code 컨텍스트 |
-| \`frameworks/tailwind.config.js\` | Tailwind 변환 |
-| \`frameworks/mui-theme.js\` | MUI v7 theme |
-| \`frameworks/tokens.css\` | 순수 CSS variables |
-| 각 reference 이미지 | 위 매칭 표 참조 |
-
-## 빠른 시작
-
-### Tailwind
-\`\`\`bash
-cp frameworks/tailwind.config.js ./tailwind.config.js
-\`\`\`
-
-### MUI v7
-\`\`\`js
-import theme from './frameworks/mui-theme.js';
-<ThemeProvider theme={theme}>{children}</ThemeProvider>
-\`\`\`
-
-### Pure CSS
-\`\`\`css
-@import './frameworks/tokens.css';
-.btn { background: var(--color-primary); }
-\`\`\`
-
-### AI 코딩 도구
-프로젝트 루트에 \`.cursorrules\` 복사 → Cursor / Claude Code 가 자동 인지.
-
-## 전체 가이드
-\`DESIGN_SYSTEM.md\` 참조.
-`;
 }
 
 /**

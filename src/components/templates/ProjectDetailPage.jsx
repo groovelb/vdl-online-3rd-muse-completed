@@ -21,18 +21,12 @@ import { TypographyPreview } from '../data-display/TypographyPreview.jsx';
 import { LayoutTokenPreview } from '../data-display/LayoutTokenPreview.jsx';
 import { GradientPreview } from '../data-display/GradientPreview.jsx';
 import { DesignMdPreview } from '../data-display/DesignMdPreview.jsx';
-import { LayerGuide } from '../data-display/LayerGuide.jsx';
 import { ThemeExportDialog } from '../overlay-feedback/ThemeExportDialog.jsx';
-import { ReferenceNotesDialog } from '../overlay-feedback/ReferenceNotesDialog.jsx';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import { RefImage } from '../media/RefImage.jsx';
-import EditNoteIcon from '@mui/icons-material/EditNote';
-import {
-  buildDtcgTokens,
-  buildTailwindConfig,
-  buildMuiTheme,
-  buildCssVariables,
-  buildCursorRules,
-} from '../../utils/handoffConverters';
 
 const LAYERS = [
   { id: 'color', label: '컬러' },
@@ -41,14 +35,6 @@ const LAYERS = [
   { id: 'gradient', label: '그라디언트' },
   { id: 'visualDirection', label: '비주얼 디렉션' },
   { id: 'designMd', label: 'DESIGN.md' },
-];
-
-const HANDOFF_FRAMEWORKS = [
-  { id: 'dtcg', label: 'DTCG JSON' },
-  { id: 'tailwind', label: 'Tailwind' },
-  { id: 'mui', label: 'MUI v7' },
-  { id: 'css', label: 'CSS vars' },
-  { id: 'cursorrules', label: '.cursorrules' },
 ];
 
 /**
@@ -79,7 +65,6 @@ export function ProjectDetailPage({
   onUpdateToken,
   onBack,
   onDelete,
-  onUpdateReferenceNotes,
   sx,
 }) {
   const [activeLayer, setActiveLayer] = useState('color');
@@ -87,54 +72,11 @@ export function ProjectDetailPage({
   const [isDeleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copyState, setCopyState] = useState('idle'); // 'idle' | 'copied'
-  const [isNotesOpen, setNotesOpen] = useState(false);
 
   const referenceNotes = project?.referenceNotes || {};
-  const useLayersByRef = Object.fromEntries(
-    (project?.selectedRefs || []).map((sr) => [sr.id, sr.useLayers || []]),
-  );
 
   const isConceptMode = project?.mode === 'concept';
-  const isHandoffMode = project?.mode === 'handoff';
   const conceptPrompt = analysis?.conceptPrompt || '';
-  const layerDetails = analysis?.layerDetails || null;
-  const [activeFramework, setActiveFramework] = useState('dtcg');
-
-  const handoffTokens = isHandoffMode ? {
-    color: analysis?.color || [],
-    typography: analysis?.typography || [],
-    layout: analysis?.layout || [],
-    gradient: analysis?.gradient || [],
-  } : null;
-
-  const renderHandoffFrameworkPreview = () => {
-    if (!handoffTokens) return null;
-    switch (activeFramework) {
-      case 'dtcg':
-        return JSON.stringify(buildDtcgTokens(handoffTokens), null, 2);
-      case 'tailwind':
-        return buildTailwindConfig(handoffTokens);
-      case 'mui':
-        return buildMuiTheme(handoffTokens);
-      case 'css':
-        return buildCssVariables(handoffTokens);
-      case 'cursorrules':
-        return buildCursorRules({ project, tokens: handoffTokens, layerDetails });
-      default:
-        return '';
-    }
-  };
-
-  const handleCopyFramework = async () => {
-    try {
-      await navigator.clipboard.writeText(renderHandoffFrameworkPreview());
-      setCopyState('copied');
-      setTimeout(() => setCopyState('idle'), 1500);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('[copy] 클립보드 실패', e);
-    }
-  };
 
   const handleCopyConceptPrompt = async () => {
     if (!conceptPrompt) return;
@@ -183,40 +125,39 @@ export function ProjectDetailPage({
     onUpdateToken?.(layerKey, id, patch);
   };
 
-  const wrapWithGuide = (layerKey, editor) => {
-    const tokens = analysis[layerKey] || [];
-    const layerDetail = analysis?.layerDetails?.[layerKey];
-    return (
-      <Box sx={ { display: 'flex', flexDirection: 'column', gap: 4 } }>
-        { editor }
-        <Box sx={ { pt: 3, borderTop: '1px solid', borderColor: 'divider' } }>
-          <LayerGuide
-            layerKey={ layerKey }
-            tokens={ tokens }
-            layerDetail={ layerDetail }
-          />
-        </Box>
-      </Box>
-    );
-  };
-
   const renderEditor = () => {
     switch (activeLayer) {
       case 'color':
-        return wrapWithGuide('color',
-          <ColorSwatchList tokens={ analysis.color || [] } onChange={ handleChange('color') } references={ references } />
+        return (
+          <ColorSwatchList
+            tokens={ analysis.color || [] }
+            onChange={ handleChange('color') }
+            references={ references }
+          />
         );
       case 'typography':
-        return wrapWithGuide('typography',
-          <TypographyPreview tokens={ analysis.typography || [] } onChange={ handleChange('typography') } references={ references } />
+        return (
+          <TypographyPreview
+            tokens={ analysis.typography || [] }
+            onChange={ handleChange('typography') }
+            references={ references }
+          />
         );
       case 'layout':
-        return wrapWithGuide('layout',
-          <LayoutTokenPreview tokens={ analysis.layout || [] } onChange={ handleChange('layout') } references={ references } />
+        return (
+          <LayoutTokenPreview
+            tokens={ analysis.layout || [] }
+            onChange={ handleChange('layout') }
+            references={ references }
+          />
         );
       case 'gradient':
-        return wrapWithGuide('gradient',
-          <GradientPreview tokens={ analysis.gradient || [] } onChange={ handleChange('gradient') } references={ references } />
+        return (
+          <GradientPreview
+            tokens={ analysis.gradient || [] }
+            onChange={ handleChange('gradient') }
+            references={ references }
+          />
         );
       case 'designMd':
         return (
@@ -276,68 +217,88 @@ export function ProjectDetailPage({
     }
   };
 
-  const renderPreview = () => {
-    // 우측 프리뷰 — 활성 토큰 요약 카드
-    const activeColors = (analysis.color || []).filter((t) => t.isEnabled);
-    const activeTypo = (analysis.typography || []).filter((t) => t.isEnabled).slice(0, 2);
-
+  const renderNotesPanel = () => {
+    if (Object.keys(referenceNotes).length === 0) {
+      return (
+        <Box sx={ { py: 4 } }>
+          <Typography variant="caption" color="text.disabled" sx={ { fontStyle: 'italic' } }>
+            (활용 노트 없음)
+          </Typography>
+        </Box>
+      );
+    }
+    const notedRefs = usedReferences.filter((ref) => referenceNotes[ref.id]);
     return (
-      <Box sx={ { p: 4, bgcolor: 'background.paper', minHeight: '100%' } }>
-        <Typography variant="caption" color="text.secondary" sx={ { textTransform: 'uppercase', letterSpacing: '0.08em' } }>
-          Preview
+      <Box>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={ { textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', mb: 1 } }
+        >
+          활용 노트 ({ notedRefs.length })
         </Typography>
-
-        {/* Typography preview */}
-        { activeTypo.length > 0 && (
-          <Box sx={ { mt: 2, mb: 4 } }>
-            { activeTypo.map((t) => (
-              <Typography
-                key={ t.id }
-                sx={ {
-                  fontFamily: t.fontFamily,
-                  fontWeight: t.fontWeight,
-                  fontSize: t.fontSize,
-                  lineHeight: t.lineHeight,
-                  letterSpacing: t.letterSpacing,
-                  mb: 1,
-                } }
-              >
-                { t.sampleText || project?.name || 'MUSE' }
-              </Typography>
-            )) }
-          </Box>
-        ) }
-
-        {/* Color chips */}
-        { activeColors.length > 0 && (
-          <Box sx={ { mt: 3 } }>
-            <Typography variant="caption" color="text.secondary" sx={ { display: 'block', mb: 1 } }>
-              Active Colors
-            </Typography>
-            <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 1 } }>
-              { activeColors.map((c) => (
-                <Box
-                  key={ c.id }
+        <Table size="small" sx={ { '& td': { borderColor: 'divider' } } }>
+          <TableBody>
+            { notedRefs.map((ref, i, arr) => (
+              <TableRow key={ ref.id }>
+                <TableCell
                   sx={ {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 999,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    width: 96,
+                    verticalAlign: 'top',
+                    py: 1.5,
+                    pl: 0,
+                    pr: 2,
+                    borderBottom: i < arr.length - 1 ? '1px solid' : 0,
                   } }
                 >
-                  <Box sx={ { width: 14, height: 14, borderRadius: '50%', bgcolor: c.hex } } />
-                  <Typography variant="caption" sx={ { fontFamily: 'monospace' } }>
-                    { c.hex }
+                  <Box
+                    sx={ {
+                      width: 80,
+                      height: 80,
+                      borderRadius: 1.5,
+                      overflow: 'hidden',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      bgcolor: 'background.paper',
+                    } }
+                  >
+                    <RefImage
+                      src={ ref.thumbnailUrl || ref.src }
+                      storagePath={ ref.storagePath }
+                      alt={ ref.title || '' }
+                    />
+                  </Box>
+                </TableCell>
+                <TableCell
+                  sx={ {
+                    py: 1.5,
+                    pl: 0,
+                    pr: 0,
+                    borderBottom: i < arr.length - 1 ? '1px solid' : 0,
+                  } }
+                >
+                  { ref.title && (
+                    <Typography
+                      variant="caption"
+                      sx={ {
+                        display: 'block',
+                        color: 'text.secondary',
+                        fontSize: '0.72rem',
+                        mb: 0.5,
+                        letterSpacing: '0.02em',
+                      } }
+                    >
+                      { ref.title }
+                    </Typography>
+                  ) }
+                  <Typography variant="body2" sx={ { lineHeight: 1.6 } }>
+                    { referenceNotes[ref.id] }
                   </Typography>
-                </Box>
-              )) }
-            </Box>
-          </Box>
-        ) }
+                </TableCell>
+              </TableRow>
+            )) }
+          </TableBody>
+        </Table>
       </Box>
     );
   };
@@ -380,228 +341,7 @@ export function ProjectDetailPage({
         ) }
       </Box>
 
-        {/* 사용된 레퍼런스 — 합성 소스 이미지 + 활용 노트 편집 진입점 */}
-        { usedReferences.length > 0 && (
-          <Box sx={ { mb: 3 } }>
-            <Box sx={ { display: 'flex', alignItems: 'center', gap: 1, mb: 1 } }>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={ { textTransform: 'uppercase', letterSpacing: '0.08em' } }
-              >
-                사용된 레퍼런스 ({ usedReferences.length })
-              </Typography>
-              { onUpdateReferenceNotes && (
-                <Button
-                  size="small"
-                  variant="text"
-                  startIcon={ <EditNoteIcon /> }
-                  onClick={ () => setNotesOpen(true) }
-                  sx={ { fontSize: '0.7rem', minWidth: 0, py: 0, color: 'text.secondary' } }
-                >
-                  활용 노트 편집
-                  { Object.keys(referenceNotes).length > 0 && (
-                    <Box component="span" sx={ { ml: 0.5, color: 'primary.main', fontWeight: 600 } }>
-                      ({ Object.keys(referenceNotes).length })
-                    </Box>
-                  ) }
-                </Button>
-              ) }
-            </Box>
-            <Box
-              sx={ {
-                display: 'flex',
-                gap: 1,
-                overflowX: 'auto',
-                pb: 1,
-              } }
-            >
-              { usedReferences.map((ref) => {
-                const hasNote = !!referenceNotes[ref.id];
-                return (
-                  <Box
-                    key={ ref.id }
-                    title={ hasNote ? `${ref.title || ref.id} — ${referenceNotes[ref.id]}` : (ref.title || ref.id) }
-                    sx={ {
-                      position: 'relative',
-                      flexShrink: 0,
-                      width: 88,
-                      height: 88,
-                      borderRadius: 1.5,
-                      overflow: 'hidden',
-                      border: '1px solid',
-                      borderColor: hasNote ? 'primary.main' : 'divider',
-                      bgcolor: 'background.paper',
-                    } }
-                  >
-                    <RefImage
-                      src={ ref.thumbnailUrl || ref.src }
-                      storagePath={ ref.storagePath }
-                      alt={ ref.title || ref.id }
-                    />
-                    { hasNote && (
-                      <Box
-                        sx={ {
-                          position: 'absolute',
-                          top: 4,
-                          right: 4,
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          bgcolor: 'primary.main',
-                          boxShadow: '0 0 0 2px white',
-                        } }
-                      />
-                    ) }
-                  </Box>
-                );
-              }) }
-            </Box>
-
-            {/* 활용 노트 list — 노트 입력된 ref 만 인라인 표시 */}
-            { Object.keys(referenceNotes).length > 0 && (
-              <Box sx={ { mt: 2, display: 'flex', flexDirection: 'column', gap: 1 } }>
-                { usedReferences
-                  .filter((ref) => referenceNotes[ref.id])
-                  .map((ref, i) => {
-                    const attachIdx = (project?.referenceIds || []).indexOf(ref.id) + 1;
-                    return (
-                      <Box
-                        key={ ref.id }
-                        sx={ {
-                          display: 'flex',
-                          gap: 1.5,
-                          alignItems: 'flex-start',
-                          p: 1,
-                          pl: 1.25,
-                          borderLeft: '3px solid',
-                          borderColor: 'primary.main',
-                          bgcolor: 'background.paper',
-                          borderRadius: 1,
-                        } }
-                      >
-                        <Box
-                          sx={ {
-                            width: 32,
-                            height: 32,
-                            flexShrink: 0,
-                            borderRadius: 0.75,
-                            overflow: 'hidden',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                          } }
-                        >
-                          <Box
-                            component="img"
-                            src={ ref.thumbnailUrl || ref.src }
-                            alt={ ref.id }
-                            sx={ { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }
-                          />
-                        </Box>
-                        <Box sx={ { flex: 1, minWidth: 0 } }>
-                          <Box sx={ { display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.25 } }>
-                            <Typography variant="caption" sx={ { fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.7rem' } }>
-                              첨부 { attachIdx > 0 ? attachIdx : i + 1 }번
-                            </Typography>
-                            <Typography variant="caption" sx={ { fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.7rem' } }>
-                              { ref.id }
-                            </Typography>
-                            { ref.title && (
-                              <Typography variant="caption" sx={ { color: 'text.secondary', fontSize: '0.7rem' } }>
-                                · { ref.title }
-                              </Typography>
-                            ) }
-                          </Box>
-                          <Typography variant="body2" sx={ { lineHeight: 1.5 } }>
-                            { referenceNotes[ref.id] }
-                          </Typography>
-                        </Box>
-                      </Box>
-                    );
-                  }) }
-              </Box>
-            ) }
-          </Box>
-        ) }
-
-        { isHandoffMode ? (
-          /* Handoff 모드: 5 layer 한글 상세 + 프레임워크 config 미리보기 */
-          <Box sx={ { mt: 2 } }>
-            {/* Layer tabs (system 모드와 동일 토큰 편집 + 한글 상세) */}
-            <CategoryTab
-              categories={ LAYERS }
-              selected={ activeLayer }
-              onChange={ setActiveLayer }
-            />
-            <SplitScreen
-              ratio="60:40"
-              gap={ 3 }
-              stackAt="md"
-              left={
-                <Box sx={ { py: 2 } }>
-                  { renderEditor() }
-                  { (() => {
-                    const raw = layerDetails?.[activeLayer];
-                    const text = typeof raw === 'string' ? raw : (raw == null ? '' : JSON.stringify(raw, null, 2));
-                    return text ? true : false;
-                  })() && (
-                    <Box sx={ { mt: 3, p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' } }>
-                      <Typography variant="overline" color="text.secondary" sx={ { display: 'block', mb: 1 } }>
-                        Handoff 상세 — { LAYERS.find((l) => l.id === activeLayer)?.label }
-                      </Typography>
-                      <Box sx={ { whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.7 } }>
-                        { typeof layerDetails[activeLayer] === 'string' ? layerDetails[activeLayer] : JSON.stringify(layerDetails[activeLayer], null, 2) }
-                      </Box>
-                    </Box>
-                  ) }
-                </Box>
-              }
-              right={
-                <Box sx={ { p: 3, bgcolor: 'background.paper', minHeight: '100%' } }>
-                  <Box sx={ { display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 } }>
-                    <Typography variant="caption" color="text.secondary" sx={ { textTransform: 'uppercase', letterSpacing: '0.08em' } }>
-                      프레임워크 전환 가이드
-                    </Typography>
-                    <Button size="small" variant="outlined" startIcon={ <ContentCopyIcon /> } onClick={ handleCopyFramework }>
-                      { copyState === 'copied' ? '복사됨 ✓' : '복사' }
-                    </Button>
-                  </Box>
-                  <Box sx={ { display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 } }>
-                    { HANDOFF_FRAMEWORKS.map((f) => (
-                      <Button
-                        key={ f.id }
-                        size="small"
-                        variant={ activeFramework === f.id ? 'contained' : 'outlined' }
-                        onClick={ () => setActiveFramework(f.id) }
-                        sx={ { fontSize: '0.7rem', minWidth: 0, px: 1 } }
-                      >
-                        { f.label }
-                      </Button>
-                    )) }
-                  </Box>
-                  <Box
-                    component="pre"
-                    sx={ {
-                      m: 0,
-                      p: 2,
-                      bgcolor: 'grey.100',
-                      borderRadius: 1.5,
-                      fontSize: 11,
-                      lineHeight: 1.6,
-                      fontFamily: 'monospace',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      maxHeight: 600,
-                      overflow: 'auto',
-                    } }
-                  >
-                    { renderHandoffFrameworkPreview() }
-                  </Box>
-                </Box>
-              }
-            />
-          </Box>
-        ) : isConceptMode ? (
+        { isConceptMode ? (
           /* Concept 모드: 단일 prompt 뷰 (탭/스플릿 없음) */
           <Box sx={ { mt: 2 } }>
             <Box sx={ { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 1 } }>
@@ -654,43 +394,55 @@ export function ProjectDetailPage({
             </Typography>
           </Box>
         ) : (
-          <>
-            {/* Layer tabs */}
-            <CategoryTab
-              categories={ LAYERS }
-              selected={ activeLayer }
-              onChange={ setActiveLayer }
-            />
-
-            {/* Split: editor / preview */}
-            <SplitScreen
-              ratio="60:40"
-              gap={ 3 }
-              stackAt="md"
-              left={
-                <Box sx={ { py: 2 } }>
-                  { renderEditor() }
+          <SplitScreen
+            ratio="25:75"
+            gap={ 4 }
+            stackAt="md"
+            left={
+              <Box
+                sx={ {
+                  position: { md: 'sticky' },
+                  top: { md: 24 },
+                  alignSelf: 'flex-start',
+                  maxHeight: { md: 'calc(100vh - 48px)' },
+                  overflowY: { md: 'auto' },
+                  pr: { md: 1 },
+                } }
+              >
+                { renderNotesPanel() }
+              </Box>
+            }
+            right={
+              <Box sx={ { display: 'flex', flexDirection: 'column', gap: 6 } }>
+                {/* 분석 결과 */}
+                <Box>
+                  <CategoryTab
+                    categories={ LAYERS }
+                    selected={ activeLayer }
+                    onChange={ setActiveLayer }
+                  />
+                  <Box sx={ { py: 2 } }>
+                    { renderEditor() }
+                  </Box>
                 </Box>
-              }
-              right={ renderPreview() }
-            />
-          </>
-        ) }
 
-        {/* ===== Design System Showcase — system / handoff 모드 한정, 결과 하단 ===== */}
-        { !isConceptMode && analysis && (
-          <Box
-            sx={ {
-              mt: 6,
-              p: { xs: 2, md: 4 },
-              bgcolor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 3,
-            } }
-          >
-            <DesignMdPreview project={ project } layers={ analysis } variant="showcase" />
-          </Box>
+                {/* 디자인 가이드 — showcase */}
+                { analysis && (
+                  <Box
+                    sx={ {
+                      p: { xs: 2, md: 4 },
+                      bgcolor: 'background.paper',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 3,
+                    } }
+                  >
+                    <DesignMdPreview project={ project } layers={ analysis } variant="showcase" />
+                  </Box>
+                ) }
+              </Box>
+            }
+          />
         ) }
 
       <Box sx={ { height: 64 } } />
@@ -703,16 +455,7 @@ export function ProjectDetailPage({
         references={ references }
       />
 
-      <ReferenceNotesDialog
-        open={ isNotesOpen }
-        onClose={ () => setNotesOpen(false) }
-        usedReferences={ usedReferences }
-        initialNotes={ referenceNotes }
-        useLayersByRef={ useLayersByRef }
-        onSave={ async (next) => onUpdateReferenceNotes?.(next) }
-      />
-
-      <Dialog
+<Dialog
         open={ isDeleteOpen }
         onClose={ () => !isDeleting && setDeleteOpen(false) }
         maxWidth="xs"

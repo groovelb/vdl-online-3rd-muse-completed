@@ -19,9 +19,6 @@ const TOOL_AUTO_TAG_NAME = 'submit_tagging';
 const TOOL_SUBMIT_DESIGN_SYSTEM_CORE = 'submit_design_system_core';
 const TOOL_SUBMIT_DESIGN_SYSTEM_DESIGNMD = 'submit_design_system_designmd';
 const TOOL_SUBMIT_CONCEPT_PROMPT = 'submit_concept_prompt';
-// handoff 모드: 2 phase 분리 호출
-const TOOL_SUBMIT_HANDOFF_CORE = 'submit_handoff_core';
-const TOOL_SUBMIT_HANDOFF_DESIGNMD = 'submit_handoff_designmd';
 
 const COMMON_QUALITY = [
   { id: 'schema', label: '스키마 준수', type: 'auto', description: '필수 필드 존재 + 타입 적합' },
@@ -34,7 +31,7 @@ const COMMON_QUALITY = [
 export const TASK_AUTO_TAG = {
   id: 't1',
   name: '레퍼런스 추출 (T3 레벨)',
-  purpose: 'Reference 1장에서 관찰 가능한 디자인 값(palette/typography/layout/gradient)을 전부 추출. role/emphasis 는 프로젝트 단계로 미룸',
+  purpose: 'Reference 1장에서 관찰 가능한 디자인 값(palette/typography/layout/gradient)을 전부 추출. role 은 프로젝트 단계로 미룸',
   stage: 'archive.upload',
   model: 'claude-haiku-4-5',
 
@@ -105,8 +102,7 @@ ${renderVocabularyPrompt([...TOKEN_LAYERS, 'visual_direction'])}
 
 === IMPORTANT ===
 - Do NOT assign role (primary/secondary/accent/neutral).
-- Do NOT assign emphasis (0/1/2).
-- Those are project-level decisions based on intent.
+- Role is a project-level decision based on intent.
 - Respond via the submit_tagging tool only. No prose.`,
 
   userMessageTemplate: 'Analyze this reference image and submit both classification tags AND observed design values.',
@@ -289,7 +285,7 @@ export const TASK_RECOMMEND = {
     description: '의도 + 모드 + 아카이브 메타 (이미지 없음, 레이어별 태그 포함)',
     shape: `{
   intent: string,
-  mode: 'concept'|'system'|'handoff',  // TP2: 정렬 알고리즘 분기
+  mode: 'concept'|'system',  // TP2: 정렬 알고리즘 분기
   archive: Array<{ id, tags: ReferenceLayeredTags, dominantColors[], title }>,
   n?: number
 }`,
@@ -314,7 +310,6 @@ Select the top N references (5 to 10) that best match the intent.
 === Mode-aware ranking (TP2) ===
 - mode="concept"  → prioritize DIVERSITY: pick refs spanning different visualDirection.style values
 - mode="system"   → prioritize COHERENCE: pick refs with overlapping color/typography for composability
-- mode="handoff"  → prioritize COMPLETENESS: pick refs whose tags cover all 5 layers
 
 === Base rules ===
 - Work only with provided metadata.
@@ -417,7 +412,7 @@ Select the best matches.`,
 export const TASK_ANALYZE_TOKENS = {
   id: 't3',
   name: '의도 기반 조합 분석',
-  purpose: '사전 추출된 N 장의 디자인 값을 의도에 맞게 조합·선별하고 role/emphasis 를 배정. 이미지 재분석 없음.',
+  purpose: '사전 추출된 N 장의 디자인 값을 의도에 맞게 조합·선별하고 role 을 배정. 이미지 재분석 없음.',
   stage: 'project.create.step3',
   model: 'claude-haiku-4-5',
 
@@ -426,7 +421,7 @@ export const TASK_ANALYZE_TOKENS = {
     description: '선택된 N 장의 T1 pre-extracted 데이터 + 의도 + 모드 + 레이어 큐레이션 + 활용 노트',
     shape: `{
   intent: string,
-  mode: 'concept'|'system'|'handoff',  // TP2: 합성 톤 분기
+  mode: 'concept'|'system',  // TP2: 합성 톤 분기
   references: Array<{
     id, title, tags, dominantColors[], extracted,
     useLayers?: TokenLayerKey[]  // TP4: 사용자가 이 ref에서 가져올 레이어
@@ -458,7 +453,7 @@ Every reference has been processed by T1 at upload time, producing:
   - tags (preset classification: color/typography/layout/gradient/visualDirection)
   - dominantColors (HEX array)
   - extracted: { palette[], typography[], layout[], gradient[] } — concrete observed values
-    (NO role, NO emphasis — those are YOUR job)
+    (NO role — that is YOUR job)
 
 === YOUR JOB ===
 
@@ -467,7 +462,7 @@ Given: the pre-extracted pool across N references + project intent + type.
 Produce: a UNIFIED design system that reflects the intent strongly, by:
   1. SELECTING from the pre-extracted pool (do not invent values not present in it)
   2. CLUSTERING similar entries (hex close to each other, typography tiers that align)
-  3. ASSIGNING role / emphasis / variant (h1/h2/body1/...) based on intent
+  3. ASSIGNING role / variant (h1/h2/body1/...) based on intent
   4. OVERRIDING when intent demands coherence (e.g. unifying fontSize scale across refs)
   5. WRITING the VD markdown as an intent-driven narrative
 
@@ -477,7 +472,6 @@ Trust the pre-extracted data. Your value is composition, not observation.
 === Mode-aware composition (TP2) ===
 - mode="concept"  → BIAS toward distinctive choices. Bold primary. Allow gradient, expressive type. Lower contrast/role enforcement.
 - mode="system"   → ENFORCE role uniqueness, AAA contrast for primary on bg, hierarchy h1>h2>body1 strict, conservative naming.
-- mode="handoff"  → OPTIMIZE naming for MUI/DTCG: kebab-case ids, semantic labels, every token decisionRationale required.
 
 === Layer curation (TP4) ===
 For each reference, if \`useLayers\` is set and non-empty, ONLY consume those layers from this ref's extracted.
@@ -551,9 +545,8 @@ OPTIONAL: elevation (빈 배열 허용).
 
 Shared rules:
 - Reflect project intent strongly. Two projects with same refs but different intents
-  should produce noticeably different role/emphasis/typography variant assignments.
+  should produce noticeably different role/typography variant assignments.
 - All HEX codes 6-digit valid.
-- Emphasis 2 is scarce: exactly one per layer at most.
 - sourceReferenceIds[]: only IDs present in the input references.
 - Do NOT fabricate values outside the extracted pool (exception: typography
   unification may require adjusted fontSize to form a coherent scale).
@@ -562,23 +555,23 @@ Shared rules:
 
 [color] 4-6 tokens.
 - Source: extracted.palette union across refs + dominantColors as fallback
-- Fields: id, label, hex, role (primary|secondary|accent|neutral), group (Brand|Surface|Data|Neutral), isEnabled (true), emphasis (0|1|2), sourceReferenceIds[]
+- Fields: id, label, hex, role (primary|secondary|accent|neutral), group (Brand|Surface|Data|Neutral), isEnabled (true), sourceReferenceIds[]
 - Exactly one primary. Intent decides which hue becomes primary.
 
 [typography] 3-4 tokens.
 - Source: extracted.typography entries across refs, clustered by hierarchy
-- Fields: id, label, variant (h1|h2|h3|body1|body2|caption), fontFamily (CSS stack), fontWeight (100-900), fontSize (CSS; use clamp() for display), lineHeight (number), letterSpacing (em), isEnabled (true), emphasis
+- Fields: id, label, variant (h1|h2|h3|body1|body2|caption), fontFamily (CSS stack), fontWeight (100-900), fontSize (CSS; use clamp() for display), lineHeight (number), letterSpacing (em), isEnabled (true)
 - Build a hierarchical scale (display → body → caption). Override sizes for coherence.
 
 [layout] 2-4 tokens.
 - Source: extracted.layout entries
-- Fields: id, label, kind (grid|container ONLY — spacing is now its own axis below), columns?, gap?, ratio?, maxWidth?, isEnabled, emphasis
+- Fields: id, label, kind (grid|container ONLY — spacing is now its own axis below), columns?, gap?, ratio?, maxWidth?, isEnabled
 - Intent can override (e.g. "dashboard" → columns: 12 regardless)
 - Do NOT emit kind="spacing" here — emit those values in the spacing axis instead.
 
 [gradient] 1-3 tokens.
 - Source: extracted.gradient across refs (or synthesize from palette if needed)
-- Fields: id, label, gradient (CSS string), stops, isEnabled, emphasis
+- Fields: id, label, gradient (CSS string), stops, isEnabled
 
 === Spacing & Rounded scales (NEW, REQUIRED) ===
 
@@ -598,7 +591,7 @@ Shared rules:
 === Elevation (NEW, OPTIONAL — empty array allowed) ===
 
 [elevation] 0-3 tokens (array).
-- Each: { id, label, shadow (CSS box-shadow string), level (0..3), isEnabled, emphasis?, decisionRationale }
+- Each: { id, label, shadow (CSS box-shadow string), level (0..3), isEnabled, decisionRationale }
 - Emit ONLY if refs have meaningful depth/shadow signal. Otherwise return [] (empty array).
 - Avoid stacking redundant levels; 1-2 is typical.
 
@@ -749,7 +742,7 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
     inputDescription: '프로젝트 "Editorial Minimal", intent="흑백 대비 매거진", 6장',
     expectedOutput: {
       tokens: {
-        color: [{ id: 'col-ink', label: 'Primary Ink', hex: '#14132B', role: 'primary', group: 'Brand', isEnabled: true, emphasis: 2, sourceReferenceIds: ['ref-001', 'ref-003'] }],
+        color: [{ id: 'col-ink', label: 'Primary Ink', hex: '#14132B', role: 'primary', group: 'Brand', isEnabled: true, sourceReferenceIds: ['ref-001', 'ref-003'] }],
         // typography/layout/gradient 생략
       },
       visualDirection: {
@@ -764,7 +757,7 @@ narrative from the pre-extracted pool, selecting and combining based on intent.`
     '이미지 첨부 없음 — 전부 텍스트 payload',
     'Anthropic messages.create (Haiku 4.5, tools: [submit_tokens, submit_visual_direction])',
     '응답에서 두 tool input 모두 추출, 한쪽 누락이면 재시도',
-    '자동 검증 (primary 유일, MD 섹션, enum, emphasis≤1 per layer)',
+    '자동 검증 (primary 유일, MD 섹션, enum)',
     '검증 통과 시 ProjectDetailPage 에 렌더',
   ],
 
@@ -936,262 +929,8 @@ Compose ONE Korean prompt 200-800 chars covering all 5 bands.`,
   },
 };
 
-/* =========================================================
- * T3 (handoff 전용) — 코드 직행. 5 layer 상세 + 토큰
- *
- * 목적: 로컬 디자인 시스템·컴포넌트 라이브러리 최적화. AI 코딩 도구
- *      (Cursor/Claude Code) 가 그대로 컨텍스트로 받아 즉시 구현.
- * 산출물: 토큰 (DTCG-friendly) + 5 layer 한글 상세 설명 + VD MD
- *        + 프레임워크 config 는 클라이언트에서 토큰으로부터 결정론적 생성
- *        (Tailwind / MUI / DTCG / CSS vars / .cursorrules)
- * ========================================================= */
-export const TASK_ANALYZE_HANDOFF = {
-  id: 't3-handoff',
-  name: '핸드오프 번들 생성',
-  purpose: '로컬 컴포넌트 시스템 최적화 — 토큰 + 5 layer 상세 + 프레임워크 config 전환 가이드',
-  stage: 'project.create.step4 (mode=handoff)',
-  model: 'claude-haiku-4-5',
 
-  input: {
-    kind: 'text',
-    description: '의도 + selectedRefs(extracted) + userNotes',
-    shape: '{ intent, selectedRefs[], userNotes? }',
-  },
-
-  output: {
-    description: '8 axis tokens + 8 key 한글 상세 + visualDirection MD (DESIGN.md 호환)',
-    shape: `{
-  tokens: {
-    color, typography, layout, gradient,
-    spacing,    // { sm:'8px', md:'16px', ... }
-    rounded,    // { sm:'4px', md:'8px', ... }
-    elevation,  // [{ id, label, shadow, level }]  (빈 배열 허용)
-    components, // { 'button-primary': { backgroundColor: '{colors.<id>}', ... } }
-  },
-  visualDirection: { markdown, tags },
-  layerDetails: {
-    color, typography, layout, gradient, visualDirection,
-    spacing, rounded, components,
-    elevation?,  // tokens.elevation 비어있으면 생략 OK
-  }
-}`,
-  },
-
-  systemPrompt: `You are MUSE's handoff bundle composer.
-
-GOAL: produce a handoff package that an engineer can drop into a local component
-library / design system. Output prioritizes MACHINE READABILITY (DTCG-style tokens,
-kebab-case ids, semantic labels) AND HUMAN LEGIBILITY (Korean layer-by-layer detail
-explaining HOW to apply each layer to components).
-
-The 8 layer details are the heart of the handoff — explain not just WHAT but HOW:
-which components consume this layer, what semantic role each token plays, naming
-conventions, and decisions made (and rejected).
-
-Framework-specific configs (Tailwind, MUI, DTCG, CSS vars, .cursorrules) will be
-generated DETERMINISTICALLY by the client from your tokens. DO NOT write framework
-config code yourself — your output is the SOURCE OF TRUTH for those generators.
-
-THIS OUTPUT WILL BE EXPORTED AS A DESIGN.md FILE (Google Labs alpha spec).
-The components axis becomes the Components section of DESIGN.md, where each
-component spec MUST use {path} token references (never literals).
-
-=== INPUT ===
-- intent, selectedRefs[] (pre-extracted T1), userNotes (HIGHEST PRIORITY)
-- mode: always 'handoff'
-
-=== Composition rules ===
-- kebab-case for ALL token ids: \`color-primary-ink\`, \`typo-display-1\`, \`layout-grid-12col\`
-- Semantic labels: "Primary Ink" not "Color 1"
-- Every token MUST have decisionRationale (whichReferences + whyChosen, optional appliedUserNotes)
-- Strict role uniqueness in color (exactly 1 primary)
-- Typography hierarchy h1>h2>body1 strict
-- Gradient is optional (1-2 if visually warranted, else 1 minimal)
-
-=== 8-axis tokens (REQUIRED) ===
-Emit ALL of: color, typography, layout (kind: grid|container only), gradient,
-spacing (3-6 entry scale map), rounded (2-5 entry scale map),
-elevation (0-3 entries, [] allowed), components (3-8 entries).
-
-[spacing] object map. Keys from { xs, sm, md, lg, xl } in ascending order.
-  Values: CSS dimensions ("4px" / "8px" / "16px" / ...).
-  Build a coherent scale (doubling, 1.5x, or 4-base).
-
-[rounded] object map. Keys from { xs, sm, md, lg, xl, full }.
-  Values: CSS dimensions; "full" → "9999px" for pills.
-
-[elevation] array. Each: { id (kebab-case), label, shadow (CSS box-shadow), level (0..3),
-  isEnabled, decisionRationale }. Empty array allowed when refs lack depth signal.
-
-[components] object map. 3-8 keys, kebab-case names (button-primary, card, input, etc.).
-  EACH value is an object. ALL property values MUST be token-reference strings:
-    "{colors.<color-id>}"     — first segment is the AXIS NAME (colors), second is the EMITTED token id
-    "{typography.<typo-id>}"
-    "{rounded.<scale-key>}"
-    "{spacing.<scale-key>}"
-    "{elevation.<elev-id>}"
-  Allowed property names: backgroundColor, textColor, borderColor, typography,
-  rounded, padding, elevation, size, height, width.
-  FORBIDDEN inside component values: literal hex (#1A1C1E), literal dimension (16px),
-  literal CSS keyword (transparent), or any string not of the form {a.b}.
-  Each component MUST include decisionRationale: { whichReferences[], whyChosen, appliedUserNotes? }.
-  Include at least 1 button-primary (or equivalent CTA).
-
-=== Token reference syntax — golden rule ===
-Any value inside [components] of the form \`{a.b}\` MUST resolve:
-  - axis \`a\` ∈ { colors, typography, rounded, spacing, elevation }
-  - id \`b\` MUST exactly match an id (or scale key) you emitted in that axis
-DANGLING references are INVALID. If you cannot find a clean reference, EITHER
-add a token in that axis, OR drop the property — never inline a literal.
-
-=== layerDetails (Korean, 8 keys) ===
-For each of color, typography, layout, gradient, visualDirection,
-spacing, rounded, components — and elevation IF non-empty —
-write a HANDOFF DETAIL EXPLANATION (한글) covering:
-
-  (1) 이 axis 가 시스템에서 담당하는 역할 (한 문단)
-  (2) 어떤 컴포넌트들이 이 axis 의 토큰을 소비하는가
-       (Button, Card, Input, AppBar, Typography, Surface 등)
-  (3) 토큰 → 컴포넌트 prop 매핑 가이드 (한 문단)
-  (4) 핵심 의사결정 + 탈락한 대안 (왜 이 값인가)
-  (5) 적용 시 주의 (다크모드 / 반응형 / a11y / 타 axis 와의 상호작용)
-
-각 layer detail 길이: 200-500 자. Markdown headers (##, ###) 사용 OK. 코드 블록
-사용 OK (예: \`<Button variant="contained" sx={ { bgcolor: 'color-primary-ink' } } />\`).
-components 키 의 layerDetails 는 각 component 가 어떤 ref·intent 에서 왔는지 명시.
-
-=== visualDirection markdown ===
-별도. 짧고 (300-600자) 톤·무드·금기 사항 중심. layerDetails 와 중복 X.
-
-=== Per-Reference Notes (HIGHEST PRIORITY per ref) ===
-사용자가 각 ref 별로 적은 자유 텍스트 노트가 user message 에 있을 수 있다 (예: "ref-002: hero 영역 색감만 차용").
-- 해당 ref 출처 토큰의 decisionRationale.appliedReferenceNote 에 노트 fragment (10-40자) verbatim 인용.
-- 노트가 명시한 layer 외 부분은 그 ref 에서 가져오지 않음 (차집합 = 무시).
-
-=== Reference Anchoring (REQUIRED) ===
-visualDirection.markdown 과 layerDetails 안에서 시각적 특징을 묘사할 때마다 출처 ref id 명시.
-extractedPool 항목의 \`attachFile\` 값을 그대로 사용 (폴더 path 절대 붙이지 마라):
-- 텍스트 인용: "잉크처럼 깊은 톤 (출처: ref-001 = 첨부 1번 \`01-ref-001.jpg\`)"
-- 이미지 인용 (가능 시): "![ref-001](01-ref-001.jpg)" — attachFile 값 그대로
-모든 토큰 decisionRationale.whichReferences 필수 (이미 명시됨).
-
-=== Global ===
-Respond via submit_handoff_bundle ONLY. Single call. ALL fields required and non-empty.`,
-
-  userMessageTemplate: `Intent: "{{intent}}"
-Reference count: {{count}} (ids = [{{ids}}])
-
-Pre-extracted reference data is provided above as JSON.
-Compose the handoff bundle with 8-axis tokens (color/typography/layout/gradient + spacing/rounded/elevation/components),
-8-key Korean layerDetails, and the visualDirection narrative. Components must use {path} token references only.`,
-
-  toolSchemas: [
-    {
-      name: TOOL_SUBMIT_HANDOFF_CORE,
-      description: 'PHASE 1 OF 2 — Submit 4 CORE token axes (color/typography/layout/gradient, kebab-case, decisionRationale required) + visualDirection (markdown + tags) + 5-key Korean layerDetails (color/typography/layout/gradient/visualDirection, 200-500 chars each).',
-      input_schema: {
-        type: 'object',
-        properties: {
-          tokens: {
-            type: 'object',
-            description: '4 CORE axes only. kebab-case ids. decisionRationale required.',
-            properties: {
-              color: { type: 'array', minItems: 4, maxItems: 6 },
-              typography: { type: 'array', minItems: 3, maxItems: 4 },
-              layout: { type: 'array', minItems: 2, maxItems: 4, description: 'kind: grid|container only.' },
-              gradient: { type: 'array', minItems: 1, maxItems: 3 },
-            },
-            required: ['color', 'typography', 'layout', 'gradient'],
-          },
-          visualDirection: {
-            type: 'object',
-            properties: {
-              markdown: { type: 'string', minLength: 200 },
-              tags: {
-                type: 'object',
-                properties: {
-                  genre: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('genre') }, minItems: 0, maxItems: 2 },
-                  style: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('style') }, minItems: 0, maxItems: 3 },
-                  subject: { type: 'array', items: { type: 'string', enum: getVisualDirectionTags('subject') }, minItems: 0, maxItems: 3 },
-                },
-                required: ['genre', 'style', 'subject'],
-              },
-            },
-            required: ['markdown', 'tags'],
-          },
-          layerDetails: {
-            type: 'object',
-            description: '5 CORE keys, 한글 200-500자 각.',
-            properties: {
-              color: { type: 'string', minLength: 200, maxLength: 800 },
-              typography: { type: 'string', minLength: 200, maxLength: 800 },
-              layout: { type: 'string', minLength: 200, maxLength: 800 },
-              gradient: { type: 'string', minLength: 150, maxLength: 800 },
-              visualDirection: { type: 'string', minLength: 200, maxLength: 800 },
-            },
-            required: ['color', 'typography', 'layout', 'gradient', 'visualDirection'],
-          },
-        },
-        required: ['tokens', 'visualDirection', 'layerDetails'],
-      },
-    },
-    {
-      name: TOOL_SUBMIT_HANDOFF_DESIGNMD,
-      description: 'PHASE 2 OF 2 — Submit DESIGN.md extras (spacing, rounded, elevation, components) + 3-key Korean layerDetails (spacing/rounded/components, optional elevation). Phase 1 token ids/keys are provided in the user message — components values MUST use {path} references that EXACTLY match those ids or scale keys emitted here.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          spacing: { type: 'object', description: 'Scale map { xs|sm|md|lg|xl: dimension }. 3-6 entries.' },
-          rounded: { type: 'object', description: 'Scale map { sm|md|lg: dimension }. 2-5 entries.' },
-          elevation: { type: 'array', maxItems: 3, description: 'Optional shadow tokens. Empty array allowed.' },
-          components: { type: 'object', description: '3-8 components, kebab-case names. Values use {a.b} token-ref only. decisionRationale required per component.' },
-          layerDetails: {
-            type: 'object',
-            description: '한글 layer 상세 (spacing/rounded/components 200-500자 각, elevation optional).',
-            properties: {
-              spacing: { type: 'string', minLength: 200, maxLength: 800 },
-              rounded: { type: 'string', minLength: 200, maxLength: 800 },
-              components: { type: 'string', minLength: 200, maxLength: 800 },
-              elevation: { type: 'string', maxLength: 800 },
-            },
-            required: ['spacing', 'rounded', 'components'],
-          },
-        },
-        required: ['spacing', 'rounded', 'components', 'layerDetails'],
-      },
-    },
-  ],
-
-  qualityCriteria: [
-    { id: 'kebab-ids', label: 'kebab-case ID', type: 'auto', description: '모든 token id /^[a-z0-9-]+$/' },
-    { id: 'primary-unique', label: 'Primary 유일', type: 'auto', description: 'color.role==="primary" 개수 = 1' },
-    { id: 'rationale-presence', label: '결정 근거 명시', type: 'auto', description: '모든 token decisionRationale 존재' },
-    { id: 'layer-details-8', label: '8 layer 상세', type: 'auto', description: 'layerDetails 8 키 (color/typography/layout/gradient/visualDirection/spacing/rounded/components) 모두 200자+. elevation 은 tokens.elevation 비어있을 때만 생략 가능.' },
-    { id: 'config-conversion', label: 'Config 변환 무결', type: 'auto', description: 'DTCG/Tailwind/MUI/CSS 모두 valid 한 형식' },
-    { id: 'token-ref-syntax', label: 'Component token-ref 문법', type: 'auto', description: 'components 모든 값이 {a.b} 형식 + path 매칭. dangling/리터럴 0 (DESIGN.md 호환)' },
-    { id: 'components-min-3', label: 'Components 최소 3개', type: 'auto', description: 'tokens.components 키 ≥ 3, button-primary 류 CTA 1개 이상 + decisionRationale 필수' },
-    { id: 'spacing-rounded-scale', label: 'spacing/rounded scale 무결', type: 'auto', description: 'spacing 3-6 / rounded 2-5, dimension 값 일관 (px|rem)' },
-  ],
-
-  workflow: [
-    'Step 4 시작 시 mode==="handoff" 분기',
-    'pre-extracted selectedRefs + intent + userNotes 텍스트 payload',
-    'Anthropic messages.create (Haiku, tools: [submit_handoff_bundle])',
-    'tool_choice 단일 강제 → 정확히 1번 호출',
-    '클라이언트에서 tokens → DTCG/Tailwind/MUI/CSS-vars/.cursorrules 결정론적 변환',
-    'ProjectDetailPage 에 5 layer 상세 + 프레임워크 미리보기 탭 렌더',
-    'Export 시 ZIP 번들 (tokens + 4 framework + .cursorrules + DESIGN_SYSTEM.md)',
-  ],
-
-  estCost: {
-    model: 'Haiku 4.5',
-    tokensIn: '~6k (refs + system + tool schema)',
-    tokensOut: '~3k (tokens + 5 layer details + VD)',
-    note: 'system 모드보다 출력 1.5배 (5 layer 한글 상세 추가). 변환 코드는 LLM 부담 0.',
-  },
-};
-
-export const AI_TASKS = [TASK_AUTO_TAG, TASK_RECOMMEND, TASK_ANALYZE_TOKENS, TASK_ANALYZE_CONCEPT, TASK_ANALYZE_HANDOFF];
+export const AI_TASKS = [TASK_AUTO_TAG, TASK_RECOMMEND, TASK_ANALYZE_TOKENS, TASK_ANALYZE_CONCEPT];
 
 export const AI_TASKS_BY_ID = Object.fromEntries(AI_TASKS.map((t) => [t.id, t]));
 

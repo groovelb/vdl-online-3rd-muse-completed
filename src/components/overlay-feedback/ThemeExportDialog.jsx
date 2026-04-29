@@ -21,7 +21,6 @@ import {
   buildUniversalJson,
   exportProjectAsZip,
   exportSystemBundle,
-  exportHandoffBundle,
   downloadUniversalJson,
 } from '../../utils/museExport.js';
 import { buildDesignMd } from '../../utils/handoffConverters.js';
@@ -84,16 +83,8 @@ export function ThemeExportDialog({
 
   // mode 별 default exporter — concept 은 ThemeExportDialog 진입하지 않음 (별도 핸들러)
   const mode = project?.mode || 'system';
-  const primaryExporter = mode === 'handoff'
-    ? exportHandoffBundle
-    : mode === 'system'
-      ? exportSystemBundle
-      : exportProjectAsZip;
-  const primaryLabel = mode === 'handoff'
-    ? 'Handoff ZIP 다운로드'
-    : mode === 'system'
-      ? 'DESIGN.md ZIP 다운로드'
-      : 'ZIP 번들 다운로드';
+  const primaryExporter = mode === 'system' ? exportSystemBundle : exportProjectAsZip;
+  const primaryLabel = mode === 'system' ? 'DESIGN.md ZIP 다운로드' : 'ZIP 번들 다운로드';
 
   const handleDownloadZip = async () => {
     setError(null);

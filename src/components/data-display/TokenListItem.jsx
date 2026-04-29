@@ -1,15 +1,6 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Switch from '@mui/material/Switch';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Tooltip from '@mui/material/Tooltip';
-
-const EMPHASIS_OPTIONS = [
-  { value: 0, label: 'Low', hint: '약' },
-  { value: 1, label: 'Mid', hint: '중' },
-  { value: 2, label: 'High', hint: '강' },
-];
 
 /**
  * TokenListItem 컴포넌트
@@ -17,10 +8,9 @@ const EMPHASIS_OPTIONS = [
  * MUSE 프로젝트 상세 화면에서 각 레이어(컬러/타이포/레이아웃/그라디언트/키비주얼)의
  * 토큰 한 건을 표현하는 공통 행 컴포넌트.
  *
- * 구성: [preview 48x48] [label + value] [emphasis (Low/Mid/High)] [on/off switch]
+ * 구성: [preview 48x48] [label + value] [on/off switch]
  *
  * - `isEnabled=false`면 행 전체가 dimmed 처리됨 (opacity 0.4, 편집 가능은 유지)
- * - emphasis 토글은 항상 활성 — 비활성 토큰도 강조값 유지하도록 함
  * - preview는 slot 패턴: 컬러 스와치, 타이포 샘플, 그라디언트 박스 등 임의 노드 주입
  *
  * Props:
@@ -28,9 +18,8 @@ const EMPHASIS_OPTIONS = [
  * @param {string} label - 토큰 이름/역할 [Required]
  * @param {string} value - 토큰 값 (HEX, px, 폰트명 등 문자열 표현) [Optional]
  * @param {boolean} isEnabled - 토큰 활성화 상태 [Optional, 기본값: true]
- * @param {number} emphasis - 강조도 0|1|2 [Optional, 기본값: 1]
  * @param {function} onToggleEnabled - 활성화 토글 (nextEnabled) => void [Optional]
- * @param {function} onChangeEmphasis - 강조도 변경 (nextEmphasis) => void [Optional]
+ * @param {node} trailing - 우측 Switch 앞에 렌더할 보조 액션 (ReactNode) [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -39,9 +28,7 @@ const EMPHASIS_OPTIONS = [
  *   label="Accent Violet"
  *   value="#4F46E5"
  *   isEnabled={ token.isEnabled }
- *   emphasis={ token.emphasis }
  *   onToggleEnabled={ (next) => updateToken(id, { isEnabled: next }) }
- *   onChangeEmphasis={ (next) => updateToken(id, { emphasis: next }) }
  * />
  */
 export function TokenListItem({
@@ -49,16 +36,10 @@ export function TokenListItem({
   label,
   value,
   isEnabled = true,
-  emphasis = 1,
   onToggleEnabled,
-  onChangeEmphasis,
+  trailing,
   sx,
 }) {
-  const handleEmphasisChange = (_event, next) => {
-    if (next === null || next === undefined) return;
-    onChangeEmphasis?.(next);
-  };
-
   return (
     <Box
       sx={ {
@@ -129,40 +110,12 @@ export function TokenListItem({
         ) }
       </Box>
 
-      {/* 3. Emphasis toggle (항상 활성) */}
-      <ToggleButtonGroup
-        value={ emphasis }
-        exclusive
-        size="small"
-        onChange={ handleEmphasisChange }
-        aria-label="강조도"
-        sx={ {
-          flex: '0 0 auto',
-          '& .MuiToggleButton-root': {
-            px: 1.25,
-            py: 0.25,
-            fontSize: '0.7rem',
-            fontWeight: 500,
-            textTransform: 'none',
-            border: '1px solid',
-            borderColor: 'divider',
-            color: 'text.secondary',
-            '&.Mui-selected': {
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': { backgroundColor: 'primary.light' },
-            },
-          },
-        } }
-      >
-        { EMPHASIS_OPTIONS.map((opt) => (
-          <Tooltip key={ opt.value } title={ `강조 ${opt.hint}` } arrow>
-            <ToggleButton value={ opt.value } aria-label={ opt.label }>
-              { opt.label }
-            </ToggleButton>
-          </Tooltip>
-        )) }
-      </ToggleButtonGroup>
+      {/* 3. Trailing slot (예: 결정 근거 토글) */}
+      { trailing && (
+        <Box sx={ { flex: '0 0 auto', display: 'flex', alignItems: 'center' } }>
+          { trailing }
+        </Box>
+      ) }
 
       {/* 4. On/Off switch */}
       <Switch

@@ -20,6 +20,8 @@ import { ColorSwatchList } from '../data-display/ColorSwatchList.jsx';
 import { TypographyPreview } from '../data-display/TypographyPreview.jsx';
 import { LayoutTokenPreview } from '../data-display/LayoutTokenPreview.jsx';
 import { GradientPreview } from '../data-display/GradientPreview.jsx';
+import { DesignMdPreview } from '../data-display/DesignMdPreview.jsx';
+import { LayerGuide } from '../data-display/LayerGuide.jsx';
 import { ThemeExportDialog } from '../overlay-feedback/ThemeExportDialog.jsx';
 import { ReferenceNotesDialog } from '../overlay-feedback/ReferenceNotesDialog.jsx';
 import { RefImage } from '../media/RefImage.jsx';
@@ -38,6 +40,7 @@ const LAYERS = [
   { id: 'layout', label: '레이아웃' },
   { id: 'gradient', label: '그라디언트' },
   { id: 'visualDirection', label: '비주얼 디렉션' },
+  { id: 'designMd', label: 'DESIGN.md' },
 ];
 
 const HANDOFF_FRAMEWORKS = [
@@ -180,39 +183,46 @@ export function ProjectDetailPage({
     onUpdateToken?.(layerKey, id, patch);
   };
 
+  const wrapWithGuide = (layerKey, editor) => {
+    const tokens = analysis[layerKey] || [];
+    const layerDetail = analysis?.layerDetails?.[layerKey];
+    return (
+      <Box sx={ { display: 'flex', flexDirection: 'column', gap: 4 } }>
+        { editor }
+        <Box sx={ { pt: 3, borderTop: '1px solid', borderColor: 'divider' } }>
+          <LayerGuide
+            layerKey={ layerKey }
+            tokens={ tokens }
+            layerDetail={ layerDetail }
+          />
+        </Box>
+      </Box>
+    );
+  };
+
   const renderEditor = () => {
     switch (activeLayer) {
       case 'color':
-        return (
-          <ColorSwatchList
-            tokens={ analysis.color || [] }
-            onChange={ handleChange('color') }
-            references={ references }
-          />
+        return wrapWithGuide('color',
+          <ColorSwatchList tokens={ analysis.color || [] } onChange={ handleChange('color') } references={ references } />
         );
       case 'typography':
-        return (
-          <TypographyPreview
-            tokens={ analysis.typography || [] }
-            onChange={ handleChange('typography') }
-            references={ references }
-          />
+        return wrapWithGuide('typography',
+          <TypographyPreview tokens={ analysis.typography || [] } onChange={ handleChange('typography') } references={ references } />
         );
       case 'layout':
-        return (
-          <LayoutTokenPreview
-            tokens={ analysis.layout || [] }
-            onChange={ handleChange('layout') }
-            references={ references }
-          />
+        return wrapWithGuide('layout',
+          <LayoutTokenPreview tokens={ analysis.layout || [] } onChange={ handleChange('layout') } references={ references } />
         );
       case 'gradient':
+        return wrapWithGuide('gradient',
+          <GradientPreview tokens={ analysis.gradient || [] } onChange={ handleChange('gradient') } references={ references } />
+        );
+      case 'designMd':
         return (
-          <GradientPreview
-            tokens={ analysis.gradient || [] }
-            onChange={ handleChange('gradient') }
-            references={ references }
-          />
+          <Box sx={ { bgcolor: 'background.paper', borderRadius: 3, p: { xs: 2, md: 4 }, border: '1px solid', borderColor: 'divider' } }>
+            <DesignMdPreview project={ project } layers={ analysis } variant="raw" />
+          </Box>
         );
       case 'visualDirection': {
         const vd = analysis.visualDirection || { markdown: '', tags: { genre: [], style: [], subject: [] } };
@@ -665,6 +675,22 @@ export function ProjectDetailPage({
               right={ renderPreview() }
             />
           </>
+        ) }
+
+        {/* ===== Design System Showcase — system / handoff 모드 한정, 결과 하단 ===== */}
+        { !isConceptMode && analysis && (
+          <Box
+            sx={ {
+              mt: 6,
+              p: { xs: 2, md: 4 },
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 3,
+            } }
+          >
+            <DesignMdPreview project={ project } layers={ analysis } variant="showcase" />
+          </Box>
         ) }
 
       <Box sx={ { height: 64 } } />

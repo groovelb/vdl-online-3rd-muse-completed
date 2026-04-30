@@ -16,8 +16,8 @@ import Typography from '@mui/material/Typography';
  * Props:
  * @param {string[]} images - 이미지 URL 배열 [Required]
  * @param {React.MutableRefObject<number>} progressRef - 외부 진행도 ref (0~1). 없으면 항상 0 (scatter only) [Optional]
- * @param {number} cursorRadius - 마우스 영향 반경(px) [Optional, 기본값: 220]
- * @param {number} maxShift - 최대 시프트(px) — 거리 0일 때의 이동 [Optional, 기본값: 14]
+ * @param {number} cursorRadius - 마우스 영향 falloff scale(px). 거리 = cursorRadius 인 썸네일은 maxShift × 0.5 만큼 시프트 (모든 썸네일이 차등 반응) [Optional, 기본값: 220]
+ * @param {number} maxShift - 최대 시프트(px) — 마우스 위치(거리 0)에서의 변위 상한 [Optional, 기본값: 14]
  * @param {number} seed - 분포 시드 [Optional, 기본값: 42]
  * @param {number} gridCols - jittered grid 열 [Optional, 기본값: 6]
  * @param {number} gridRows - jittered grid 행 [Optional, 기본값: 5]
@@ -159,8 +159,9 @@ export function ScatterGallery({
 
     const tick = () => {
       if (!active) return;
-      const hovered = hoverIdxRef.current;
       const p = progressRef?.current ?? 0;
+      // 탄력 ease — scatter↔flow 보간이 약간 당겼다가 오버슈트 후 정착
+      const easedP = easeInOutBack(p);
       const t = (performance.now() - startT) / 1000;
 
       placements.forEach((pl, i) => {
@@ -178,24 +179,24 @@ export function ScatterGallery({
         const flowY = rowY - pl.size / 2;
 
         // scatter↔flow 보간 (delta 만 transform 으로) — top/left 은 scatter 정적
-        const deltaX = (flowX - pl.x) * p;
-        const deltaY = (flowY - pl.y) * p;
+        const deltaX = (flowX - pl.x) * easedP;
+        const deltaY = (flowY - pl.y) * easedP;
 
-        // cursor parallax — p ↑ 면 약화
+        // cursor parallax — hover 와 무관하게 모든 썸네일이 거리에 따라 차등 반응. 최대 변위 = maxShift.
+        // falloff = cursorRadius / (cursorRadius + dist) → 모든 거리에서 0~1 의 가중치
         let tx = 0;
         let ty = 0;
-        if (i !== hovered && mx > -9000) {
+        if (mx > -9000) {
           const ccx = pl.x + deltaX + pl.size / 2;
           const ccy = pl.y + deltaY + pl.size / 2;
           const ddx = ccx - mx;
           const ddy = ccy - my;
           const dist = Math.hypot(ddx, ddy);
-          if (dist < cursorRadius) {
-            const k = (1 - dist / cursorRadius) * maxShift * (1 - p);
-            const inv = dist === 0 ? 0 : 1 / dist;
-            tx = ddx * inv * k;
-            ty = ddy * inv * k;
-          }
+          const fall = cursorRadius / (cursorRadius + dist);
+          const k = fall * maxShift * (1 - p);
+          const inv = dist === 0 ? 0 : 1 / dist;
+          tx = ddx * inv * k;
+          ty = ddy * inv * k;
         }
         cur[i].dx += (tx - cur[i].dx) * lerp;
         cur[i].dy += (ty - cur[i].dy) * lerp;
@@ -390,6 +391,18 @@ export function ScatterGallery({
       ) }
     </Box>
   );
+}
+
+/* ============================================
+ * easeInOutBack — 양 끝에서 살짝 overshoot. https://easings.net/#easeInOutBack
+ * scatter↔flow 보간에 탄력감을 주기 위해 사용.
+ * ============================================ */
+function easeInOutBack(x) {
+  const c1 = 1.70158;
+  const c2 = c1 * 1.525;
+  return x < 0.5
+    ? (Math.pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
+    : (Math.pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
 }
 
 /* ============================================

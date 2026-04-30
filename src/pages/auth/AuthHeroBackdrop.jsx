@@ -211,7 +211,14 @@ export function AuthHeroBackdrop({ onStart, onScrollNext }) {
               size="large"
               disableElevation
               onClick={ onStart }
-              sx={ { fontWeight: 600, px: 5, py: 1.5, mt: 1 } }
+              sx={ {
+                fontWeight: 700,
+                fontSize: '1.25rem',
+                px: 8,
+                py: 2.5,
+                mt: 2,
+                borderRadius: 2,
+              } }
             >
               { HERO.cta }
             </Button>
@@ -230,10 +237,10 @@ export function AuthHeroBackdrop({ onStart, onScrollNext }) {
           <Typography
             component="h2"
             sx={ {
-              fontSize: 'clamp(36px, 5.5vw, 72px)',
+              fontSize: 'clamp(28px, 4.5vw, 56px)',
               fontWeight: 700,
               letterSpacing: '-0.03em',
-              lineHeight: 1.2,
+              lineHeight: 1.25,
               color: 'text.primary',
               textAlign: 'center',
               wordBreak: 'keep-all',
@@ -333,7 +340,13 @@ function MobileHero({ onStart, theme }) {
             size="large"
             disableElevation
             onClick={ onStart }
-            sx={ { fontWeight: 600, px: 4 } }
+            sx={ {
+              fontWeight: 700,
+              fontSize: '1.125rem',
+              px: 6,
+              py: 2,
+              borderRadius: 2,
+            } }
           >
             { HERO.cta }
           </Button>
@@ -357,10 +370,10 @@ function MobileHero({ onStart, theme }) {
           sx={ {
             position: 'relative',
             zIndex: 2,
-            fontSize: 'clamp(28px, 7vw, 44px)',
+            fontSize: 'clamp(22px, 5.5vw, 34px)',
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            lineHeight: 1.2,
+            lineHeight: 1.25,
             textAlign: 'center',
             wordBreak: 'keep-all',
             px: 3,

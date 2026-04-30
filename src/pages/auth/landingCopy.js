@@ -28,7 +28,7 @@ export const HERO = {
  * Hero 가 흡수한 1 문장 만 남김. 4 카드 섹션은 폐기.
  */
 export const PROBLEM = {
-  title: 'AI 가 만든 디자인, 과연 내 결정이 들어갔을까요?',
+  title: '레퍼런스로 만든 AI 의 디자인, 얼마나 이해하고 계신가요?',
 };
 
 export const SOLUTION = {

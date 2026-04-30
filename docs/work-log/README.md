@@ -80,5 +80,6 @@ curriculum은 주제별 재배치라서, **실제 프로젝트 진행 순서**�
 | 033 | MUSE — concept prompt 실측 검증 → 원복 + 직접 LLM 호출 스크립트 도입 | 2026-04-28 | [033-MUSE-concept-prompt-실측검증-원복-LLM-스크립트-도입.md](./033-MUSE-concept-prompt-실측검증-원복-LLM-스크립트-도입.md) |
 | 034 | MUSE — cli-test 스킬 도입 + AI slope negative + LLM 출력 방어 가드 | 2026-04-28 | [034-MUSE-cli-test-스킬-AI-slope-negative-방어-가드.md](./034-MUSE-cli-test-스킬-AI-slope-negative-방어-가드.md) |
 | 035 | MUSE — 어드민 페이지·이미지 만료 대응·위자드 풀스크린·AI 노트 제안 | 2026-04-29 | [035-MUSE-어드민페이지-이미지만료대응-위자드풀스크린-AI노트제안.md](./035-MUSE-어드민페이지-이미지만료대응-위자드풀스크린-AI노트제안.md) |
+| 036 | MUSE — 랜딩 Hero Stack-Pin + Scatter↔Flow 연속 트랜지션 + GNB ghost 모드 | 2026-04-30 | [036-MUSE-랜딩-Hero-StackPin-Scatter-Flow-연속트랜지션.md](./036-MUSE-랜딩-Hero-StackPin-Scatter-Flow-연속트랜지션.md) |
 
 </details>

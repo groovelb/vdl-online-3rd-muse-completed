@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme, alpha } from '@mui/material/styles';
 import { ScatterGallery } from '../../components/media/ScatterGallery.jsx';
+import { useScrollProgress } from '../../hooks/useScrollProgress.js';
 import exampleTokensJson from '../../data/exampleTokens.json';
-import { COMMON, HERO } from './landingCopy.js';
+import { COMMON, HERO, PROBLEM } from './landingCopy.js';
 
 /** Vite glob — assets/example/*.jpg|jpeg|png 빌드 시점 번들 */
 const imageModules = import.meta.glob('../../assets/example/*.{jpg,jpeg,png}', {
@@ -15,11 +19,7 @@ const imageModules = import.meta.glob('../../assets/example/*.{jpg,jpeg,png}', {
 });
 const ALL_IMAGES = Object.values(imageModules);
 
-/**
- * url(번들된) → basename 매핑 으로 정적 토큰 lookup 가능하게 변환.
- * exampleTokens.json 키는 src/assets/example/ 의 원본 파일명.
- * Vite glob path 의 basename 으로 매칭.
- */
+/** 토큰 정적 lookup (basename → 토큰) */
 const TOKENS_BY_SRC = (() => {
   const out = {};
   for (const [filePath, url] of Object.entries(imageModules)) {
@@ -38,46 +38,231 @@ const TOKENS_BY_SRC = (() => {
 /**
  * AuthHeroBackdrop
  *
- * 로그인/가입 페이지 hero. Three.js 기반 z-depth 갤러리(FloatingImageGallery) 위에
- * 큰 MUSE 타이포 + 서브카피를 얹고, 페이지 스크롤에 따라 로고가 위로 빠진다.
+ * Stack-pin hero — wrapper 200vh 안에 sticky bg(100vh) + content overlay(200vh).
+ * BG 는 화면에 고정된 채 scatter ↔ 두 줄 horizontal flow 사이를 진행도(--p) 에 따라
+ * 연속 lerp. 컨텐츠(로고/타이틀/CTA, 메인 질문) 는 일반 스크롤로 위 → 아래 흐름.
  *
- * - 데스크탑: WebGL 인터랙티브(드래그/휠/마우스 패럴랙스) + 자동 드리프트
- * - 모바일(md 미만): 정적 그리드로 폴백 (배터리/터치 끊김 회피)
+ * 모바일(md 미만): pin 비활성, 두 모드를 단순 stack 으로 렌더.
  *
  * Props:
- * @param {number} heightVh - hero 높이(vh) [Optional, 기본값: 100]
+ * @param {function} onStart - hero CTA 클릭 시 호출 [Optional]
+ * @param {function} onScrollNext - hero 끝까지 스크롤 트리거 [Optional]
  *
  * Example usage:
- * <AuthHeroBackdrop />
+ *   <AuthHeroBackdrop onStart={ openSignup } onScrollNext={ scrollPastHero } />
  */
-export function AuthHeroBackdrop({ heightVh = 100 }) {
+export function AuthHeroBackdrop({ onStart, onScrollNext }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [scrollY, setScrollY] = useState(0);
+  const wrapperRef = useRef(null);
+  const progressRef = useScrollProgress(wrapperRef);
 
-  // 모바일 폴백용 정적 12장 (셔플 없이 앞에서 자르기 — 시각 일관성)
+  const scrollPastHero = () => {
+    if (typeof onScrollNext === 'function') return onScrollNext();
+    const el = wrapperRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().bottom + window.scrollY;
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+
+  if (isMobile) return <MobileHero onStart={ onStart } theme={ theme } />;
+
+  return (
+    <Box
+      ref={ wrapperRef }
+      sx={ {
+        position: 'relative',
+        width: '100%',
+        height: '200vh',
+      } }
+    >
+      {/* Sticky bg — 화면에 고정. ScatterGallery 가 progressRef 로 scatter↔flow 연속 lerp */}
+      <Box
+        sx={ {
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          width: '100%',
+          overflow: 'hidden',
+          zIndex: 0,
+        } }
+      >
+        <ScatterGallery
+          images={ ALL_IMAGES }
+          progressRef={ progressRef }
+          seed={ 12 }
+          gridCols={ 6 }
+          gridRows={ 4 }
+          thumbnailMin={ 48 }
+          thumbnailMax={ 104 }
+          cursorRadius={ 240 }
+          maxShift={ 16 }
+          centerKeepout={ 220 }
+          hasTooltip
+          tooltipDelay={ 200 }
+          tokensBySrc={ TOKENS_BY_SRC }
+          flowGap={ 28 }
+          flowRows={ 4 }
+          flowSpeeds={ [-34, 42, -38, 46] }
+          sx={ { position: 'absolute', inset: 0 } }
+        />
+
+        {/* 하단 페이드 — 다음 섹션과 자연 연결 */}
+        <Box
+          sx={ {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '32%',
+            background: `linear-gradient(180deg, transparent 0%, ${ theme.palette.background.default } 75%, ${ theme.palette.background.default } 100%)`,
+            pointerEvents: 'none',
+          } }
+        />
+
+        {/* Scroll indicator — bg 와 함께 pin 됨, scatter 모드(--p < 0.4) 에서만 visible */}
+        <IconButton
+          onClick={ scrollPastHero }
+          aria-label={ COMMON.scrollDownAria }
+          sx={ {
+            position: 'absolute',
+            left: '50%',
+            bottom: 32,
+            transform: 'translateX(-50%)',
+            zIndex: 60,
+            color: 'text.secondary',
+            backgroundColor: alpha(theme.palette.background.paper, 0.6),
+            opacity: 'clamp(0, calc((0.4 - var(--p, 0)) * 6), 1)',
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.background.paper, 0.9),
+            },
+            animation: 'authBounce 2s ease-in-out infinite',
+            '@keyframes authBounce': {
+              '0%, 100%': { transform: 'translate(-50%, 0)' },
+              '50%':       { transform: 'translate(-50%, 8px)' },
+            },
+          } }
+        >
+          <KeyboardArrowDownIcon />
+        </IconButton>
+      </Box>
+
+      {/* Content overlay — 자연 스크롤. 두 섹션이 위/아래로 흐름 */}
+      <Box
+        sx={ {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '200vh',
+          zIndex: 5,
+          pointerEvents: 'none',
+        } }
+      >
+        {/* Mode A — 로고 / 메인 타이틀 / CTA */}
+        <Box
+          sx={ {
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          } }
+        >
+          <Box
+            sx={ {
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              textAlign: 'center',
+              px: 3,
+              pointerEvents: 'auto',
+            } }
+          >
+            <Typography
+              component="h1"
+              sx={ {
+                fontSize: 'clamp(64px, 10vw, 128px)',
+                fontWeight: 800,
+                letterSpacing: '-0.05em',
+                lineHeight: 0.9,
+                color: 'text.primary',
+              } }
+            >
+              { COMMON.brand }
+            </Typography>
+            <Typography
+              variant="h3"
+              component="p"
+              sx={ {
+                color: 'text.primary',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                fontWeight: 600,
+                wordBreak: 'keep-all',
+                maxWidth: 720,
+              } }
+            >
+              { HERO.desktopTitle }
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              disableElevation
+              onClick={ onStart }
+              sx={ { fontWeight: 600, px: 5, py: 1.5, mt: 1 } }
+            >
+              { HERO.cta }
+            </Button>
+          </Box>
+        </Box>
+
+        {/* Mode B — 메인 질문 */}
+        <Box
+          sx={ {
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          } }
+        >
+          <Typography
+            component="h2"
+            sx={ {
+              fontSize: 'clamp(36px, 5.5vw, 72px)',
+              fontWeight: 700,
+              letterSpacing: '-0.03em',
+              lineHeight: 1.2,
+              color: 'text.primary',
+              textAlign: 'center',
+              wordBreak: 'keep-all',
+              maxWidth: 1080,
+              px: 4,
+              pointerEvents: 'auto',
+            } }
+          >
+            { PROBLEM.title }
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/* ============================================
+ * MobileHero — pin 없이 두 모드 단순 stack
+ * ============================================ */
+function MobileHero({ onStart, theme }) {
   const mobilePicked = useMemo(() => ALL_IMAGES.slice(0, 12), []);
 
-  useEffect(() => {
-    let raf = 0;
-    const update = () => { raf = 0; setScrollY(window.scrollY); };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    update();
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // 모바일 폴백
-  if (isMobile) {
-    return (
+  return (
+    <Box>
       <Box
         sx={ {
           position: 'relative',
           width: '100%',
-          minHeight: '70vh',
+          minHeight: '90vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -93,7 +278,7 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 1,
             p: 2,
-            opacity: 0.45,
+            opacity: 0.4,
           } }
         >
           { mobilePicked.slice(0, 9).map((src) => (
@@ -108,7 +293,6 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
                 aspectRatio: '1',
                 objectFit: 'cover',
                 borderRadius: 2,
-                filter: 'blur(2px)',
               } }
             />
           )) }
@@ -118,6 +302,10 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
             position: 'relative',
             zIndex: 2,
             textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 3,
             background: `radial-gradient(ellipse at center, ${ alpha(theme.palette.background.default, 0.85) } 0%, ${ alpha(theme.palette.background.default, 0.4) } 60%, transparent 100%)`,
             py: 6,
             px: 4,
@@ -125,116 +313,60 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
         >
           <Typography
             sx={ {
-              fontSize: 'clamp(64px, 18vw, 120px)',
+              fontSize: 'clamp(56px, 16vw, 96px)',
               fontWeight: 800,
               letterSpacing: '-0.04em',
-              lineHeight: 1,
-              color: 'text.primary',
+              lineHeight: 0.9,
             } }
           >
             { COMMON.brand }
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={ { mt: 2 } }>
+          <Typography
+            variant="h5"
+            sx={ { fontWeight: 600, letterSpacing: '-0.02em', wordBreak: 'keep-all' } }
+          >
             { HERO.mobileSubtitle }
           </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            disableElevation
+            onClick={ onStart }
+            sx={ { fontWeight: 600, px: 4 } }
+          >
+            { HERO.cta }
+          </Button>
         </Box>
       </Box>
-    );
-  }
 
-  // 데스크탑: ScatterGallery (jittered grid + cursor parallax + hover backdrop)
-  return (
-    <Box sx={ { position: 'relative', width: '100%', height: `${ heightVh }vh`, overflow: 'hidden' } }>
-      <ScatterGallery
-        images={ ALL_IMAGES }
-        seed={ 12 }
-        gridCols={ 6 }
-        gridRows={ 4 }
-        thumbnailMin={ 48 }
-        thumbnailMax={ 104 }
-        cursorRadius={ 240 }
-        maxShift={ 16 }
-        centerKeepout={ 220 }
-        hasTooltip
-        tooltipDelay={ 200 }
-        tokensBySrc={ TOKENS_BY_SRC }
-        sx={ { position: 'absolute', inset: 0 } }
-      />
-
-      {/* 중앙 MUSE 로고 — 페이지 스크롤과 함께 위로 이동 (opacity 유지) */}
       <Box
         sx={ {
-          position: 'absolute',
-          inset: 0,
+          position: 'relative',
+          width: '100%',
+          minHeight: '70vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          textAlign: 'center',
-          transform: `translate3d(0, ${ -scrollY * 0.5 }px, 0)`,
-          willChange: 'transform',
-          zIndex: 50,
-          pointerEvents: 'none',
+          overflow: 'hidden',
+          py: 6,
         } }
       >
         <Typography
-          component="h1"
+          component="h2"
           sx={ {
-            fontSize: 'clamp(120px, 22vw, 280px)',
-            fontWeight: 800,
-            letterSpacing: '-0.05em',
-            lineHeight: 0.9,
-            color: 'text.primary',
-            mixBlendMode: theme.palette.mode === 'dark' ? 'screen' : 'multiply',
-          } }
-        >
-          { COMMON.brand }
-        </Typography>
-      </Box>
-
-      {/* 하단 페이드 — 폼 영역과 자연 연결 */}
-      <Box
-        sx={ {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: '40%',
-          background: `linear-gradient(180deg, transparent 0%, ${ theme.palette.background.default } 60%, ${ theme.palette.background.default } 100%)`,
-          zIndex: 40,
-          pointerEvents: 'none',
-        } }
-      />
-
-      {/* 하단 sub-brand message — typography 계층: h2(메인 메시지) + body1(보조) */}
-      <Box
-        sx={ {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: { xs: 80, md: 96 },
-          textAlign: 'center',
-          px: 3,
-          zIndex: 45,
-          pointerEvents: 'none',
-        } }
-      >
-        <Typography
-          variant="h3"
-          component="p"
-          sx={ {
-            color: 'text.primary',
+            position: 'relative',
+            zIndex: 2,
+            fontSize: 'clamp(28px, 7vw, 44px)',
+            fontWeight: 700,
             letterSpacing: '-0.02em',
-            lineHeight: 1.15,
+            lineHeight: 1.2,
+            textAlign: 'center',
+            wordBreak: 'keep-all',
+            px: 3,
           } }
         >
-          { HERO.desktopTitle }
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={ { mt: 2, fontWeight: 500 } }
-        >
-          { HERO.desktopSubtitle }
+          { PROBLEM.title }
         </Typography>
       </Box>
     </Box>

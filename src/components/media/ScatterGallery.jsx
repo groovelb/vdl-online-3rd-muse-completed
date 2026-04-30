@@ -5,35 +5,41 @@ import Typography from '@mui/material/Typography';
 /**
  * ScatterGallery 컴포넌트
  *
- * 이미지를 컨테이너 전체에 흩뿌리는 2D 무드보드형 갤러리.
- * - 분포 알고리즘: jittered grid + seeded RNG (deterministic)
- * - 인터랙션: 커서 반경 안에 있는 썸네일만 inverse-distance 만큼 시프트
- * - hover 시: 해당 이미지가 컨테이너 배경에 blur fill 로 깔림 (옵션)
+ * 이미지를 컨테이너 전체에 흩뿌리는 2D 무드보드. 추가로 외부 progressRef(0~1) 가
+ * 주어지면 진행도에 따라 jittered scatter ↔ 두 줄 horizontal flow 사이를
+ * 연속 lerp 한다 (단일 RAF 안에서 일체화).
+ *
+ * - 분포: jittered grid + seeded RNG (deterministic)
+ * - flow: i % 2 로 두 줄(상단/하단), 각 줄 반대 방향 + 다른 속도로 무한 흐름
+ * - 마우스 parallax: 진행도 0 일 때만 풀 적용, 진행도 ↑ → 약화
  *
  * Props:
  * @param {string[]} images - 이미지 URL 배열 [Required]
+ * @param {React.MutableRefObject<number>} progressRef - 외부 진행도 ref (0~1). 없으면 항상 0 (scatter only) [Optional]
  * @param {number} cursorRadius - 마우스 영향 반경(px) [Optional, 기본값: 220]
  * @param {number} maxShift - 최대 시프트(px) — 거리 0일 때의 이동 [Optional, 기본값: 14]
- * @param {number} seed - 분포 시드 (동일하면 동일한 배치) [Optional, 기본값: 42]
+ * @param {number} seed - 분포 시드 [Optional, 기본값: 42]
  * @param {number} gridCols - jittered grid 열 [Optional, 기본값: 6]
  * @param {number} gridRows - jittered grid 행 [Optional, 기본값: 5]
  * @param {number} thumbnailMin - 썸네일 최소 한 변(px) [Optional, 기본값: 64]
  * @param {number} thumbnailMax - 썸네일 최대 한 변(px) [Optional, 기본값: 132]
- * @param {boolean} hasBackdrop - hover 시 배경 blur fill 여부 [Optional, 기본값: true]
  * @param {number} centerKeepout - 중앙 보호 반경(px). 이 안에는 썸네일 배치 안 됨 [Optional, 기본값: 0]
  * @param {boolean} hasTooltip - hover 시 추출 토큰(컬러) 툴팁 [Optional, 기본값: false]
  * @param {number} tooltipDelay - 툴팁 진입 delay(ms) [Optional, 기본값: 200]
- * @param {Object<string,{title?:string,colors?:string[],tags?:string[]}>} tokensBySrc - 정적 토큰 매핑 (override) [Optional]
- * @param {node} children - 중앙 오버레이 슬롯 (로고 등) [Optional]
+ * @param {Object<string,{title?:string,colors?:string[],tags?:string[]}>} tokensBySrc - 정적 토큰 매핑 [Optional]
+ * @param {number} flowGap - flow 모드 줄 안 이미지 간격(px) [Optional, 기본값: 24]
+ * @param {number} flowRows - flow 모드 줄 갯수 (화면을 가득 메우려고 4 권장) [Optional, 기본값: 4]
+ * @param {number[]} flowSpeeds - 줄 별 속도(px/s, 양수=오른쪽으로). flowRows 와 길이 일치 [Optional, 기본값: [-34, 42, -38, 46]]
+ * @param {node} children - 중앙 오버레이 슬롯 [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
- * <ScatterGallery images={ urls } seed={ 7 } centerKeepout={ 240 }>
- *   <Logo />
- * </ScatterGallery>
+ *   const progressRef = useScrollProgress(wrapperRef);
+ *   <ScatterGallery images={ urls } progressRef={ progressRef } />
  */
 export function ScatterGallery({
   images,
+  progressRef,
   cursorRadius = 220,
   maxShift = 14,
   seed = 42,
@@ -41,11 +47,13 @@ export function ScatterGallery({
   gridRows = 5,
   thumbnailMin = 48,
   thumbnailMax = 96,
-  hasBackdrop = true,
   centerKeepout = 0,
   hasTooltip = false,
   tooltipDelay = 200,
   tokensBySrc,
+  flowGap = 24,
+  flowRows = 4,
+  flowSpeeds = [-34, 42, -38, 46],
   children,
   sx,
 }) {
@@ -53,7 +61,6 @@ export function ScatterGallery({
   const itemRefs = useRef([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hoverIdx, setHoverIdx] = useState(-1);
-  const [lastHoverSrc, setLastHoverSrc] = useState(null);
   const [tooltipIdx, setTooltipIdx] = useState(-1);
   const [hoverColors, setHoverColors] = useState(null);
   const tooltipTimerRef = useRef(0);
@@ -70,7 +77,12 @@ export function ScatterGallery({
     return () => ro.disconnect();
   }, []);
 
-  /* deterministic 분포 — seed + container size 변경 시만 재계산 */
+  /* placements 산출 — 이미지 1 장 = placement 1 개 (duplicate 없음).
+   *   1) jittered grid + centerKeepout 으로 scatter 좌표 산출
+   *   2) round-robin 으로 줄에 분배 (i % flowRows)
+   *   3) 줄 별 laneSpan ≥ size.w + 2 × thumbnailMax 가 되도록 균등 gap 계산
+   *      → 줄 안 이미지가 sparse 하게 펼쳐지고, wrap 은 항상 화면 밖에서 발생
+   */
   const placements = useMemo(() => {
     if (!size.w || !size.h || !images?.length) return [];
     const rng = mulberry32(seed);
@@ -78,54 +90,60 @@ export function ScatterGallery({
     const cellH = size.h / gridRows;
     const cx = size.w / 2;
     const cy = size.h / 2;
-    const out = [];
 
-    for (let row = 0; row < gridRows; row += 1) {
-      for (let col = 0; col < gridCols; col += 1) {
-        const idx = out.length;
-        if (idx >= images.length) break;
-        // cell 내에서 random offset (가장자리 padding 12%)
+    const out = [];
+    let imgIdx = 0;
+    for (let row = 0; row < gridRows && imgIdx < images.length; row += 1) {
+      for (let col = 0; col < gridCols && imgIdx < images.length; col += 1) {
         const pad = 0.12;
         const jx = pad + rng() * (1 - pad * 2);
         const jy = pad + rng() * (1 - pad * 2);
         const x = col * cellW + jx * cellW;
         const y = row * cellH + jy * cellH;
-        // 중앙 keepout
-        if (centerKeepout > 0) {
-          const dx = x - cx;
-          const dy = y - cy;
-          if (Math.hypot(dx, dy) < centerKeepout) continue;
-        }
+        if (centerKeepout > 0 && Math.hypot(x - cx, y - cy) < centerKeepout) continue;
         const sz = thumbnailMin + rng() * (thumbnailMax - thumbnailMin);
-        const src = images[idx % images.length];
         out.push({
-          src,
+          src: images[imgIdx],
           x: x - sz / 2,
           y: y - sz / 2,
           size: sz,
-          // idle phase
-          phase: rng() * Math.PI * 2,
-          phaseSpeed: 0.6 + rng() * 0.6,
-          phaseAmp: 2 + rng() * 4,
+          row: out.length % flowRows,
         });
+        imgIdx += 1;
       }
     }
-    return out;
-  }, [size.w, size.h, images, seed, gridCols, gridRows, thumbnailMin, thumbnailMax, centerKeepout]);
+    if (!out.length) return [];
 
-  /* hover 중인 idx 를 ref 로 ㄱ도 유지 (RAF 안에서 최신값 읽기) */
+    /* 줄 별 laneSpan / 균등 gap. wrap 화면 밖 보장. */
+    const minLaneSpan = size.w + 2 * thumbnailMax;
+    for (let r = 0; r < flowRows; r += 1) {
+      const ofRow = out.filter((p) => p.row === r);
+      if (!ofRow.length) continue;
+      const sumSizes = ofRow.reduce((s, p) => s + p.size, 0);
+      const laneSpan = Math.max(minLaneSpan, sumSizes + ofRow.length * flowGap);
+      const gap = (laneSpan - sumSizes) / ofRow.length;
+      let cursor = 0;
+      ofRow.forEach((p) => {
+        p.flowLaneStart = cursor + p.size / 2;
+        cursor += p.size + gap;
+        p.flowLaneSpan = laneSpan;
+      });
+    }
+    return out;
+  }, [size.w, size.h, images, seed, gridCols, gridRows, thumbnailMin, thumbnailMax, centerKeepout, flowGap, flowRows]);
+
   const hoverIdxRef = useRef(-1);
   useEffect(() => { hoverIdxRef.current = hoverIdx; }, [hoverIdx]);
 
-  /* 마우스 parallax — DOM transform 직조작 (re-render 회피)
-   * hover 된 썸네일은 일체 변형 안 시킴 (transform: none) — 끊김 방지 */
+  /* 단일 RAF — scatter↔flow lerp + cursor parallax */
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     let raf = 0;
     let mx = -9999;
     let my = -9999;
     let active = true;
+    const startT = performance.now();
 
     const onMove = (e) => {
       const rect = el.getBoundingClientRect();
@@ -136,27 +154,44 @@ export function ScatterGallery({
     el.addEventListener('mousemove', onMove);
     el.addEventListener('mouseleave', onLeave);
 
-    // 현재 보간된 위치 — 매 frame target 으로 lerp
     const cur = placements.map(() => ({ dx: 0, dy: 0 }));
     const lerp = 0.15;
 
     const tick = () => {
       if (!active) return;
       const hovered = hoverIdxRef.current;
-      placements.forEach((p, i) => {
+      const p = progressRef?.current ?? 0;
+      const t = (performance.now() - startT) / 1000;
+
+      placements.forEach((pl, i) => {
         const node = itemRefs.current[i];
         if (!node) return;
+
+        // flow 위치 (lane 안 cursor 가 시간에 따라 흐름) — laneSpan 으로 wrap
+        const speed = flowSpeeds[pl.row] ?? 0;
+        const span = pl.flowLaneSpan || 1;
+        const rawPos = pl.flowLaneStart + t * speed;
+        const wrapped = ((rawPos % span) + span) % span;
+        // lane 을 viewport 가운데에 배치 → laneSpan ≥ W + 2*tileMax 이므로 wrap 은 항상 화면 밖
+        const flowX = wrapped - span / 2 + size.w / 2 - pl.size / 2;
+        const rowY = ((pl.row + 0.5) / flowRows) * size.h;
+        const flowY = rowY - pl.size / 2;
+
+        // scatter↔flow 보간 (delta 만 transform 으로) — top/left 은 scatter 정적
+        const deltaX = (flowX - pl.x) * p;
+        const deltaY = (flowY - pl.y) * p;
+
+        // cursor parallax — p ↑ 면 약화
         let tx = 0;
         let ty = 0;
-        // hover 중인 썸네일 — target 0 (시프트 멈춤)
         if (i !== hovered && mx > -9000) {
-          const cx = p.x + p.size / 2;
-          const cy = p.y + p.size / 2;
-          const ddx = cx - mx;
-          const ddy = cy - my;
+          const ccx = pl.x + deltaX + pl.size / 2;
+          const ccy = pl.y + deltaY + pl.size / 2;
+          const ddx = ccx - mx;
+          const ddy = ccy - my;
           const dist = Math.hypot(ddx, ddy);
           if (dist < cursorRadius) {
-            const k = (1 - dist / cursorRadius) * maxShift;
+            const k = (1 - dist / cursorRadius) * maxShift * (1 - p);
             const inv = dist === 0 ? 0 : 1 / dist;
             tx = ddx * inv * k;
             ty = ddy * inv * k;
@@ -164,7 +199,7 @@ export function ScatterGallery({
         }
         cur[i].dx += (tx - cur[i].dx) * lerp;
         cur[i].dy += (ty - cur[i].dy) * lerp;
-        node.style.transform = `translate3d(${cur[i].dx}px, ${cur[i].dy}px, 0)`;
+        node.style.transform = `translate3d(${ deltaX + cur[i].dx }px, ${ deltaY + cur[i].dy }px, 0)`;
       });
       raf = requestAnimationFrame(tick);
     };
@@ -176,19 +211,13 @@ export function ScatterGallery({
       el.removeEventListener('mousemove', onMove);
       el.removeEventListener('mouseleave', onLeave);
     };
-  }, [placements, cursorRadius, maxShift]);
+  }, [placements, cursorRadius, maxShift, size.w, size.h, flowSpeeds, flowRows, progressRef]);
 
-  const hoverSrc = hoverIdx >= 0 ? placements[hoverIdx]?.src : null;
-
-  // hover 떠난 뒤에도 마지막 이미지를 유지 — opacity 0 으로 fade out 되는 동안 image 안 사라지게
-  useEffect(() => {
-    if (hoverSrc) setLastHoverSrc(hoverSrc);
-  }, [hoverSrc]);
-
-  // tooltip delay — hover 200ms 유지되면 띄움
+  /* tooltip delay — flow 모드(p > 0.5) 에서는 비활성 */
   useEffect(() => {
     if (!hasTooltip) return undefined;
-    if (hoverIdx < 0) {
+    const p = progressRef?.current ?? 0;
+    if (hoverIdx < 0 || p > 0.5) {
       setTooltipIdx(-1);
       setHoverColors(null);
       if (tooltipTimerRef.current) {
@@ -203,14 +232,14 @@ export function ScatterGallery({
     return () => {
       if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
     };
-  }, [hoverIdx, hasTooltip, tooltipDelay]);
+  }, [hoverIdx, hasTooltip, tooltipDelay, progressRef]);
 
-  // tooltip src 결정 + 토큰 lookup / 색 추출
+  /* tooltip src 결정 + 토큰 lookup / 색 추출 */
   const tooltipSrc = tooltipIdx >= 0 ? placements[tooltipIdx]?.src : null;
   const tooltipStatic = tooltipSrc ? tokensBySrc?.[tooltipSrc] : null;
   useEffect(() => {
-    if (!tooltipSrc) { setHoverColors(null); return; }
-    if (tooltipStatic?.colors?.length) { setHoverColors(tooltipStatic.colors); return; }
+    if (!tooltipSrc) { setHoverColors(null); return undefined; }
+    if (tooltipStatic?.colors?.length) { setHoverColors(tooltipStatic.colors); return undefined; }
     let cancelled = false;
     extractDominantColors(tooltipSrc, 5).then((cols) => {
       if (!cancelled) setHoverColors(cols);
@@ -232,16 +261,6 @@ export function ScatterGallery({
     return { left, top, width: cardW };
   }, [tooltipPlacement, size.w, size.h]);
 
-  // 마지막 tooltip 컨텐츠/위치 유지 — fade out 도중 사라지지 않게
-  const [lastTooltip, setLastTooltip] = useState(null);
-  useEffect(() => {
-    if (tooltipIdx >= 0 && tooltipPos) {
-      setLastTooltip({ pos: tooltipPos, src: placements[tooltipIdx]?.src });
-    }
-  }, [tooltipIdx, tooltipPos, placements]);
-  const renderPos = tooltipPos || lastTooltip?.pos;
-  const renderStaticTokens = (tooltipStatic || (lastTooltip ? tokensBySrc?.[lastTooltip.src] : null));
-
   return (
     <Box
       ref={ containerRef }
@@ -253,29 +272,10 @@ export function ScatterGallery({
         ...sx,
       } }
     >
-      {/* hover backdrop */}
-      { hasBackdrop && (
-        <Box
-          sx={ {
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: lastHoverSrc ? `url(${lastHoverSrc})` : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(48px) saturate(1.1)',
-            transform: 'scale(1.18)',
-            opacity: hoverSrc ? 0.55 : 0,
-            transition: 'opacity 1200ms cubic-bezier(0.22, 0.61, 0.36, 1)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          } }
-        />
-      ) }
-
-      {/* scattered thumbnails */}
+      {/* scattered thumbnails — flow 시점에는 transform 으로 이동 */}
       { placements.map((p, i) => (
         <Box
-          key={ `${p.src}-${i}` }
+          key={ `${ p.src }-${ i }` }
           ref={ (n) => { itemRefs.current[i] = n; } }
           onMouseEnter={ () => setHoverIdx(i) }
           onMouseLeave={ () => setHoverIdx((curr) => (curr === i ? -1 : curr)) }
@@ -287,7 +287,7 @@ export function ScatterGallery({
             height: p.size,
             borderRadius: 1.5,
             overflow: 'hidden',
-            backgroundImage: `url(${p.src})`,
+            backgroundImage: `url(${ p.src })`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             willChange: 'transform',
@@ -302,37 +302,26 @@ export function ScatterGallery({
         />
       )) }
 
-      {/* tooltip — 추출 토큰(컬러 + 옵션 태그). fade out 도중 잔존 위해 lastTooltip 유지 */}
-      { hasTooltip && renderPos && (
+      {/* tooltip — scatter 모드(p<0.5)에서만 표시 */}
+      { hasTooltip && tooltipPos && tooltipIdx >= 0 && (
         <Box
           sx={ {
             position: 'absolute',
-            top: renderPos.top,
-            left: renderPos.left,
-            width: renderPos.width,
+            top: tooltipPos.top,
+            left: tooltipPos.left,
+            width: tooltipPos.width,
             zIndex: 8,
             pointerEvents: 'none',
-            opacity: tooltipIdx >= 0 ? 1 : 0,
-            transition: 'opacity 480ms cubic-bezier(0.22, 0.61, 0.36, 1)',
             bgcolor: 'background.paper',
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
-            boxShadow: '0 18px 40px rgba(0,0,0,0.15)',
             p: 1.75,
-            backdropFilter: 'blur(8px)',
           } }
         >
-          { renderStaticTokens?.title && (
-            <Typography
-              sx={ {
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                letterSpacing: '0.02em',
-                mb: 0.75,
-              } }
-            >
-              { renderStaticTokens.title }
+          { tooltipStatic?.title && (
+            <Typography sx={ { fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.02em', mb: 0.75 } }>
+              { tooltipStatic.title }
             </Typography>
           ) }
           <Typography
@@ -343,9 +332,9 @@ export function ScatterGallery({
             Extracted color
           </Typography>
           <Box sx={ { display: 'flex', gap: 0.75, flexWrap: 'wrap' } }>
-            { (hoverColors || renderStaticTokens?.colors || Array(5).fill(null)).map((c, i) => (
+            { (hoverColors || tooltipStatic?.colors || Array(5).fill(null)).map((c, k) => (
               <Box
-                key={ i }
+                key={ k }
                 sx={ {
                   width: 28,
                   height: 28,
@@ -359,11 +348,11 @@ export function ScatterGallery({
               />
             )) }
           </Box>
-          { renderStaticTokens?.tags?.length > 0 && (
+          { tooltipStatic?.tags?.length > 0 && (
             <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 } }>
-              { renderStaticTokens.tags.map((t) => (
+              { tooltipStatic.tags.map((tag) => (
                 <Box
-                  key={ t }
+                  key={ tag }
                   sx={ {
                     px: 0.75,
                     py: 0.15,
@@ -375,7 +364,7 @@ export function ScatterGallery({
                     letterSpacing: '0.02em',
                   } }
                 >
-                  { t }
+                  { tag }
                 </Box>
               )) }
             </Box>
@@ -419,7 +408,6 @@ function mulberry32(seed) {
 
 /* ============================================
  * extractDominantColors — 32x32 다운샘플 + RGB bucket(>>4) 모드 카운트
- * 결과는 module-level Map 으로 캐시 (src 단위)
  * ============================================ */
 const COLOR_CACHE = new Map();
 
@@ -446,7 +434,6 @@ function extractDominantColors(src, count = 5) {
           const r = (data[i] >> 4) << 4;
           const g = (data[i + 1] >> 4) << 4;
           const b = (data[i + 2] >> 4) << 4;
-          // 너무 어두운 / 너무 밝은 (전체 면적 차지하는 mat) 약간 페널티: 가중치 0.4
           const luma = 0.299 * r + 0.587 * g + 0.114 * b;
           const weight = (luma < 18 || luma > 240) ? 0.4 : 1;
           const key = (r << 16) | (g << 8) | b;
@@ -454,7 +441,7 @@ function extractDominantColors(src, count = 5) {
         }
         const sorted = [...buckets.entries()].sort((a, b) => b[1] - a[1]);
         const out = [];
-        const minDist = 28; // hex 거리 임계 — 비슷한 색 dedupe
+        const minDist = 28;
         for (const [key] of sorted) {
           const r = (key >> 16) & 0xff;
           const g = (key >> 8) & 0xff;
@@ -469,7 +456,7 @@ function extractDominantColors(src, count = 5) {
           out.push({ r, g, b });
           if (out.length >= count) break;
         }
-        resolve(out.map(({ r, g, b }) => `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`));
+        resolve(out.map(({ r, g, b }) => `#${ [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('') }`));
       } catch {
         resolve([]);
       }

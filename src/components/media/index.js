@@ -23,7 +23,7 @@ export { CarouselIndicator } from './CarouselIndicator.jsx';
 // FloatingImageGallery - Three.js z-depth 무한 갤러리 (hero/배경용)
 export { FloatingImageGallery } from './FloatingImageGallery.jsx';
 
-// ScatterGallery - jittered grid 분포 + cursor parallax + hover backdrop blur (hero용)
+// ScatterGallery - jittered grid 분포 + cursor parallax + scatter↔두 줄 flow 연속 lerp (hero용)
 export { ScatterGallery } from './ScatterGallery.jsx';
 
 // RefImage - signed URL 만료 자동 재서명 이미지

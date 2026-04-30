@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { alpha, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { defaultTheme } from '../../styles/themes';
 import { AppShell } from '../../components/layout/AppShell.jsx';
 import { AuthHeroBackdrop } from './AuthHeroBackdrop.jsx';
 import { AuthDialog } from './AuthDialog.jsx';
 import { COMMON, LANDING_GNB } from './landingCopy.js';
-import { LandingProblem } from './sections/LandingProblem.jsx';
 import { LandingSolution } from './sections/LandingSolution.jsx';
 import { LandingHowItWorks } from './sections/LandingHowItWorks.jsx';
 import { LandingPersonas } from './sections/LandingPersonas.jsx';
@@ -20,8 +17,8 @@ import { LandingCta } from './sections/LandingCta.jsx';
 /**
  * AuthPage — 랜딩 + 가입 진입 페이지
  *
- * Hero(scatter gallery + MUSE 타이포)
- * → PROBLEM → SOLUTION → HOW IT WORKS → PERSONAS → CTA
+ * Hero (stack-pin: scatter ↔ blurred marquee + 메인 질문)
+ * → SOLUTION → HOW IT WORKS → PERSONAS → CTA
  * → AuthDialog (signin/signup 팝업)
  *
  * 항상 light 테마 고정.
@@ -41,7 +38,7 @@ function AuthPage() {
   const openSignup = () => { setAuthMode('signup'); setAuthOpen(true); };
   const openSignin = () => { setAuthMode('signin'); setAuthOpen(true); };
 
-  const scrollToNext = () => {
+  const scrollPastHero = () => {
     nextSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -81,38 +78,10 @@ function AuthPage() {
           </Box>
         ) }
       >
-        {/* Hero */}
-        <Box sx={ { position: 'relative' } }>
-          <AuthHeroBackdrop heightVh={ 100 } />
-          <IconButton
-            onClick={ scrollToNext }
-            aria-label={ COMMON.scrollDownAria }
-            sx={ {
-              position: 'absolute',
-              left: '50%',
-              bottom: 32,
-              transform: 'translateX(-50%)',
-              zIndex: 60,
-              color: 'text.secondary',
-              backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.6),
-              backdropFilter: 'blur(8px)',
-              '&:hover': {
-                backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.9),
-              },
-              animation: 'authBounce 2s ease-in-out infinite',
-              '@keyframes authBounce': {
-                '0%, 100%': { transform: 'translate(-50%, 0)' },
-                '50%': { transform: 'translate(-50%, 8px)' },
-              },
-            } }
-          >
-            <KeyboardArrowDownIcon />
-          </IconButton>
-        </Box>
+        <AuthHeroBackdrop onStart={ openSignup } onScrollNext={ scrollPastHero } />
 
         {/* 랜딩 섹션들 */}
         <Box ref={ nextSectionRef }>
-          <LandingProblem />
           <LandingSolution />
           <LandingHowItWorks />
           <LandingPersonas />

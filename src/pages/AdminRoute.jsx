@@ -8,15 +8,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
+import Grid from '@mui/material/Grid';
 import { PageContainer } from '../components/layout/PageContainer.jsx';
 import { ImageCard } from '../components/card/ImageCard.jsx';
+import { MoodboardCard } from '../components/card/MoodboardCard.jsx';
 import { useAuth } from '../hooks/auth';
 import { supabase } from '../lib/supabase';
+import { getSignedUrl } from '../lib/museDb';
 import { flattenTags } from '../data/muse';
 
 /**
@@ -70,13 +68,26 @@ export function AdminRoute() {
     setDetailError(null);
     Promise.all([
       supabase.from('reference_items').select('*').eq('user_id', selectedUserId).order('created_at', { ascending: false }),
-      supabase.from('projects').select('*').eq('user_id', selectedUserId).order('created_at', { ascending: false }),
+      supabase
+        .from('projects')
+        .select('*, project_references(reference_id)')
+        .eq('user_id', selectedUserId)
+        .order('created_at', { ascending: false }),
     ])
-      .then(([refRes, projRes]) => {
+      .then(async ([refRes, projRes]) => {
         if (canceled) return;
         if (refRes.error) throw refRes.error;
         if (projRes.error) throw projRes.error;
-        setRefs(refRes.data || []);
+        const enrichedRefs = await Promise.all(
+          (refRes.data || []).map(async (r) => ({
+            ...r,
+            resolvedThumbnail: r.storage_path
+              ? await getSignedUrl(r.storage_path)
+              : (r.thumbnail_url || null),
+          })),
+        );
+        if (canceled) return;
+        setRefs(enrichedRefs);
         setProjects(projRes.data || []);
       })
       .catch((e) => {
@@ -94,6 +105,25 @@ export function AdminRoute() {
   const selectedUser = useMemo(
     () => users.find((u) => u.id === selectedUserId) || null,
     [users, selectedUserId],
+  );
+
+  const refMap = useMemo(
+    () => Object.fromEntries(refs.map((r) => [r.id, r])),
+    [refs],
+  );
+
+  const projectsWithThumbnails = useMemo(
+    () => projects.map((p) => {
+      const refIds = (p.project_references || []).map((pr) => pr.reference_id);
+      return {
+        ...p,
+        thumbnails: refIds
+          .slice(0, 4)
+          .map((id) => refMap[id]?.resolvedThumbnail)
+          .filter(Boolean),
+      };
+    }),
+    [projects, refMap],
   );
 
   if (authLoading) {
@@ -226,7 +256,7 @@ export function AdminRoute() {
                   { refs.map((r) => (
                     <ImageCard
                       key={ r.id }
-                      src={ r.thumbnail_url }
+                      src={ r.resolvedThumbnail }
                       title={ r.title }
                       tags={ flattenTags({ tags: r.tags }).slice(0, 3) }
                       dominantColors={ r.dominant_colors || [] }
@@ -235,33 +265,25 @@ export function AdminRoute() {
                 </Box>
               )
             ) : (
-              projects.length === 0 ? (
+              projectsWithThumbnails.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">프로젝트 없음</Typography>
               ) : (
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>이름</TableCell>
-                      <TableCell>모드</TableCell>
-                      <TableCell>의도</TableCell>
-                      <TableCell>생성</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    { projects.map((p) => (
-                      <TableRow key={ p.id } hover>
-                        <TableCell sx={ { fontWeight: 600 } }>{ p.name }</TableCell>
-                        <TableCell>
-                          <Chip label={ p.mode || '-' } size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell sx={ { color: 'text.secondary', fontSize: '0.8rem' } }>{ p.intent }</TableCell>
-                        <TableCell sx={ { color: 'text.secondary', fontSize: '0.8rem' } }>
-                          { p.created_at ? new Date(p.created_at).toLocaleString() : '' }
-                        </TableCell>
-                      </TableRow>
-                    )) }
-                  </TableBody>
-                </Table>
+                <Grid container spacing={ 3 }>
+                  { projectsWithThumbnails.map((p) => (
+                    <Grid key={ p.id } size={ { xs: 12, sm: 6, md: 6, lg: 4, xl: 3 } }>
+                      <MoodboardCard
+                        id={ p.id }
+                        name={ p.name }
+                        description={ p.intent }
+                        items={ (p.thumbnails || []).map((url, i) => ({
+                          id: `${p.id}-thumb-${i}`,
+                          thumbnail: url,
+                        })) }
+                        createdAt={ p.created_at }
+                      />
+                    </Grid>
+                  )) }
+                </Grid>
               )
             ) }
           </Box>

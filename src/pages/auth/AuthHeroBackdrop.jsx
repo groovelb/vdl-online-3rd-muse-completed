@@ -3,7 +3,9 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme, alpha } from '@mui/material/styles';
-import { FloatingImageGallery } from '../../components/media/FloatingImageGallery.jsx';
+import { ScatterGallery } from '../../components/media/ScatterGallery.jsx';
+import exampleTokensJson from '../../data/exampleTokens.json';
+import { COMMON, HERO } from './landingCopy.js';
 
 /** Vite glob — assets/example/*.jpg|jpeg|png 빌드 시점 번들 */
 const imageModules = import.meta.glob('../../assets/example/*.{jpg,jpeg,png}', {
@@ -12,6 +14,26 @@ const imageModules = import.meta.glob('../../assets/example/*.{jpg,jpeg,png}', {
   import: 'default',
 });
 const ALL_IMAGES = Object.values(imageModules);
+
+/**
+ * url(번들된) → basename 매핑 으로 정적 토큰 lookup 가능하게 변환.
+ * exampleTokens.json 키는 src/assets/example/ 의 원본 파일명.
+ * Vite glob path 의 basename 으로 매칭.
+ */
+const TOKENS_BY_SRC = (() => {
+  const out = {};
+  for (const [filePath, url] of Object.entries(imageModules)) {
+    const basename = filePath.split('/').pop();
+    const t = exampleTokensJson[basename];
+    if (!t) continue;
+    out[url] = {
+      title: t.title,
+      colors: t.dominantColors,
+      tags: (t.tags || []).slice(0, 4),
+    };
+  }
+  return out;
+})();
 
 /**
  * AuthHeroBackdrop
@@ -110,27 +132,32 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
               color: 'text.primary',
             } }
           >
-            MUSE
+            { COMMON.brand }
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={ { mt: 2 } }>
-            디자인 레퍼런스 아카이브 + 토큰 추출
+            { HERO.mobileSubtitle }
           </Typography>
         </Box>
       </Box>
     );
   }
 
-  // 데스크탑: Three.js 무한 갤러리
+  // 데스크탑: ScatterGallery (jittered grid + cursor parallax + hover backdrop)
   return (
     <Box sx={ { position: 'relative', width: '100%', height: `${ heightVh }vh`, overflow: 'hidden' } }>
-      <FloatingImageGallery
+      <ScatterGallery
         images={ ALL_IMAGES }
-        backgroundColor={ theme.palette.background.default }
-        count={ 80 }
-        planeSize={ 360 }
-        autoDriftZ={ -1.4 }
-        isInteractive
-        hasParallax
+        seed={ 12 }
+        gridCols={ 6 }
+        gridRows={ 4 }
+        thumbnailMin={ 48 }
+        thumbnailMax={ 104 }
+        cursorRadius={ 240 }
+        maxShift={ 16 }
+        centerKeepout={ 220 }
+        hasTooltip
+        tooltipDelay={ 200 }
+        tokensBySrc={ TOKENS_BY_SRC }
         sx={ { position: 'absolute', inset: 0 } }
       />
 
@@ -160,7 +187,7 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
             mixBlendMode: theme.palette.mode === 'dark' ? 'screen' : 'multiply',
           } }
         >
-          MUSE
+          { COMMON.brand }
         </Typography>
       </Box>
 
@@ -192,7 +219,7 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
         } }
       >
         <Typography
-          variant="h2"
+          variant="h3"
           component="p"
           sx={ {
             color: 'text.primary',
@@ -200,14 +227,14 @@ export function AuthHeroBackdrop({ heightVh = 100 }) {
             lineHeight: 1.15,
           } }
         >
-          무드보드를 디자인 토큰으로.
+          { HERO.desktopTitle }
         </Typography>
         <Typography
           variant="body1"
           color="text.secondary"
           sx={ { mt: 2, fontWeight: 500 } }
         >
-          디자인 레퍼런스 아카이브 + 토큰 추출
+          { HERO.desktopSubtitle }
         </Typography>
       </Box>
     </Box>

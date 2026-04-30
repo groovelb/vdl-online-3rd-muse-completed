@@ -3,6 +3,8 @@
 > **핵심 원칙**: 새 화면 신규 X. 기존 5개 입력 지점(TP2~TP6)에 "왜?" 질문을 끼워 넣어 사용자 의도를 UX 자체에 박는다. 자세한 명세: [04-ux-intervention-roadmap.md](../research/04-ux-intervention-roadmap.md)
 >
 > **2026-04-28**: TP1(레퍼런스 업로드 chip) 폐기. T1은 이미지가 정보 원천이라 사용자 chip이 태깅 정확도를 의미 있게 향상시키지 않음. TP4(레이어 chip)와 다운스트림 가치 중복으로 판단.
+>
+> **2026-04-29**: 모드 3 (`handoff` / 🎯 코드 직행) 폐기. system 모드와 실질 차이 부족 — system 모드가 기존 handoff 의 ZIP export (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 활성 모드는 `concept` / `system` 2종.
 
 ## 유저 시나리오
 
@@ -23,9 +25,10 @@
 - **사용자**: 디자이너 / PM / 엔지니어
 - **목표**: 사용자가 모드 → 한 줄 의도 → 레퍼런스 → 활용 노트 4단계로 의도를 좁혀가며 결정. **"AI가 알아서"가 아닌 "내가 단계마다 결정했다"는 인식**.
 - **플로우**:
-  1. **Step 0 (TP2): 모드 선택 카드 3개**
-     - 🎨 컨셉 잡기 / 🏗️ 디자인 시스템 (default) / 🎯 코드 직행
+  1. **Step 0 (TP2): 모드 선택 카드 2개**
+     - 🎨 컨셉 잡기 / 🏗️ 디자인 시스템 (default)
      - → `project.mode` 저장 → T2/T3 system prompt 분기 + Step 3 minLength 차등
+     - (~~🎯 코드 직행 (handoff)~~ 은 2026-04-29 폐기 — system 모드가 export 까지 흡수)
   2. **Step 1 (TP3): 제목 + 한 줄 의도**
      - 제목 TextField + IntentGuideField (placeholder + helperText 가이드만, maxLength 120)
      - 가이드: "무드 / 사용자 맥락 / 시각 방향 / 제약을 한 줄에"
@@ -35,7 +38,7 @@
      - → `selectedRefs[].useLayers` 저장
   4. **Step 3 (NEW, 활용 노트 — RefinementNotesField)**
      - 레퍼런스 본 후 활용 지점 명시 textarea + 선택된 ref 썸네일 + 가이드 박스
-     - 모드별 minLength: **concept=0(스킵) / system=30 / handoff=50**
+     - 모드별 minLength: **concept=0(스킵) / system=30**
      - 좋은 예: "ref-002 색을 primary로, ref-005 grid 강조, 타이포는 가볍게"
      - → `project.userNotes` 저장 → T3 합성 **HIGHEST PRIORITY** 입력
      - [분석 시작 →] 버튼이 곧 confirm (TP5 흡수, 별도 step 없음)
@@ -43,7 +46,7 @@
 - **T3 입력 우선순위 (Progressive Narrowing)**: userNotes (L4) > useLayers (L3) > intent (L2) > mode (L1)
 - **성공 조건**:
   - concept 모드: 비디자이너 P1 도 5분 안에 완료 (Step 3 스킵 가능)
-  - system/handoff 모드: 사용자가 명시 지시한 토큰이 결과에 직접 반영 (TP6 펼침에 ✋ appliedUserNotes 인용)
+  - system 모드: 사용자가 명시 지시한 토큰이 결과에 직접 반영 (TP6 펼침에 ✋ appliedUserNotes 인용)
 - **예외 상황**: 0장 선택 시 비활성, 분석 중 이탈 시 백그라운드 진행
 
 ### 시나리오 3: 토큰 확인 및 조정 + 결정 추적 펼침 (TP6)
@@ -76,9 +79,8 @@
 - **플로우**:
   1. 프로젝트 상세에서 "Export" 클릭
   2. Export 다이얼로그에 **모드별 default 산출물** 자동 선택:
-     - 🎨 컨셉 모드: DESIGN.md 우선 + 미리보기
-     - 🏗️ 시스템 모드: 토큰 JSON + decision-trace.md
-     - 🎯 코드직행 모드: DTCG tokens.json + MUI theme + cursorrules
+     - 🎨 컨셉 모드: conceptPrompt 800자 (Claude Desktop / Gemini / ChatGPT 즉시 입력) + 이미지 ZIP
+     - 🏗️ 시스템 모드: ZIP 번들 (DESIGN.md + DTCG tokens.json + decision-trace.md + refs/) — 외부 코딩 도구 직접 입력
   3. 복사 / 파일 다운로드 / ZIP 번들 — 4종 출력 동시 가능
      - MUI theme (`createTheme` 코드)
      - DTCG W3C tokens.json (외부 표준)
@@ -98,7 +100,7 @@ flowchart TD
     Upload --> AutoTag["T1 · 자동 태깅<br/>(Haiku 4.5 vision)<br/>tags + dominantColors + extracted"]
     AutoTag --> Archive
 
-    Archive -->|새 프로젝트| TP2["TP2: 모드 선택 카드<br/>🎨 컨셉 / 🏗️ 시스템 / 🎯 코드직행"]
+    Archive -->|새 프로젝트| TP2["TP2: 모드 선택 카드<br/>🎨 컨셉 / 🏗️ 시스템"]
     TP2 --> TP3["TP3: 제목 + 한 줄 의도<br/>(IntentGuideField, maxLength 120)"]
     TP3 -->|projectMode + intent| Recommend["T2 · 레퍼런스 추천<br/>(Haiku text-only)<br/>+ referenceLayer per ref"]
     Recommend --> TP4["TP4: 카드 layer chip<br/>🎨 색  📝 타이포  📐 레이아웃<br/>(자동 / 수동 토글)"]
@@ -133,7 +135,7 @@ MUSE
 ├── 프로젝트 목록 (/projects)
 │   └── 프로젝트 카드 (2x2 썸네일 + 이름 + 모드 뱃지)
 ├── 프로젝트 생성 (/projects/new)
-│   ├── ★Step 0. 모드 선택 카드 — TP2 (컨셉 / 시스템 / 코드직행)
+│   ├── ★Step 0. 모드 선택 카드 — TP2 (컨셉 / 시스템)
 │   ├── Step 1. 이름 + 의도 (+ ★시드 칩 + 예시 — TP3)
 │   ├── Step 2. 레퍼런스 선택 (추천 + 아카이브 + ★layer chip — TP4)
 │   └── Step 3. ★분석 직전 확인 박스 — TP5 → 분석 진행 화면
@@ -358,7 +360,7 @@ MUI theme 코드 최종 산출 흐름.
 
 - **사용자 의도가 UX의 5개 입력 지점에 박힌다 (TP2~TP6)**: 새 화면 신규 X. 기존 흐름에 작은 질문 끼워 넣어 사용자가 답을 만드는 동안 자기 취향을 의식하게 만듦. 답은 system prompt 변수로 흘러가 결과 디테일 ↑. (TP1 폐기 — T1은 이미지가 정보 원천이라 사용자 의도가 정확도 향상에 기여 안 함)
 - **모든 질문은 스킵 가능 (자동 default OK)**: TP2 모드 미선택 시 "🏗️ 시스템" default. TP1 chip 미클릭 시 자동 태깅. 비디자이너 P1 페르소나 진입 막지 않음.
-- **모드별 분기가 파이프라인 전체 결정**: TP2 모드(컨셉/시스템/코드직행) 한 번 선택이 T2 정렬 + T3 합성 톤 + Export default 모두 분기. 사용자가 "내가 지금 뭘 하려는지" 명시화.
+- **모드별 분기가 파이프라인 전체 결정**: TP2 모드(컨셉/시스템) 한 번 선택이 T2 정렬 + T3 합성 톤 + Export default 모두 분기. 사용자가 "내가 지금 뭘 하려는지" 명시화.
 - **아카이빙과 프로젝트 생성의 분리**: 아카이빙은 수시로, 프로젝트는 의도 기반 큐레이션 — 두 플로우의 진입점을 명확히 구분
 - **분석은 비동기·백그라운드**: 생성 이탈 후 돌아와도 결과 확인 가능
 - **토큰 편집 = on/off + emphasis 2축 + 결정 추적 (TP6)**: 삭제가 아닌 비활성화 기반으로 언제든 복원 가능. 추가로 카드 클릭 시 출처/이유/대안 펼침으로 "왜 이 토큰?" 즉답 가능.

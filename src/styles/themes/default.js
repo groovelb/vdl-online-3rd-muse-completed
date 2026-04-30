@@ -154,10 +154,10 @@ const typography = {
   },
   h3: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',
-    fontWeight: 600,
-    fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', // 24px ~ 32px
-    lineHeight: 1.25,
-    letterSpacing: '-0.01em',
+    fontWeight: 700,
+    fontSize: 'clamp(1.875rem, 3.25vw, 2.625rem)', // 30px ~ 42px
+    lineHeight: 1.2,
+    letterSpacing: '-0.015em',
   },
   h4: {
     fontFamily: '"Outfit", "Pretendard Variable", Pretendard, sans-serif',

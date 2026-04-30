@@ -1,8 +1,10 @@
 # DESIGN.md (alpha) — 발췌 사본
 
 > 출처: https://github.com/google-labs-code/design.md (Google Labs, 2026-04 공개 알파 사양)
-> 본 문서는 MUSE T3 system / handoff 모드의 산출물 포맷이 따라야 할 **고정된 참조본**이다.
+> 본 문서는 MUSE T3 **system 모드** 의 산출물 포맷이 따라야 할 **고정된 참조본**이다.
 > upstream spec 갱신 발견 시 이 파일을 갱신하고 호환 영향 범위를 코드에 반영한다.
+>
+> **2026-04-29 변경**: 기존 `handoff` 모드 폐기 — system 모드가 ZIP export (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 본문에 남은 `system` / `handoff` 듀얼 표기는 모두 현 시점 기준 `system` 으로 읽으면 됨 (handoff 컬럼은 이력 보존).
 
 ---
 

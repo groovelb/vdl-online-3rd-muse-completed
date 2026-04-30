@@ -38,6 +38,7 @@ export const useGNB = () => useContext(GNBContext);
  * @param {boolean} hasBorder - 헤더 하단 보더 [Optional, 기본값: true]
  * @param {boolean} isSticky - 헤더 고정 [Optional, 기본값: true]
  * @param {boolean} isTransparent - 헤더 투명 배경 [Optional, 기본값: false]
+ * @param {boolean} isGhost - ghost 모드 (배경/보더/blur 모두 제거 → 컨텐츠만 떠 있음) [Optional, 기본값: false]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -59,6 +60,7 @@ const GNB = forwardRef(function GNB({
   hasBorder = true,
   isSticky = true,
   isTransparent = false,
+  isGhost = false,
   sx,
   ...props
 }, ref) {
@@ -83,10 +85,10 @@ const GNB = forwardRef(function GNB({
     justifyContent: 'space-between',
     height,
     px: { xs: 2, sm: 3, md: 4 },
-    backgroundColor: isTransparent ? 'transparent' : 'background.paper',
-    borderBottom: hasBorder ? '1px solid' : 'none',
+    backgroundColor: isGhost ? 'transparent' : (isTransparent ? 'transparent' : 'background.paper'),
+    borderBottom: !isGhost && hasBorder ? '1px solid' : 'none',
     borderColor: 'divider',
-    backdropFilter: isTransparent ? 'blur(12px)' : 'none',
+    backdropFilter: isGhost ? 'none' : (isTransparent ? 'blur(12px)' : 'none'),
     ...sx,
   };
 

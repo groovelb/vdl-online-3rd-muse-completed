@@ -1,10 +1,12 @@
 # 06. 플랫폼별 전달 모범 + MUSE 산출물 설계 전략
 
 > 2026-04-28 · 외부 AI 도구 3종 (Claude Design / Google AI Studio / Gemini) 대상으로
-> MUSE 의 mode 별 산출물(concept/system/handoff) 이 어떻게 받아들여지는지 분석하고,
+> MUSE 의 mode 별 산출물 이 어떻게 받아들여지는지 분석하고,
 > 각 플랫폼 친화 산출물을 설계하기 위한 전략 문서.
 >
 > 본 문서는 **분석·전략 단계**. 코드 변경은 별도 work-log 로 분리.
+>
+> **2026-04-29 변경**: 모드 3 (`handoff`) 폐기. system 모드가 기존 handoff 의 ZIP export 역할 (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 본문 표/플랜에 남은 `handoff` 컬럼은 **분석 시점 기준 (2026-04-28)** 으로 보존하되, 실제 산출물은 모두 `system` 모드 경로로 통합되어 동일하게 동작한다. "handoff 만 적용" / "system / handoff" 같은 표현은 현 시점에선 모두 `system` 으로 읽으면 됨.
 
 ---
 

@@ -117,8 +117,57 @@ export const Transparent = {
 };
 
 /**
+ * ## Ghost
+ *
+ * 배경 / 보더 / blur 모두 제거. 컨텐츠(로고 + 우측 슬롯)만 떠 있는 형태.
+ * Hero 위 transparent overlay 보다 더 minimal — landing 페이지에 사용.
+ */
+export const Ghost = {
+  render: () => (
+    <PageContainer>
+      <DocumentTitle
+        title="GNB - Ghost"
+        status="Ready"
+        note="배경 / 보더 / blur 모두 제거 — 컨텐츠만 노출"
+        brandName="Navigation"
+        systemName="GNB"
+        version="1.0"
+      />
+      <SectionContainer sx={{ py: 0 }}>
+        <Box sx={{ position: 'relative' }}>
+          <GNB
+            logo={<Logo />}
+            navContent={
+              <NavMenu
+                items={navItems}
+                activeId="dashboard"
+                variant="underline"
+              />
+            }
+            isGhost
+          />
+          <Box
+            sx={{
+              height: 400,
+              background: 'linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography variant="h3" color="text.secondary" fontWeight={700}>
+              Hero Section
+            </Typography>
+          </Box>
+        </Box>
+      </SectionContainer>
+    </PageContainer>
+  ),
+};
+
+/**
  * ## With Persistent Elements
- * 
+ *
  * 항상 표시되는 요소(검색바, 프로필 등)와 함께 사용합니다.
  */
 export const WithPersistent = {
@@ -316,6 +365,12 @@ export const Props = {
                 <td>boolean</td>
                 <td>false</td>
                 <td>투명 배경 + 블러 효과</td>
+              </tr>
+              <tr>
+                <td><code>isGhost</code></td>
+                <td>boolean</td>
+                <td>false</td>
+                <td>배경 / 보더 / blur 모두 제거 (컨텐츠만 노출)</td>
               </tr>
             </tbody>
           </Box>

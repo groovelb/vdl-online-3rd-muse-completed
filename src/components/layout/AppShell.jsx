@@ -21,6 +21,7 @@ import { GNB } from '../navigation/GNB';
  * @param {boolean} hasHeaderBorder - 헤더 하단 보더 [Optional, 기본값: true]
  * @param {boolean} isHeaderSticky - 헤더 고정 [Optional, 기본값: true]
  * @param {boolean} isHeaderTransparent - 헤더 투명 배경 [Optional, 기본값: false]
+ * @param {boolean} isHeaderGhost - 헤더 ghost 모드 (배경/보더/blur 모두 제거) [Optional, 기본값: false]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -46,6 +47,7 @@ const AppShell = forwardRef(function AppShell({
   hasHeaderBorder = true,
   isHeaderSticky = true,
   isHeaderTransparent = false,
+  isHeaderGhost = false,
   sx,
   ...props
 }, ref) {
@@ -73,6 +75,7 @@ const AppShell = forwardRef(function AppShell({
         hasBorder={hasHeaderBorder}
         isSticky={isHeaderSticky}
         isTransparent={isHeaderTransparent}
+        isGhost={isHeaderGhost}
       />
 
       {/* Main Content */}

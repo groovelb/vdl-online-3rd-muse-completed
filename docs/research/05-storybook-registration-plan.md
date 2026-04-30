@@ -94,11 +94,11 @@ src/components/
 
 #### ModeSelectCard (TP2)
 **Title**: `Card / ModeSelectCard`
-**스토리 4개**:
-- `Default` — 3 카드 선택 안 된 상태
+**스토리 3개** (2026-04-29: handoff 폐기로 4 → 3):
+- `Default` — 2 카드 선택 안 된 상태
 - `ConceptSelected` — "🎨 컨셉" 선택
 - `SystemSelected` — "🏗️ 시스템" 선택
-- `HandoffSelected` — "🎯 코드직행" 선택
+- ~~`HandoffSelected` — "🎯 코드직행" 선택~~ (2026-04-29 폐기)
 
 #### UserIntentChipRow (TP1)
 **Title**: `Card / UserIntentChipRow`
@@ -123,12 +123,9 @@ src/components/
 - `ManualOnlyColor` — 색만 토글된 큐레이션
 - `Locked` — 분석 시작 후 잠김
 
-#### AnalysisConfirmBox (TP5)
-**Title**: `OverlayFeedback / AnalysisConfirmBox`
-**스토리 3개**:
-- `ConceptMode` — 컨셉 모드 confirmation
-- `SystemMode` — 시스템 모드
-- `HandoffMode` — 코드직행 모드 (예상 비용 표시)
+#### AnalysisConfirmBox (TP5) — **TP5 자체 2026-04-28 폐기 (Step 3 분석 시작 버튼이 흡수)**
+~~**Title**: `OverlayFeedback / AnalysisConfirmBox`~~
+~~**스토리 3개**: ConceptMode / SystemMode / HandoffMode~~
 
 ---
 

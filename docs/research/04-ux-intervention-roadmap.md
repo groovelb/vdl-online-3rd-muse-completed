@@ -3,6 +3,7 @@
 > 작성일: 2026-04-28
 > **2026-04-28 수정 1**: TP1 폐기. 사유는 §TP1 섹션.
 > **2026-04-28 수정 2**: TP5 폐기 (Step 3 하단 버튼이 흡수). Step 3 (활용 노트, RefinementNotesField) 신규 도입 — Progressive Narrowing의 핵심.
+> **2026-04-29 수정 3**: 모드 3 (`handoff` / 🎯 코드 직행) 폐기. system 모드와 실질 차이 부족. system 이 기존 handoff 의 ZIP export (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 활성 모드는 `concept` / `system` 2종. 본 문서의 TP2 모드 표 / minLength / system prompt 분기 등에 남아 있는 `handoff` 컬럼/라인은 **이력 보존 차원에서 유지** (실제 코드는 system 으로 흡수됨).
 > 근거: `01-design-md-painpoints-raw.md` (52건 출처) + `02-painpoints-qualitative-analysis.md` (4 super-themes) + `03-product-priority-roadmap.md` (15개 작업 후보)
 > 결정 방향: **퍼포먼스 파인튜닝보다 UX 자체에 의도가 들어가는 방향으로**
 > 핵심 원칙: 큰 화면 신규 X. 기존 입력 지점에 "왜?" 질문을 끼워 넣음. UX 자체가 사용자 주도권을 일깨우고 결과 디테일을 끌어올림.

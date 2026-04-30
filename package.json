@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "generate-rules": "node scripts/generate-rules.js"
+    "generate-rules": "node scripts/generate-rules.js",
+    "gen:example-tokens": "node scripts/gen-example-tokens.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

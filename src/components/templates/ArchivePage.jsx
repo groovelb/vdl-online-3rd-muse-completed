@@ -17,7 +17,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { isSimilarColor } from '../../utils/colorSimilarity';
 import { PageContainer } from '../layout/PageContainer.jsx';
 import { InfiniteMasonry } from '../layout/InfiniteMasonry.jsx';
-import { ImageCard } from '../card/ImageCard.jsx';
+import { ReferenceCard } from '../card/ReferenceCard.jsx';
 import { FileDropzone } from '../input/FileDropzone.jsx';
 import { ReferenceDetailDialog } from '../overlay-feedback/ReferenceDetailDialog.jsx';
 import { flattenTags } from '../../data/muse';
@@ -143,103 +143,103 @@ export function ArchivePage({
 
   return (
     <>
-      <PageContainer variant="fluid" sx={ sx }>
+      <PageContainer variant="fluid" sx={sx}>
         {/* Hero */}
-        <Box ref={ heroRef } sx={ { py: { xs: 4, md: 8 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 } }>
-          <Typography variant="h2" sx={ { fontWeight: 600, letterSpacing: '-0.02em' } }>Archive</Typography>
+        <Box ref={heroRef} sx={{ py: { xs: 4, md: 8 }, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography variant="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em' }}>Archive</Typography>
           <Button
             variant="contained"
             color="primary"
-            startIcon={ <AddIcon /> }
-            onClick={ () => setIsAddRefOpen(true) }
+            startIcon={<AddIcon />}
+            onClick={() => setIsAddRefOpen(true)}
           >
             레퍼런스 추가
           </Button>
         </Box>
 
-        { uploadState.error && (
-          <Alert severity="error" sx={ { mb: 2 } }>{ uploadState.error }</Alert>
-        ) }
-        { useStoreMode && pendingCount > 0 && (
+        {uploadState.error && (
+          <Alert severity="error" sx={{ mb: 2 }}>{uploadState.error}</Alert>
+        )}
+        {useStoreMode && pendingCount > 0 && (
           <Alert
             severity="info"
-            icon={ <CircularProgress size={ 16 } thickness={ 5 } /> }
-            sx={ { mb: 2 } }
+            icon={<CircularProgress size={16} thickness={5} />}
+            sx={{ mb: 2 }}
           >
-            { pendingCount }장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
+            {pendingCount}장 자동 태깅 중… 완료되면 카드에 태그가 자동으로 채워집니다
           </Alert>
-        ) }
+        )}
 
         {/* 좌측 sticky 필터 사이드바 + 우측 fluid 그리드 */}
         <Box
-          sx={ {
+          sx={{
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             gap: { xs: 2, md: 4 },
             alignItems: 'flex-start',
-          } }
+          }}
         >
           <Box
-            sx={ {
+            sx={{
               width: { xs: '100%', md: 240 },
               flexShrink: 0,
               position: { md: 'sticky' },
               top: { md: 88 },
               alignSelf: { md: 'flex-start' },
-            } }
+            }}
           >
             <FilterPanel
-              references={ references }
-              searchTerm={ searchTerm }
-              onSearchTermChange={ setSearchTerm }
-              activeTags={ activeTags }
-              onToggleTag={ toggleTag }
-              activeColors={ activeColors }
-              onToggleColor={ toggleColor }
-              onResetColors={ resetColors }
-              onResetFilters={ resetAllFilters }
-              filteredCount={ filtered.length }
-              totalCount={ references.length }
+              references={references}
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              activeTags={activeTags}
+              onToggleTag={toggleTag}
+              activeColors={activeColors}
+              onToggleColor={toggleColor}
+              onResetColors={resetColors}
+              onResetFilters={resetAllFilters}
+              filteredCount={filtered.length}
+              totalCount={references.length}
             />
           </Box>
 
-          <Box sx={ { flex: 1, width: '100%', minWidth: 0 } }>
+          <Box sx={{ flex: 1, width: '100%', minWidth: 0 }}>
             <InfiniteMasonry
-              items={ filtered }
-              hasMore={ hasMore && !hasActiveFilters }
-              isLoading={ isLoading }
-              onLoadMore={ onLoadMore }
-              columns={ { xs: 2, sm: 3, md: 3, lg: 4, xl: 6 } }
-              spacing={ 2 }
+              items={filtered}
+              hasMore={hasMore && !hasActiveFilters}
+              isLoading={isLoading}
+              onLoadMore={onLoadMore}
+              columns={{ xs: 2, sm: 3, md: 3, lg: 4, xl: 5 }}
+              spacing={4}
               emptyContent={
                 hasActiveFilters
                   ? '조건에 맞는 레퍼런스가 없습니다.'
                   : '아직 수집된 레퍼런스가 없습니다. 이미지를 드래그해서 추가해보세요.'
               }
-              renderItem={ (item) => (
+              renderItem={(item) => (
                 <ArchiveCard
-                  item={ item }
-                  useStoreMode={ useStoreMode }
-                  onOpenDetail={ () => setDetailTarget(item) }
-                  onRequestDelete={ () =>
+                  item={item}
+                  useStoreMode={useStoreMode}
+                  onOpenDetail={() => setDetailTarget(item)}
+                  onRequestDelete={() =>
                     setDeleteTarget({ id: item.id, title: item.title || '(제목 없음)' })
                   }
-                  onRetryTagging={ () => retryTagging(item) }
+                  onRetryTagging={() => retryTagging(item)}
                 />
-              ) }
+              )}
             />
           </Box>
         </Box>
 
-        <Box sx={ { height: 64 } } />
+        <Box sx={{ height: 64 }} />
       </PageContainer>
 
       <Fab
         color="primary"
         variant="extended"
         aria-label="레퍼런스 추가"
-        onClick={ () => setIsAddRefOpen(true) }
-        sx={ {
+        onClick={() => setIsAddRefOpen(true)}
+        sx={{
           position: 'fixed',
           bottom: { xs: 24, md: 32 },
           right: { xs: 24, md: 32 },
@@ -248,55 +248,55 @@ export function ArchivePage({
           transform: isHeroVisible ? 'translateY(8px)' : 'translateY(0)',
           pointerEvents: isHeroVisible ? 'none' : 'auto',
           transition: 'opacity 200ms ease, transform 200ms ease',
-        } }
+        }}
       >
-        <AddIcon sx={ { mr: 1 } } />
+        <AddIcon sx={{ mr: 1 }} />
         레퍼런스 추가
       </Fab>
 
       <Dialog
-        open={ !!deleteTarget }
-        onClose={ () => !deleteState.isDeleting && setDeleteTarget(null) }
+        open={!!deleteTarget}
+        onClose={() => !deleteState.isDeleting && setDeleteTarget(null)}
         maxWidth="xs"
         fullWidth
       >
         <DialogTitle>레퍼런스 삭제</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            <strong>{ deleteTarget?.title }</strong> 을(를) 삭제할까요?
+            <strong>{deleteTarget?.title}</strong> 을(를) 삭제할까요?
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={ { mt: 1, display: 'block' } }>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
             이 작업은 되돌릴 수 없습니다. 원본 이미지 파일도 함께 삭제되며, 프로젝트에 연결된 경우 자동으로 해제됩니다.
           </Typography>
-          { deleteState.error && (
-            <Alert severity="error" sx={ { mt: 2 } }>{ deleteState.error }</Alert>
-          ) }
+          {deleteState.error && (
+            <Alert severity="error" sx={{ mt: 2 }}>{deleteState.error}</Alert>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={ () => setDeleteTarget(null) } disabled={ deleteState.isDeleting }>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleteState.isDeleting}>
             취소
           </Button>
           <Button
-            onClick={ handleConfirmDelete }
+            onClick={handleConfirmDelete}
             color="error"
             variant="contained"
-            disabled={ deleteState.isDeleting }
+            disabled={deleteState.isDeleting}
           >
-            { deleteState.isDeleting ? '삭제 중...' : '삭제' }
+            {deleteState.isDeleting ? '삭제 중...' : '삭제'}
           </Button>
         </DialogActions>
       </Dialog>
 
       <ReferenceDetailDialog
-        reference={ detailTarget }
-        onClose={ () => setDetailTarget(null) }
-        activeTags={ activeTags }
-        activeColors={ activeColors }
+        reference={detailTarget}
+        onClose={() => setDetailTarget(null)}
+        activeTags={activeTags}
+        activeColors={activeColors}
       />
 
       <Dialog
-        open={ isAddRefOpen }
-        onClose={ () => setIsAddRefOpen(false) }
+        open={isAddRefOpen}
+        onClose={() => setIsAddRefOpen(false)}
         maxWidth="sm"
         fullWidth
       >
@@ -304,45 +304,45 @@ export function ArchivePage({
         <DialogContent>
           <FileDropzone
             multiple
-            onFileSelect={ (file) => {
+            onFileSelect={(file) => {
               setIsAddRefOpen(false);
               handleUploadFile(file);
-            } }
-            onFilesSelect={ (files) => {
+            }}
+            onFilesSelect={(files) => {
               setIsAddRefOpen(false);
               handleUploadFiles(files);
-            } }
+            }}
             variant="default"
-            isUploading={ false }
+            isUploading={false}
           />
           <input
-            ref={ fileInputRef }
+            ref={fileInputRef}
             type="file"
             accept="image/*,video/*"
             multiple
             hidden
-            onChange={ (e) => {
+            onChange={(e) => {
               const files = Array.from(e.target.files || []);
               e.target.value = '';
               if (!files.length) return;
               setIsAddRefOpen(false);
               if (files.length > 1) handleUploadFiles(files);
               else handleUploadFile(files[0]);
-            } }
+            }}
           />
-          { uploadState.error && (
-            <Alert severity="error" sx={ { mt: 2 } }>{ uploadState.error }</Alert>
-          ) }
+          {uploadState.error && (
+            <Alert severity="error" sx={{ mt: 2 }}>{uploadState.error}</Alert>
+          )}
         </DialogContent>
-        <DialogActions sx={ { px: 3, pb: 2, justifyContent: 'space-between' } }>
+        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
           <Button
             variant="outlined"
-            startIcon={ <UploadFileIcon /> }
-            onClick={ () => fileInputRef.current?.click() }
+            startIcon={<UploadFileIcon />}
+            onClick={() => fileInputRef.current?.click()}
           >
             파일 업로드
           </Button>
-          <Button onClick={ () => setIsAddRefOpen(false) }>
+          <Button onClick={() => setIsAddRefOpen(false)}>
             닫기
           </Button>
         </DialogActions>
@@ -355,28 +355,32 @@ export function ArchivePage({
 function ArchiveCard({ item, useStoreMode, onOpenDetail, onRequestDelete, onRetryTagging }) {
   return (
     <Box
-      sx={ {
+      sx={{
         position: 'relative',
         '&:hover .muse-delete-btn': { opacity: 1 },
-      } }
+      }}
     >
-      <ImageCard
-        src={ item.thumbnailUrl || item.src }
-        title={ item.title }
-        tags={ flattenTags(item).slice(0, 3) }
-        dominantColors={ item.dominantColors || [] }
-        onClick={ onOpenDetail }
+      <ReferenceCard
+        src={item.thumbnailUrl || item.src}
+        title={item.title}
+        tags={flattenTags(item).slice(0, 3)}
+        dominantColors={item.dominantColors || []}
+        state={item._pending ? 1 : 2}
+        analyzingVariant="chip"
+        errorMessage={item._tagError}
+        onRetry={onRetryTagging}
+        onClick={onOpenDetail}
       />
-      { useStoreMode && !item._pending && (
+      {useStoreMode && !item._pending && (
         <IconButton
           className="muse-delete-btn"
           size="small"
           aria-label="레퍼런스 삭제"
-          onClick={ (e) => {
+          onClick={(e) => {
             e.stopPropagation();
             onRequestDelete();
-          } }
-          sx={ {
+          }}
+          sx={{
             position: 'absolute',
             top: 8,
             left: 8,
@@ -386,70 +390,11 @@ function ArchiveCard({ item, useStoreMode, onOpenDetail, onRequestDelete, onRetr
             transition: 'opacity 150ms',
             backdropFilter: 'blur(6px)',
             '&:hover': { bgcolor: 'error.main' },
-          } }
+          }}
         >
           <DeleteOutlineIcon fontSize="small" />
         </IconButton>
-      ) }
-      { item._pending && (
-        <Box
-          sx={ {
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            bgcolor: 'rgba(252,252,255,0.9)',
-            borderRadius: 999,
-            px: 1,
-            py: 0.25,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            backdropFilter: 'blur(6px)',
-          } }
-        >
-          <CircularProgress size={ 10 } thickness={ 5 } />
-          <Typography variant="caption" sx={ { fontSize: 10, color: 'text.secondary' } }>
-            태깅 중
-          </Typography>
-        </Box>
-      ) }
-      { item._tagError && (
-        <Box
-          sx={ {
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            bgcolor: 'error.main',
-            color: 'white',
-            borderRadius: 999,
-            pl: 1,
-            pr: 0.25,
-            py: 0.25,
-            fontSize: 10,
-          } }
-          title={ item._tagError }
-        >
-          <span>태깅 실패</span>
-          <IconButton
-            size="small"
-            onClick={ (e) => {
-              e.stopPropagation();
-              onRetryTagging();
-            } }
-            aria-label="태깅 다시 시도"
-            sx={ {
-              p: 0.25,
-              color: 'white',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
-            } }
-          >
-            <RefreshIcon sx={ { fontSize: 14 } } />
-          </IconButton>
-        </Box>
-      ) }
+      )}
     </Box>
   );
 }

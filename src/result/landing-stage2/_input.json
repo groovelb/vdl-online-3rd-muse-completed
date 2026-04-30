@@ -1,0 +1,238 @@
+{
+  "intent": "의도까지 추적 가능한 디자인 시스템. 컬러는 네온/그라디언트 강한 톤, 타이포는 매거진 헤드라인 임팩트, 레이아웃은 fintech-grade 격자.",
+  "refs": [
+    {
+      "id": "ref-001",
+      "title": "Bold Energetic Message",
+      "tags": {
+        "color": [
+          "Vivid"
+        ],
+        "typography": [
+          "Display",
+          "All-caps"
+        ],
+        "layout": [],
+        "gradient": []
+      },
+      "dominantColors": [
+        "#D32F2F",
+        "#1A1A1A",
+        "#E53935",
+        "#C62828",
+        "#F44336"
+      ],
+      "extracted": {
+        "palette": [
+          {
+            "hex": "#D32F2F",
+            "label": "Hero Red",
+            "group": "Brand"
+          },
+          {
+            "hex": "#1A1A1A",
+            "label": "Ink",
+            "group": "Neutral"
+          },
+          {
+            "hex": "#F44336",
+            "label": "Alert Red",
+            "group": "Brand"
+          }
+        ],
+        "typography": [
+          {
+            "hierarchy": "display",
+            "fontFamily": "Bricolage Grotesque, Inter, sans-serif",
+            "fontWeight": 800,
+            "fontSize": "clamp(64px, 8vw, 120px)",
+            "lineHeight": 0.95,
+            "letterSpacing": "-0.04em",
+            "sampleText": "BOLD ENERGY"
+          },
+          {
+            "hierarchy": "heading",
+            "fontFamily": "Bricolage Grotesque, Inter, sans-serif",
+            "fontWeight": 700,
+            "fontSize": "clamp(36px, 4vw, 56px)",
+            "lineHeight": 1.1,
+            "letterSpacing": "-0.02em"
+          },
+          {
+            "hierarchy": "body",
+            "fontFamily": "IBM Plex Sans, sans-serif",
+            "fontWeight": 400,
+            "fontSize": "16px",
+            "lineHeight": 1.6
+          }
+        ],
+        "layout": [],
+        "gradient": []
+      },
+      "note": "",
+      "useLayers": [
+        "typography"
+      ],
+      "attachIdx": 1,
+      "attachFile": "01-ref-001.jpg"
+    },
+    {
+      "id": "ref-002",
+      "title": "Bold Gradient Fintech Energy",
+      "tags": {
+        "color": [
+          "Vivid",
+          "Deep"
+        ],
+        "typography": [],
+        "layout": [
+          "Grid",
+          "Hero"
+        ],
+        "gradient": [
+          "Mesh",
+          "Sunset"
+        ]
+      },
+      "dominantColors": [
+        "#1E3A8A",
+        "#FFA500",
+        "#0F172A",
+        "#FF6B35"
+      ],
+      "extracted": {
+        "palette": [
+          {
+            "hex": "#1E3A8A",
+            "label": "Deep Indigo",
+            "group": "Brand"
+          },
+          {
+            "hex": "#0F172A",
+            "label": "Slate Ink",
+            "group": "Neutral"
+          }
+        ],
+        "typography": [],
+        "layout": [
+          {
+            "kind": "grid",
+            "columns": 12,
+            "gap": 24,
+            "maxWidth": "1280px"
+          },
+          {
+            "kind": "spacing",
+            "px": 8
+          },
+          {
+            "kind": "container",
+            "maxWidth": "1280px",
+            "ratio": 1.78
+          }
+        ],
+        "gradient": []
+      },
+      "note": "",
+      "useLayers": [
+        "layout"
+      ],
+      "attachIdx": 2,
+      "attachFile": "02-ref-002.jpg"
+    },
+    {
+      "id": "ref-003",
+      "title": "Neon Gradient Blur",
+      "tags": {
+        "color": [
+          "Neon",
+          "Vivid"
+        ],
+        "typography": [],
+        "layout": [],
+        "gradient": [
+          "Neon-glow",
+          "Mesh",
+          "Soft-blur"
+        ]
+      },
+      "dominantColors": [
+        "#FF1744",
+        "#0066FF",
+        "#00FFCC",
+        "#7B1FA2",
+        "#1A1A1A"
+      ],
+      "extracted": {
+        "palette": [
+          {
+            "hex": "#FF1744",
+            "label": "Neon Magenta",
+            "group": "Brand"
+          },
+          {
+            "hex": "#0066FF",
+            "label": "Electric Blue",
+            "group": "Brand"
+          },
+          {
+            "hex": "#00FFCC",
+            "label": "Cyan Glow",
+            "group": "Brand"
+          },
+          {
+            "hex": "#7B1FA2",
+            "label": "Deep Violet",
+            "group": "Brand"
+          },
+          {
+            "hex": "#1A1A1A",
+            "label": "Void",
+            "group": "Neutral"
+          }
+        ],
+        "typography": [],
+        "layout": [],
+        "gradient": [
+          {
+            "gradient": "linear-gradient(135deg, #FF1744 0%, #7B1FA2 50%, #0066FF 100%)",
+            "stops": [
+              {
+                "offset": 0,
+                "color": "#FF1744"
+              },
+              {
+                "offset": 0.5,
+                "color": "#7B1FA2"
+              },
+              {
+                "offset": 1,
+                "color": "#0066FF"
+              }
+            ]
+          },
+          {
+            "gradient": "radial-gradient(circle at 30% 70%, #00FFCC 0%, transparent 60%)",
+            "stops": [
+              {
+                "offset": 0,
+                "color": "#00FFCC"
+              },
+              {
+                "offset": 1,
+                "color": "#1A1A1A"
+              }
+            ]
+          }
+        ]
+      },
+      "note": "",
+      "useLayers": [
+        "color",
+        "gradient"
+      ],
+      "attachIdx": 3,
+      "attachFile": "03-ref-003.jpg"
+    }
+  ]
+}

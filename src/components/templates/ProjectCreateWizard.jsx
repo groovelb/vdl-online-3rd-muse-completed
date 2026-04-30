@@ -17,24 +17,12 @@ import { IntentGuideField } from '../input/IntentGuideField.jsx';
 import { RefImage } from '../media/RefImage.jsx';
 import { runSuggestRefNote } from '../../utils/museAiTasks';
 import Chip from '@mui/material/Chip';
+import {
+  LAYER_LABEL,
+  TOKEN_LAYER_CATEGORIES as MUSE_LAYERS,
+} from '../../data/muse/layers.js';
 
 const STEPS = ['모드', '제목+의도', '레퍼런스', '활용 노트', '분석'];
-
-const LAYER_LABEL = {
-  color: '🎨 색',
-  typography: '📝 타이포',
-  layout: '📐 레이아웃',
-  gradient: '🌈 그라디언트',
-  visualDirection: '🎭 무드',
-};
-
-const MUSE_LAYERS = [
-  { key: 'color', label: '컬러' },
-  { key: 'typography', label: '타이포그래피' },
-  { key: 'layout', label: '레이아웃' },
-  { key: 'gradient', label: '그라디언트' },
-  { key: 'visualDirection', label: '비주얼 디렉션' },
-];
 
 const MODE_DEFS = [
   {

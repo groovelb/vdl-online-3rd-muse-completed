@@ -27,15 +27,7 @@ import TableBody from '@mui/material/TableBody';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import { RefImage } from '../media/RefImage.jsx';
-
-const LAYERS = [
-  { id: 'color', label: '컬러' },
-  { id: 'typography', label: '타이포' },
-  { id: 'layout', label: '레이아웃' },
-  { id: 'gradient', label: '그라디언트' },
-  { id: 'visualDirection', label: '비주얼 디렉션' },
-  { id: 'designMd', label: 'DESIGN.md' },
-];
+import { ANALYSIS_LAYERS_WITH_DESIGN_MD as LAYERS } from '../../data/muse/layers.js';
 
 /**
  * ProjectDetailPage 템플릿

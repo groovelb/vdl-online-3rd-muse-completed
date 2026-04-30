@@ -11,7 +11,6 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Alert from '@mui/material/Alert';
 import CloseIcon from '@mui/icons-material/Close';
-import { alpha } from '@mui/material/styles';
 import { useSignIn, useSignUp } from '../../hooks/auth';
 import { COMMON, AUTH_DIALOG } from './landingCopy.js';
 
@@ -152,18 +151,14 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
               variant="contained"
               disabled={ loading }
               fullWidth
+              disableElevation
               sx={ {
                 mt: 1,
                 py: 1.75,
                 fontSize: '1.05rem',
                 fontWeight: 700,
-                borderRadius: 999,
                 textTransform: 'none',
                 letterSpacing: '-0.01em',
-                boxShadow: (theme) => `0 12px 40px ${ alpha(theme.palette.primary.main, 0.35) }`,
-                '&:hover': {
-                  boxShadow: (theme) => `0 16px 50px ${ alpha(theme.palette.primary.main, 0.5) }`,
-                },
               } }
             >
               { loading ? AUTH_DIALOG.submitting : AUTH_DIALOG[mode].submit }

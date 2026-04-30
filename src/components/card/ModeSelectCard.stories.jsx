@@ -9,9 +9,8 @@ export default {
 };
 
 const MODES = [
-  { mode: 'concept', title: '🎨 컨셉 잡기', subtitle: '감을 잡고 싶다', description: '빠른 다양성 우선 — T2 다양한 무드, T3 distinctive bias' },
-  { mode: 'system', title: '🏗️ 디자인 시스템 만들기', subtitle: '정확한 토큰 필요', description: '일관성·근거 우선 — role 엄격, contrast 검증' },
-  { mode: 'handoff', title: '🎯 코드 직행', subtitle: 'MUI/Tailwind로 바로', description: '완전성·표준 우선 — naming MUI/DTCG 호환' },
+  { mode: 'concept', title: '컨셉 잡기', subtitle: '감을 잡고 싶다', description: '빠른 다양성 우선. T2 다양한 무드, T3 distinctive bias' },
+  { mode: 'system', title: '디자인 시스템 만들기', subtitle: '정확한 토큰 필요', description: '일관성, 근거 우선. role 엄격, contrast 검증' },
 ];
 
 /** Default — 3장 카드 grid, 미선택 상태 */
@@ -67,9 +66,9 @@ export const Single = {
   render: () => (
     <ModeSelectCard
       mode="concept"
-      title="🎨 컨셉 잡기"
+      title="컨셉 잡기"
       subtitle="감을 잡고 싶다"
-      description="빠른 다양성 우선 — T2 다양한 무드, T3 distinctive bias"
+      description="빠른 다양성 우선. T2 다양한 무드, T3 distinctive bias"
       isSelected
       onSelect={ () => {} }
       sx={ { width: 280 } }

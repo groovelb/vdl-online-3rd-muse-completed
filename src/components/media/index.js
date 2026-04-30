@@ -26,5 +26,8 @@ export { FloatingImageGallery } from './FloatingImageGallery.jsx';
 // ScatterGallery - jittered grid 분포 + cursor parallax + scatter↔두 줄 flow 연속 lerp (hero용)
 export { ScatterGallery } from './ScatterGallery.jsx';
 
+// ReferenceAnnotationOverlay - 레퍼런스 hover 시 코너 브래킷 + 스캔 + 가장자리 어노테이션
+export { ReferenceAnnotationOverlay } from './ReferenceAnnotationOverlay.jsx';
+
 // RefImage - signed URL 만료 자동 재서명 이미지
 export { RefImage } from './RefImage.jsx';

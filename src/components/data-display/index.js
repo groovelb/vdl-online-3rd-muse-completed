@@ -16,3 +16,6 @@ export { GradientPreview } from './GradientPreview.jsx';
 
 // DESIGN.md (Google Labs alpha spec) preview — system / handoff 결과 화면 + components live render + scale 시각화
 export { DesignMdPreview } from './DesignMdPreview.jsx';
+
+// LayerAnalysisStrip — T1 레이어별 진행 strip (overlay 아닌 stack 흐름)
+export { LayerAnalysisStrip } from './LayerAnalysisStrip.jsx';

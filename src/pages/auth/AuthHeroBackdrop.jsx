@@ -8,32 +8,8 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme, alpha } from '@mui/material/styles';
 import { ScatterGallery } from '../../components/media/ScatterGallery.jsx';
 import { useScrollProgress } from '../../hooks/useScrollProgress.js';
-import exampleTokensJson from '../../data/exampleTokens.json';
+import { ALL_IMAGES, TOKENS_BY_SRC } from '../../utils/exampleImageTokens.js';
 import { COMMON, HERO, PROBLEM } from './landingCopy.js';
-
-/** Vite glob — assets/example/*.jpg|jpeg|png 빌드 시점 번들 */
-const imageModules = import.meta.glob('../../assets/example/*.{jpg,jpeg,png}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-const ALL_IMAGES = Object.values(imageModules);
-
-/** 토큰 정적 lookup (basename → 토큰) */
-const TOKENS_BY_SRC = (() => {
-  const out = {};
-  for (const [filePath, url] of Object.entries(imageModules)) {
-    const basename = filePath.split('/').pop();
-    const t = exampleTokensJson[basename];
-    if (!t) continue;
-    out[url] = {
-      title: t.title,
-      colors: t.dominantColors,
-      tags: (t.tags || []).slice(0, 4),
-    };
-  }
-  return out;
-})();
 
 /**
  * AuthHeroBackdrop
@@ -217,7 +193,6 @@ export function AuthHeroBackdrop({ onStart, onScrollNext }) {
                 px: 8,
                 py: 2.5,
                 mt: 2,
-                borderRadius: 2,
               } }
             >
               { HERO.cta }
@@ -345,7 +320,6 @@ function MobileHero({ onStart, theme }) {
               fontSize: '1.125rem',
               px: 6,
               py: 2,
-              borderRadius: 2,
             } }
           >
             { HERO.cta }

@@ -19,6 +19,7 @@ import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
  * @param {function} onChange - (id, patch) => void [Optional]
  * @param {boolean} isGrouped - group 필드 기준으로 섹션 분리 [Optional, 기본값: false]
  * @param {array} references - TP6 출처 썸네일용 reference 풀 [Optional]
+ * @param {string} defaultExpandedId - 마운트 시점에 자동으로 펼쳐진 토큰 id [Optional]
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -27,8 +28,8 @@ import { TokenDecisionTracePanel } from './TokenDecisionTracePanel.jsx';
  *   onChange={ (id, patch) => updateToken(id, patch) }
  * />
  */
-export function ColorSwatchList({ tokens, onChange, isGrouped = false, references = [], sx }) {
-  const [expandedId, setExpandedId] = useState(null);
+export function ColorSwatchList({ tokens, onChange, isGrouped = false, references = [], defaultExpandedId = null, sx }) {
+  const [expandedId, setExpandedId] = useState(defaultExpandedId);
 
   const renderItem = (token, isLastInGroup) => {
     const hasRationale = !!token.decisionRationale || (token.sourceReferenceIds || []).length > 0;

@@ -137,7 +137,7 @@ export function RefinementNotesField({
             letterSpacing: '0.06em',
           } }
         >
-          💡 활용 노트 작성 가이드
+          활용 노트 작성 가이드
         </Typography>
         <Typography variant="body2" sx={ { mb: 1, color: 'text.secondary' } }>
           큰 느낌과 구조부터. 픽셀 단위 디테일은 지금 적지 않아도 됩니다.

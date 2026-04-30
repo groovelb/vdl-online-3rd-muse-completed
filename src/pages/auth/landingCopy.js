@@ -31,26 +31,29 @@ export const PROBLEM = {
   title: '레퍼런스로 만든 AI 의 디자인, 얼마나 이해하고 계신가요?',
 };
 
-export const SOLUTION = {
-  eyebrow: 'THE SOLUTION',
-  title: '결과가 아니라 결정 을 디자인한다.',
-  lede: 'MUSE 는 사용자 의도를 UX 의 입력 지점마다 박고, 모든 결정을 추적 가능하게 만든다.',
-  items: [
-    {
-      key: 'intent',
-      title: '의도가 박힌 UX',
-      body: '레퍼런스 업로드, 모드 선택, 추천 카드, 활용 노트. 6 개 입력 지점에 "왜?" 가 끼워져 있다. 사용자의 의도가 모든 결정의 입력으로 명시 된다.',
-    },
-    {
-      key: 'trace',
-      title: '결정 추적',
-      body: '모든 토큰에 출처 레퍼런스 + 의도 매칭 이유 + 탈락 후보가 자동 노출. 결과만 보는 게 아니라, 어떤 결정 위에서 그 결과가 나왔는지 추적할 수 있다.',
-    },
-    {
-      key: 'mode',
-      title: '모드 분기',
-      body: '컨셉 잡기 / 시스템 빌드. 모드에 따라 추천 정렬, 합성 톤, export default 가 모두 분기. 사용 맥락이 결과의 톤을 결정한다.',
-    },
+export const SOLUTION_STAGE_1 = {
+  eyebrow: '01 · INPUT LAYER',
+  title: '정확한 분류 체계로 레퍼런스를 관리하세요',
+  lede: '업로드 한 장이 들어오면 같은 5 layer 격자 (color, typography, layout, gradient, visual direction) 로 자동 분류됩니다. 분류가 같아야 비교, 합성, 추적이 가능합니다.',
+  caption: '모든 레퍼런스가 동일한 격자 위에 정렬됩니다.',
+  layerLabels: {
+    color: 'Color',
+    typography: 'Typography',
+    layout: 'Layout',
+    gradient: 'Gradient',
+    visualDirection: 'Visual Direction',
+  },
+};
+
+export const SOLUTION_STAGE_2 = {
+  eyebrow: '02 · OUTPUT LAYER',
+  title: '의도에 맞게 분석된 레퍼런스를 AI에게 학습시키세요',
+  lede: '추출된 토큰과 결정 추적을 DESIGN.md ZIP 으로 export. Claude, Gemini, ChatGPT 어디에 붙여넣어도 의도까지 이해한 코드를 받을 수 있습니다.',
+  caption: 'DESIGN.md ZIP 을 그대로 붙여넣으면, AI 가 의도까지 이해한 코드를 출력합니다.',
+  brands: [
+    { name: 'Claude',  org: 'Anthropic', color: '#DA7756' },
+    { name: 'Gemini',  org: 'Google',    color: '#4285F4' },
+    { name: 'ChatGPT', org: 'OpenAI',    color: '#10A37F' },
   ],
 };
 
@@ -117,15 +120,15 @@ export const PERSONAS = {
 };
 
 export const CTA = {
-  title: '결정의 출처가 박힌 디자인 시스템, 30 초 안에 시작.',
-  lede: '이메일 하나로 첫 프로젝트의 결정 로그까지 받아보세요.',
+  title: '오늘 본 레퍼런스, 그대로 흘려보내지 마세요.',
+  lede: '이메일 하나면 충분합니다. 첫 프로젝트의 결정 로그까지 30 초 안에 받아보실 수 있어요.',
   primary: '지금 시작하기',
   secondary: '이미 계정이 있나요?',
 };
 
 export const AUTH_DIALOG = {
   signin: {
-    title: '바이브 디자인 시작하세요',
+    title: 'MUSE 시작하기',
     subtitle: '계정 정보로 로그인하세요',
     submit: '로그인',
   },

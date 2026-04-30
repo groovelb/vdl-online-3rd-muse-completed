@@ -1,17 +1,10 @@
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
-
-const LAYER_DEFS_BASE = [
-  { key: 'color', label: '🎨 색', short: '색' },
-  { key: 'typography', label: '📝 타이포', short: '타이포' },
-  { key: 'layout', label: '📐 레이아웃', short: '레이아웃' },
-  { key: 'gradient', label: '🌈 그라디언트', short: '그라디언트' },
-  { key: 'visualDirection', label: '🎭 무드', short: '무드' },
-];
-
-// system / handoff 모드 한정 — 컴포넌트 결합 차용 chip (DESIGN.md components)
-const LAYER_DEF_COMPONENTS = { key: 'components', label: '🧩 컴포넌트', short: '컴포넌트' };
+import {
+  LAYER_CHIP_DEFS_BASE as LAYER_DEFS_BASE,
+  LAYER_CHIP_DEF_COMPONENTS as LAYER_DEF_COMPONENTS,
+} from '../../data/muse/layers.js';
 
 /**
  * ReferenceLayerChipRow 컴포넌트 (TP4)

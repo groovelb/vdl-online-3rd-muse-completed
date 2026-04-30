@@ -35,6 +35,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - MoodboardCard: 무드보드 컬렉션 카드. 2x2 썸네일 그리드 (`components/card/MoodboardCard.jsx`)
 - ModeSelectCard: TP2 — 프로젝트 생성 첫 화면 모드 카드 (concept/system/handoff). 한 번의 선택이 T2 추천·T3 합성·Export 기본을 모두 분기 (`components/card/ModeSelectCard.jsx`)
 - ReferenceLayerChipRow: TP4 — 추천 카드별 "이 ref에서 어느 레이어를 가져올지" chip 토글. T2 referenceLayer 자동 / 사용자 수동 (`components/card/ReferenceLayerChipRow.jsx`)
+- ReferenceCard: MUSE Reference (공식 데이터 모델) 도메인 카드. ImageCard 위에 T1 분석 state(0|1|2) 머신 + analyzingVariant ('chip' 작은 뱃지 / 'strip' 하단 LayerAnalysisStrip) + errorMessage / onRetry 에러 chip 통합. ArchivePage / ReferencePicker / AdminRoute / 랜딩 데모 모두 이걸 사용 (`components/card/ReferenceCard.jsx`)
 - Card: MUI Card 컴포넌트 [MUI]
 
 ## 4. Media — 이미지, 비디오 표시
@@ -52,6 +53,7 @@ Vibe Dictionary 텍소노미 v0.4 기반 분류. 번호는 텍소노미 카테�
 - TypographyPreview: 타이포 레이어 토큰 목록. preview에 실제 폰트로 샘플 문자 렌더 (`components/data-display/TypographyPreview.jsx`)
 - LayoutTokenPreview: 레이아웃 레이어(grid/spacing/container) mini-diagram 프리뷰 (`components/data-display/LayoutTokenPreview.jsx`)
 - GradientPreview: 그라디언트 레이어 토큰 목록. preview에 실제 gradient 스와치 (`components/data-display/GradientPreview.jsx`)
+- LayerAnalysisStrip: 레퍼런스 / 미디어 카드 하단에 부착되는 가벼운 5 layer 진행 strip. ANALYZING n/N + LinearProgress 2px + per-layer status 행. overlay 아닌 stack 흐름 (`components/data-display/LayerAnalysisStrip.jsx`)
 - Table: MUI Table 컴포넌트 [MUI]
 
 ## 6. In-page Navigation — 페이지 내 탐색

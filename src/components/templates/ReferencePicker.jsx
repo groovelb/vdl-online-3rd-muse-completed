@@ -7,7 +7,7 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
-import { ImageCard } from '../card/ImageCard.jsx';
+import { ReferenceCard } from '../card/ReferenceCard.jsx';
 import { ReferenceLayerChipRow } from '../card/ReferenceLayerChipRow.jsx';
 import { useInfiniteScroll } from '../layout/useInfiniteScroll.js';
 import { flattenTags } from '../../data/muse';
@@ -275,7 +275,7 @@ export function ReferencePicker({
             const userCuration = selectedRefs.find((r) => r.id === item.id)?.useLayers || [];
             return (
               <Box key={ item.id }>
-                <ImageCard
+                <ReferenceCard
                   src={ item.src }
                   title={ item.title }
                   mediaRatio="4/5"

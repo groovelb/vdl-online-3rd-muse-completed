@@ -31,7 +31,7 @@ export default {
   },
   decorators: [
     (Story) => (
-      <MemoryRouter initialEntries={ ['/auth'] }>
+      <MemoryRouter initialEntries={['/auth']}>
         <AuthProvider>
           <Story />
         </AuthProvider>

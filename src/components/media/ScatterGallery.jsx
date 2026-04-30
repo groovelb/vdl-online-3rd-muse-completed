@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import { ReferenceAnnotationOverlay } from './ReferenceAnnotationOverlay.jsx';
 
 /**
  * ScatterGallery 컴포넌트
@@ -62,7 +62,6 @@ export function ScatterGallery({
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hoverIdx, setHoverIdx] = useState(-1);
   const [tooltipIdx, setTooltipIdx] = useState(-1);
-  const [hoverColors, setHoverColors] = useState(null);
   const tooltipTimerRef = useRef(0);
 
   /* container size 추적 */
@@ -219,13 +218,12 @@ export function ScatterGallery({
     if (!hasTooltip) return undefined;
     const p = progressRef?.current ?? 0;
     if (hoverIdx < 0 || p > 0.5) {
-      setTooltipIdx(-1);
-      setHoverColors(null);
       if (tooltipTimerRef.current) {
         clearTimeout(tooltipTimerRef.current);
         tooltipTimerRef.current = 0;
       }
-      return undefined;
+      const id = window.setTimeout(() => setTooltipIdx(-1), 0);
+      return () => clearTimeout(id);
     }
     tooltipTimerRef.current = window.setTimeout(() => {
       setTooltipIdx(hoverIdx);
@@ -234,33 +232,6 @@ export function ScatterGallery({
       if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
     };
   }, [hoverIdx, hasTooltip, tooltipDelay, progressRef]);
-
-  /* tooltip src 결정 + 토큰 lookup / 색 추출 */
-  const tooltipSrc = tooltipIdx >= 0 ? placements[tooltipIdx]?.src : null;
-  const tooltipStatic = tooltipSrc ? tokensBySrc?.[tooltipSrc] : null;
-  useEffect(() => {
-    if (!tooltipSrc) { setHoverColors(null); return undefined; }
-    if (tooltipStatic?.colors?.length) { setHoverColors(tooltipStatic.colors); return undefined; }
-    let cancelled = false;
-    extractDominantColors(tooltipSrc, 5).then((cols) => {
-      if (!cancelled) setHoverColors(cols);
-    });
-    return () => { cancelled = true; };
-  }, [tooltipSrc, tooltipStatic]);
-
-  const tooltipPlacement = tooltipIdx >= 0 ? placements[tooltipIdx] : null;
-  const tooltipPos = useMemo(() => {
-    if (!tooltipPlacement || !size.w) return null;
-    const cardW = 240;
-    const gap = 12;
-    const rightX = tooltipPlacement.x + tooltipPlacement.size + gap;
-    const flip = rightX + cardW > size.w - 16;
-    const left = flip
-      ? Math.max(16, tooltipPlacement.x - cardW - gap)
-      : rightX;
-    const top = Math.max(16, Math.min(size.h - 160, tooltipPlacement.y));
-    return { left, top, width: cardW };
-  }, [tooltipPlacement, size.w, size.h]);
 
   return (
     <Box
@@ -273,105 +244,51 @@ export function ScatterGallery({
         ...sx,
       } }
     >
-      {/* scattered thumbnails — flow 시점에는 transform 으로 이동 */}
-      { placements.map((p, i) => (
-        <Box
-          key={ `${ p.src }-${ i }` }
-          ref={ (n) => { itemRefs.current[i] = n; } }
-          onMouseEnter={ () => setHoverIdx(i) }
-          onMouseLeave={ () => setHoverIdx((curr) => (curr === i ? -1 : curr)) }
-          sx={ {
-            position: 'absolute',
-            top: p.y,
-            left: p.x,
-            width: p.size,
-            height: p.size,
-            borderRadius: 1.5,
-            overflow: 'hidden',
-            backgroundImage: `url(${ p.src })`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            willChange: 'transform',
-            transition: 'filter 220ms ease',
-            zIndex: 1,
-            cursor: 'pointer',
-            '&:hover': {
-              filter: 'brightness(1.05)',
-              zIndex: 5,
-            },
-          } }
-        />
-      )) }
-
-      {/* tooltip — scatter 모드(p<0.5)에서만 표시 */}
-      { hasTooltip && tooltipPos && tooltipIdx >= 0 && (
-        <Box
-          sx={ {
-            position: 'absolute',
-            top: tooltipPos.top,
-            left: tooltipPos.left,
-            width: tooltipPos.width,
-            zIndex: 8,
-            pointerEvents: 'none',
-            bgcolor: 'background.paper',
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            p: 1.75,
-          } }
-        >
-          { tooltipStatic?.title && (
-            <Typography sx={ { fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.02em', mb: 0.75 } }>
-              { tooltipStatic.title }
-            </Typography>
-          ) }
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={ { display: 'block', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.62rem', mb: 0.75 } }
+      {/* scattered thumbnails — flow 시점에는 transform 으로 이동.
+          외곽 wrapper 는 overflow 해제 (annotation 칩이 이미지 외부로 부착) */}
+      { placements.map((p, i) => {
+        const tokens = tokensBySrc?.[p.src];
+        const isAnnotated = hasTooltip && tooltipIdx === i && tokens;
+        return (
+          <Box
+            key={ `${ p.src }-${ i }` }
+            ref={ (n) => { itemRefs.current[i] = n; } }
+            onMouseEnter={ () => setHoverIdx(i) }
+            onMouseLeave={ () => setHoverIdx((curr) => (curr === i ? -1 : curr)) }
+            sx={ {
+              position: 'absolute',
+              top: p.y,
+              left: p.x,
+              width: p.size,
+              height: p.size,
+              willChange: 'transform',
+              zIndex: isAnnotated ? 6 : 1,
+              cursor: 'pointer',
+            } }
           >
-            Extracted color
-          </Typography>
-          <Box sx={ { display: 'flex', gap: 0.75, flexWrap: 'wrap' } }>
-            { (hoverColors || tooltipStatic?.colors || Array(5).fill(null)).map((c, k) => (
-              <Box
-                key={ k }
-                sx={ {
-                  width: 28,
-                  height: 28,
-                  borderRadius: 1,
-                  bgcolor: c || 'action.hover',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  flexShrink: 0,
-                } }
-                title={ c || '' }
+            <Box
+              sx={ {
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 1.5,
+                overflow: 'hidden',
+                backgroundImage: `url(${ p.src })`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                transition: 'filter 220ms ease',
+                ...(hoverIdx === i && { filter: 'brightness(1.05)' }),
+              } }
+            />
+            { hasTooltip && tokens && (
+              <ReferenceAnnotationOverlay
+                tokens={ tokens }
+                isActive={ isAnnotated }
+                size={ p.size }
               />
-            )) }
+            ) }
           </Box>
-          { tooltipStatic?.tags?.length > 0 && (
-            <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 } }>
-              { tooltipStatic.tags.map((tag) => (
-                <Box
-                  key={ tag }
-                  sx={ {
-                    px: 0.75,
-                    py: 0.15,
-                    borderRadius: 999,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    fontSize: '0.65rem',
-                    color: 'text.secondary',
-                    letterSpacing: '0.02em',
-                  } }
-                >
-                  { tag }
-                </Box>
-              )) }
-            </Box>
-          ) }
-        </Box>
-      ) }
+        );
+      }) }
 
       {/* center slot */}
       { children && (
@@ -419,64 +336,3 @@ function mulberry32(seed) {
   };
 }
 
-/* ============================================
- * extractDominantColors — 32x32 다운샘플 + RGB bucket(>>4) 모드 카운트
- * ============================================ */
-const COLOR_CACHE = new Map();
-
-function extractDominantColors(src, count = 5) {
-  if (COLOR_CACHE.has(src)) return COLOR_CACHE.get(src);
-  const promise = new Promise((resolve) => {
-    if (typeof window === 'undefined') return resolve([]);
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const w = 32;
-        const h = 32;
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        const data = ctx.getImageData(0, 0, w, h).data;
-        const buckets = new Map();
-        for (let i = 0; i < data.length; i += 4) {
-          const a = data[i + 3];
-          if (a < 200) continue;
-          const r = (data[i] >> 4) << 4;
-          const g = (data[i + 1] >> 4) << 4;
-          const b = (data[i + 2] >> 4) << 4;
-          const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-          const weight = (luma < 18 || luma > 240) ? 0.4 : 1;
-          const key = (r << 16) | (g << 8) | b;
-          buckets.set(key, (buckets.get(key) || 0) + weight);
-        }
-        const sorted = [...buckets.entries()].sort((a, b) => b[1] - a[1]);
-        const out = [];
-        const minDist = 28;
-        for (const [key] of sorted) {
-          const r = (key >> 16) & 0xff;
-          const g = (key >> 8) & 0xff;
-          const b = key & 0xff;
-          const isDup = out.some((c) => {
-            const dr = c.r - r;
-            const dg = c.g - g;
-            const db = c.b - b;
-            return Math.sqrt(dr * dr + dg * dg + db * db) < minDist;
-          });
-          if (isDup) continue;
-          out.push({ r, g, b });
-          if (out.length >= count) break;
-        }
-        resolve(out.map(({ r, g, b }) => `#${ [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('') }`));
-      } catch {
-        resolve([]);
-      }
-    };
-    img.onerror = () => resolve([]);
-    img.src = src;
-  });
-  COLOR_CACHE.set(src, promise);
-  return promise;
-}

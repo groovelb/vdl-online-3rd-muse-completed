@@ -9,14 +9,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Chip from '@mui/material/Chip';
 import { RefImage } from '../media/RefImage.jsx';
-
-const LAYER_LABEL = {
-  color: '🎨 색',
-  typography: '📝 타이포',
-  layout: '📐 레이아웃',
-  gradient: '🌈 그라디언트',
-  visualDirection: '🎭 무드',
-};
+import { LAYER_LABEL } from '../../data/muse/layers.js';
 
 /**
  * ReferenceNotesDialog — 레퍼런스별 자유 텍스트 노트 일괄 편집

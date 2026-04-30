@@ -855,8 +855,8 @@ userNotes 가 있으면 그 내용을 반드시 prompt 안에 자연스럽게 �
 
 === EXAMPLE (참고용, 절대 그대로 출력 X) ===
 
-(a) Landing — 매거진 톤:
-"흑백 대비가 강한 매거진 톤의 랜딩페이지. 잉크처럼 깊은 #14132B 를 주조색으로, 크림빛 #FAF6E8 표면에 차분한 머스타드 #D4A857 액센트가 포인트로 흩어진 구성. Display 는 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 Crimson Pro 1rem 1.6 lineHeight 로 안정적. 12-col modular grid 24px gap, 컨테이너 max-width 1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고, Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다. 평범한 blog post 식 단조 카드 그리드와 다르게 비대칭 hierarchy 로 시선을 유도한다."
+(a) Landing — 매거진 톤 (refs 3장 각각 attachFile 인용):
+"01-ref-001.jpg 의 잉크처럼 깊은 #14132B 를 주조색으로, 흑백 대비가 강한 매거진 톤의 랜딩페이지. 크림빛 #FAF6E8 표면에 02-ref-002.jpg 의 차분한 머스타드 #D4A857 액센트가 포인트로 흩어진 구성. Display 는 03-ref-003.jpg 의 Playfair Display serif 4rem 굵직하게 좌측 정렬, 본문은 Crimson Pro 1rem 1.6 lineHeight 로 안정적. 12-col modular grid 24px gap, 컨테이너 max-width 1200px. 배경에는 retro paper-grain 텍스처를 fixed 로 깔아 종이 질감을 더하고, Hero 섹션은 oversized typography 로 시선을 끌며 우측에 작은 메타 정보 칼럼을 배치한다. 평범한 blog post 식 단조 카드 그리드와 다르게 비대칭 hierarchy 로 시선을 유도한다."
 
 (b) Dashboard — functional + retro accent (intent: "functional dashboard with retro mood"):
 "기능 중심의 메트릭 대시보드에 1970s 에디토리얼 무드를 액센트로 입힌 구성. 잉크 #1F1F1F 텍스트, 크림 #E8E5DC 표면, 머스타드 #C8A574 액센트로 따뜻한 대비. Display 는 Fraunces serif 28px 메트릭 큰 숫자에, 본문은 IBM Plex Sans 13px 라벨에 적용. 12-col grid 16px gap, max 1280px. 배경은 retro paper-grain 텍스처를 fixed 로 깔되 metric card / line chart / data table 같은 dashboard 의 기능 컴포넌트는 그대로 유지. magazine cover / weather almanac 풍이 아닌 functional readability 가 우선이며 sticky header nav 에 fontWeight 강조 hierarchy 만 editorial 에서 차용한다."
@@ -871,10 +871,20 @@ userNotes 가 있으면 그 내용을 반드시 prompt 안에 자연스럽게 �
 해당 노트가 명시한 부분만 그 ref 에서 가져오고, 나머지 layer 는 무시 (차집합).
 prompt 안에 노트 의도가 자연스럽게 녹아야 한다 (verbatim 인용 X — 800자 제약 때문에 의미 반영).
 
-=== Reference Anchoring (선택 — 800자 안에서 가능하면) ===
-가능하면 prompt 안에 ref-XXX 식 출처 단서를 짧게 녹여라 (예: "ref-001 의 잉크 톤").
-extractedPool 의 attachFile 필드 (예: \`01-ref-001.jpg\`) 가 ZIP 안 정확한 파일명이며
-이게 외부 AI 첨부 매칭 단서가 된다. 800자 제약상 모든 시각 묘사에 박을 필요는 없음.
+=== Reference Anchoring (REQUIRED) ===
+prompt 안에 출처 레퍼런스 파일명을 직접 명시하라. extractedPool 의 각 항목에
+\`attachFile\` 필드 (예: \`01-ref-001.jpg\`, \`02-ref-002.jpg\`) 가 ZIP 안 정확한 파일명이며,
+사용자가 외부 AI 챗에 그 파일을 첨부할 때 매칭 단서가 된다.
+
+규칙:
+- prompt 안 *최소 ref 갯수만큼* attachFile 값을 직접 인용 (refs 가 3장이면 최소 3번).
+  각 ref 의 가장 두드러진 차용 포인트(색 / 타이포 / 레이아웃 / 무드 중) 를 묘사할 때 inline 으로.
+- 인용 형태 예시:
+  - "01-ref-001.jpg 의 잉크처럼 깊은 #14132B 를 주조색으로"
+  - "타이포는 02-ref-002.jpg 의 Playfair Display Serif 를 차용"
+  - "03-ref-003.jpg 의 retro paper-grain 텍스처를 fixed 로"
+- ref-XXX id 단독 사용 X. 항상 attachFile 파일명을 함께 또는 단독으로 명시.
+- 폴더 경로 (references/) 는 붙이지 마라. attachFile 값 그대로.
 
 === Global ===
 Respond via submit_concept_prompt ONLY. No prose outside the tool. Single call.`,

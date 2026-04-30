@@ -170,13 +170,24 @@ export function MuseStoreProvider({ children, seed = 'supabase' }) {
       // eslint-disable-next-line no-console
       console.log('[museStore] hydrate start. user.id =', user.id);
 
+      // CRITICAL: admin RLS 정책이 깔려있어 admin 계정은 RLS 만으로 본인 데이터로 좁혀지지 않음.
+      // 일반 페이지에서는 "현재 로그인 유저" 의 데이터만 보여야 하므로 클라이언트에서 명시적으로 user_id 를 강제한다.
+      // (analysis_results 는 user_id 컬럼이 없어 projects 조인으로 owner 필터)
       const [refsRes, projsRes, analsRes, setsRes] = await Promise.all([
-        supabase.from('reference_items').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('reference_items')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
         supabase
           .from('projects')
           .select('*, project_references(reference_id, use_layers)')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
-        supabase.from('analysis_results').select('*'),
+        supabase
+          .from('analysis_results')
+          .select('*, projects!inner(user_id)')
+          .eq('projects.user_id', user.id),
         supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle(),
       ]);
 

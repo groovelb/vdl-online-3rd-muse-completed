@@ -10,7 +10,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Grid from '@mui/material/Grid';
 import { PageContainer } from '../components/layout/PageContainer.jsx';
-import { ImageCard } from '../components/card/ImageCard.jsx';
+import { ReferenceCard } from '../components/card/ReferenceCard.jsx';
 import { MoodboardCard } from '../components/card/MoodboardCard.jsx';
 import { useAuth } from '../hooks/auth';
 import { supabase } from '../lib/supabase';
@@ -254,7 +254,7 @@ export function AdminRoute() {
                   } }
                 >
                   { refs.map((r) => (
-                    <ImageCard
+                    <ReferenceCard
                       key={ r.id }
                       src={ r.resolvedThumbnail }
                       title={ r.title }

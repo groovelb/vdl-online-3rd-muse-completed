@@ -51,7 +51,7 @@ const TOUCH_POINTS = [
   {
     id: 'TP2', title: '프로젝트 모드 선택', where: 'Wizard Step 0',
     before: '바로 form',
-    after: '🎨 컨셉 / 🏗️ 시스템 / 🎯 코드직행 카드 3개 — 모든 후속 분기 기준',
+    after: '컨셉 / 시스템 카드 (모든 후속 분기 기준)',
     pain: 'T2, T3',
     promptVar: 'projectMode',
   },
@@ -65,7 +65,7 @@ const TOUCH_POINTS = [
   {
     id: 'TP4', title: '카드 layer chip', where: 'ReferencePicker Step 2',
     before: '추천 카드 add/remove',
-    after: '카드별 🎨색 📝타이포 📐레이아웃 chip — T2 자동 / 사용자 수동',
+    after: '카드별 색 / 타이포 / 레이아웃 chip (T2 자동, 사용자 수동)',
     pain: 'T3 합성',
     promptVar: 'selectedRefs[].useLayers',
   },
@@ -86,16 +86,16 @@ const TOUCH_POINTS = [
   {
     id: 'TP6', title: '토큰 카드 출처 펼침', where: 'ProjectDetailPage 4개 토큰 preview',
     before: '값만 표시',
-    after: '❓ 클릭 → 출처 + 의도 매칭 + ✋ 사용자 노트 인용 + 탈락 후보. 4 layer (color/typo/layout/gradient) 모두 적용',
+    after: '? 클릭 시 출처 + 의도 매칭 + 사용자 노트 인용 + 탈락 후보. 4 layer (color/typo/layout/gradient) 모두 적용',
     pain: 'T1 결정 추적',
     promptVar: 'decisionRationale + appliedUserNotes',
   },
 ];
 
 const PERSONAS = [
-  { p: 'P1', label: '비디자이너 PM/창업자', need: '디자이너 없이 프로토타입', entry: 'TP2 🎨 컨셉 잡기' },
+  { p: 'P1', label: '비디자이너 PM/창업자', need: '디자이너 없이 프로토타입', entry: 'TP2 컨셉 잡기' },
   { p: 'P2', label: '시니어 디자이너', need: 'craft 보존하며 가속', entry: 'TP4 layer chip으로 큐레이션' },
-  { p: 'P3', label: '디자인 시스템 엔지니어', need: '토큰 코드로 30% 손실 회피', entry: 'TP2 🎯 코드직행 + DTCG export' },
+  { p: 'P3', label: '디자인 시스템 엔지니어', need: '토큰 코드로 30% 손실 회피', entry: 'TP2 시스템 + DTCG export' },
   { p: 'P4', label: 'AI 코딩 헤비유저', need: 'DESIGN.md를 AI가 무시함', entry: 'TP6 결정 추적 + cursorrules' },
 ];
 

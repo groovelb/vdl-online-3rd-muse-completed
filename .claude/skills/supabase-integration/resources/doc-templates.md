@@ -1,10 +1,123 @@
 # Documentation Templates
 
-Phase 1~5에서 산출할 4개 문서의 템플릿. 사용자에게 제시할 때는 반드시 이 구조를 따른다.
+Phase 0.5 ~ 6 에서 산출할 문서 템플릿. 본문 1종 (`04-data-bridge.md`) + 부록 5종 (`appendix-*.md`).
+
+> **본문 vs 부록**: data-bridge 는 디자이너+개발자 합의 지점 (자연어, 표, 다이어그램). appendix 는 개발자 영역 (DDL, 정책, 코드). 디자이너가 부록을 펼치지 않아도 자기 디자인이 어떻게 데이터로 내려가는지 이해할 수 있어야 한다.
 
 ---
 
-## 04-db-schema.md
+## 04-data-bridge.md (본문, Phase 0.5)
+
+> **이 문서의 역할**: ux-flow 의 데이터 모델이 **Supabase 와 어떻게 연결되는지** 디자이너가 가장 쉽게 이해하도록 3 가지 질문에 답한다.
+>
+> 1. 데이터 모델은 어떤 DB 테이블이 되나?
+> 2. UX-flow 의 어느 시점에 DB 가 업데이트되나?
+> 3. 각 페이지는 어떤 DB 와 연결되나?
+>
+> § 4 (라이프사이클) / § 5 (정합성) 는 선택·후순위.
+
+```markdown
+# {ProjectName}. Data Bridge
+
+> ux-flow 의 데이터 모델이 Supabase 와 어떻게 연결되는지 설명.
+> 컬럼 / 제약 / SQL 은 `appendix-db-schema.md` 참조.
+
+**입력**: [02-ux-flow.md § 데이터 모델 활용](./02-ux-flow.md)
+
+## 1. 데이터 모델은 어떤 DB 테이블이 되나?
+
+ux-flow 의 사전을 그대로 인용. 데이터명이 어느 Supabase 테이블에 저장되는지 1:1.
+
+| 데이터명 | 예상 테이블명 | 설명 (1줄) |
+|---|---|---|
+| `Reference` | `reference_items` | 사용자가 모은 영감 이미지 |
+| `Project` | `projects` | 의도+모드+레퍼런스 큐레이션 묶음 |
+| `ProjectReference` | `project_references` | 프로젝트가 어떤 레퍼런스를 어떤 레이어로 활용 (M:N) |
+| `AnalysisResult` | `analysis_results` | AI 가 만든 토큰 묶음 |
+| `User` | `auth.users` (Supabase 내장) | 가입 사용자 |
+
+## 2. UX-flow 의 어느 시점에 DB 가 업데이트되나?
+
+ux-flow 의 UX-flow 단계별 서사를 따라가며, 각 단계에서 어떤 테이블이 변하는지.
+
+### 시나리오 1. 레퍼런스 아카이빙
+
+- **이미지 업로드** (Archive) → `reference_items` insert (status='tagging'). 동시에 Supabase Storage 에 이미지 본체 저장.
+- **자동 태깅 완료** → 같은 row update (tags / dominant_colors / extracted 채움, status='ready')
+
+### 시나리오 2. 프로젝트 생성 5-step
+
+- **Step 0 모드 선택** (ProjectCreate) → `projects` insert (mode 만 채워진 row)
+- **Step 1 제목+의도** → 같은 row update (name, intent)
+- **Step 2 layer chip** → `project_references` insert/update (선택한 레퍼런스마다 1 row)
+- **Step 3 활용 노트** → `projects` row update (user_notes)
+- **Step 4 AI 분석** → `analysis_results` insert (Anthropic 응답을 layers jsonb 에)
+
+### 시나리오 3. 토큰 확인 + 결정 추적
+
+- **on/off + emphasis 편집** (ProjectDetail) → `analysis_results` row update (layers jsonb 의 isEnabled / emphasis 필드)
+
+### 시나리오 4. Export
+
+- **DB 업데이트 없음**. 읽기만 (`projects` + `analysis_results` + `reference_items` 모두 R).
+
+## 3. 각 페이지는 어떤 DB 와 연결되나?
+
+페이지 중심 표. R = 읽기, W = 쓰기 (insert/update).
+
+| 페이지 | 다루는 테이블 | 동작 |
+|---|---|---|
+| Auth | `auth.users` + `profiles` + `user_settings` | W (가입 시 자동 생성) |
+| Archive | `reference_items` | W (업로드) + R (그리드) |
+| ProjectList | `projects` | R |
+| ProjectCreate | `projects` + `project_references` + `analysis_results` + `reference_items` | W (Step 0~4) + R (레퍼런스 선택) |
+| ProjectDetail | `analysis_results` + `projects` + `reference_items` | R + 편집 시 `analysis_results` W |
+| Settings | `user_settings` | R + W |
+
+## 4. (선택) 외부 의존 데이터의 라이프사이클
+
+외부 API / Storage / Auth 가 끼는 데이터만 sequence. 단순 CRUD 만의 데이터는 생략.
+
+### AnalysisResult (Anthropic 분석)
+
+\`\`\`mermaid
+sequenceDiagram
+  actor User as 사용자
+  participant UI as ProjectCreate (Step 4)
+  participant API as Anthropic
+  participant DB as analysis_results
+
+  User->>UI: 분석 시작
+  UI->>API: T3 호출
+  API-->>UI: 토큰 + 이유
+  UI->>DB: insert
+\`\`\`
+
+(다른 외부 의존 데이터도 동일 양식)
+
+## 5. 정합성 체크
+
+- [ ] § 1 의 데이터명·테이블명이 ux-flow 사전과 글자 단위 일치
+- [ ] § 2 의 단계가 ux-flow UX-flow 단계별 서사의 단계와 일치
+- [ ] § 3 의 페이지명이 ux-flow 페이지 리스트의 행과 글자 단위 일치
+- [ ] § 4 시퀀스의 외부 의존이 ux-flow 단계별 서사의 트리거와 일치
+- [ ] 본문에 SQL/컬럼/제약/훅 코드 0건 (있으면 부록으로 분리)
+```
+
+### 작성 규칙
+
+- **§ 1**: ux-flow 사전 그대로 인용. 자동 채움. 디자이너 entry point.
+- **§ 2**: UX-flow 단계별 서사 → 시점별 DB 동작 1줄로 변환. 자동 채움 가능. 추론 신뢰도 낮으면 빈칸 + 사용자에게 묻기.
+- **§ 3**: 페이지 리스트 + § 1 매핑 결합. 자동 채움 가능.
+- **§ 4**: 외부 의존 있는 데이터만. 외부 의존 0 이면 § 4 자체 생략.
+- **§ 5**: 자동 검증.
+- 본문에 SQL / 제약 / 정책 / 훅 코드 등장 금지 (부록 영역).
+- 데이터명 / 페이지명 / 테이블명은 ux-flow 와 글자 단위 일치. 다르면 차단.
+- 자동 채움 가능 부분: § 1 / § 2 / § 3 / § 5. § 4 만 외부 의존 추론 후 작성.
+
+---
+
+## appendix-db-schema.md (Phase 1, 부록)
 
 ```markdown
 # DB Schema
@@ -70,7 +183,7 @@ erDiagram
 
 ---
 
-## 05-auth-design.md
+## appendix-auth-design.md (Phase 2, 부록)
 
 ```markdown
 # Auth Design
@@ -133,7 +246,61 @@ create trigger on_auth_user_created
 
 ---
 
-## 06-rls-policies.md
+## appendix-auth-ui-spec.md (Phase 2, NEW · component-work 입력 사양)
+
+```markdown
+# appendix. Auth UI Spec ({Project})
+
+> `/component-work` 의 입력 사양. 이 파일을 component-work 가 Read 해서 컴포넌트 + 스토리 자동 생성.
+> 사용자 호출: `/component-work LoginForm SignUpForm AuthGuard`
+
+## 컴포넌트 목록
+
+### 1. LoginForm
+
+- **카테고리**: input
+- **경로**: `src/components/input/LoginForm.jsx`
+- **소비할 훅**: `useSignIn` (`src/hooks/auth/useSignIn.js`)
+- **필드**: email, password
+- **상태**: loading / error / success
+- **동작**: 입력 후 submit → `signIn({email, password})` 호출 → 성공 시 onSuccess 콜백
+- **Props**:
+  - `onSuccess?: () => void`. 로그인 성공 시 콜백 (예: 라우팅)
+  - `redirectTo?: string`. 로그인 후 이동 경로 (default: `/`)
+- **Storybook 스토리**: Default / Loading / WithError (mock useSignIn 주입)
+
+### 2. SignUpForm
+
+- **카테고리**: input
+- **경로**: `src/components/input/SignUpForm.jsx`
+- **소비할 훅**: `useSignUp` (`src/hooks/auth/useSignUp.js`)
+- **필드**: email, password, password_confirm, nickname (선택)
+- **상태**: loading / error / awaiting_email_confirmation
+- **동작**: submit → `signUp({email, password, nickname})` 호출 → 인증 메일 발송 안내 표시
+- **Props**: `onSuccess?: () => void`
+- **Storybook 스토리**: Default / Loading / AwaitingEmailConfirmation / WithError
+
+### 3. AuthGuard
+
+- **카테고리**: layout
+- **경로**: `src/components/layout/AuthGuard.jsx`
+- **소비할 훅**: `useAuth`
+- **동작**: children 을 감싸고 비로그인 시 `<Navigate to="/auth" />`
+- **Props**:
+  - `children: ReactNode`
+  - `fallback?: ReactNode`. 비로그인 시 표시할 컴포넌트 (default: redirect)
+- **Storybook 스토리**: Authenticated / Unauthenticated (mock useAuth 주입)
+
+## 디자인 시스템 준수
+
+- 모든 form 은 MUI `TextField` + `Button` 재활용
+- 에러 메시지는 한국어 (supabaseError.js 정규화 결과)
+- spacing / typography 는 theme 토큰만 사용 (직접값 금지)
+```
+
+---
+
+## appendix-rls-policies.md (Phase 3, 부록)
 
 ```markdown
 # RLS Policies
@@ -182,18 +349,18 @@ create policy "profiles_update_own"
 
 ---
 
-## 07-api-integration.md
+## appendix-api-integration.md (Phase 4·5 통합, 부록)
 
 ```markdown
 # API Integration Guide
 
 ## 파일 구조
 
-- `src/lib/supabase.js` — client singleton
-- `src/utils/supabaseError.js` — 에러 정규화
-- `src/types/database.js` — JSDoc 타입
-- `src/hooks/auth/` — useAuth, useSignIn, useSignUp, useSignOut
-- `src/hooks/data/` — 엔티티별 CRUD 훅
+- `src/lib/supabase.js`. client singleton
+- `src/utils/supabaseError.js`. 에러 정규화
+- `src/types/database.js`. JSDoc 타입
+- `src/hooks/auth/`. useAuth, useSignIn, useSignUp, useSignOut
+- `src/hooks/data/`. 데이터별 CRUD 훅
 
 ## 사용 예시
 
@@ -244,10 +411,10 @@ A. 훅에 `{ client }` 파라미터로 mock 주입. `storybook-mock.md` 참조.
 
 ---
 
-## `08-edge-functions.md` (Phase 6, 조건부)
+## appendix-edge-functions.md (Phase 6, 조건부, 부록)
 
 ```markdown
-# Edge Functions — 외부 API 연동
+# Edge Functions. 외부 API 연동
 
 ## 개요
 

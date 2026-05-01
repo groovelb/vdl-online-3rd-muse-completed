@@ -1,4 +1,4 @@
-# MUSE — Visual Direction
+# MUSE. Visual Direction
 
 ## 톤앤매너
 
@@ -8,7 +8,7 @@
   - 뷰포트 전체를 시원하게 사용하는 fluid 레이아웃(고정 max-width보다 유체적 폭 우선).
   - 크기·간격·패딩이 넉넉해 정보 밀도가 낮은 현대적 공간 구성.
   - **이미지 퍼스트**: UI는 뒤로 빠져 레퍼런스 이미지와 토큰이 주인공이 되도록 Primary는 검정 기반 뉴트럴.
-  - 배경은 완벽한 흰색을 피하되 블루-바이올렛 틴트는 **은은하게**만 — 이미지 색을 왜곡하지 않는 선에서.
+  - 배경은 완벽한 흰색을 피하되 블루-바이올렛 틴트는 **은은하게**만. 이미지 색을 왜곡하지 않는 선에서.
   - 클리커블 요소는 가장 큰 border radius를 적용해 부드럽고 "누르고 싶은" 감각을 강조.
 
 ---
@@ -26,17 +26,17 @@
 | 용도 | 현재 토큰 | 현재값 | 변경 방향 | 근거 |
 |------|----------|--------|----------|------|
 | Primary | `palette.primary.main` | `#0000FF` | `#14132B` (틴트 near-black) | 이미지 퍼스트. UI가 뒤로 빠지도록 검정 기반 뉴트럴 |
-| Primary Hover | (없음) | — | `#2D2B5A` | hover 시 한 단계 밝게 |
+| Primary Hover | (없음) |. | `#2D2B5A` | hover 시 한 단계 밝게 |
 | Secondary | `palette.secondary.main` | `#263238` | `#5A586E` (미드 뉴트럴 틴트) | 보조 액션, Primary와 계조만 다르게 |
 | Background Default | `palette.background.default` | `#FFFFFF` | `#FCFCFF` (아주 은은한 블루 틴트) | 완벽한 흰색 회피, 이미지 색 왜곡 없음 |
 | Background Paper | `palette.background.paper` | `#FFFFFF` | `#F8F8FC` | 카드/패널, 기본 배경보다 약간 더 깊은 면 |
-| Surface Elevated | (신규) | — | `#F3F3F9` | Dialog/Popover 등 최상위 면 |
+| Surface Elevated | (신규) |. | `#F3F3F9` | Dialog/Popover 등 최상위 면 |
 | Text Primary | `palette.text.primary` | 기본 | `#14132B` | Primary와 동일축 near-black (ink 개념) |
 | Text Secondary | `palette.text.secondary` | 기본 grey | `#7A798E` | 보조 텍스트, 은은한 틴트 |
 | Divider | `palette.divider` | 기본 grey | `rgba(20, 19, 43, 0.08)` | near-black을 저투명으로 사용 |
 | Grey 100 | `palette.grey[100]` | 기본 grey | `#F3F3F9` | 전체 grey 스케일을 은은한 틴트로 재정의 |
-| Action Selected | (신규) | — | `rgba(20, 19, 43, 0.06)` | 토큰 on, 태그 선택 상태 — 낮은 대비로 이미지 방해 안 함 |
-| Accent (옵션) | (신규) | — | `#4F46E5` | 꼭 필요한 경우(예: "분석 중" 인디케이터)에만 소량 사용 |
+| Action Selected | (신규) |. | `rgba(20, 19, 43, 0.06)` | 토큰 on, 태그 선택 상태. 낮은 대비로 이미지 방해 안 함 |
+| Accent (옵션) | (신규) |. | `#4F46E5` | 꼭 필요한 경우(예: "분석 중" 인디케이터)에만 소량 사용 |
 
 ### 추천 팔레트 (참고용)
 
@@ -69,9 +69,9 @@ Image-First Neutral Scale (은은한 바이올렛 틴트)
 |------|----------|----------|------|
 | `fontFamily` | `Pretendard Variable` | 유지 | 브랜드 자산 유지 |
 | `h1` | `Outfit 900` | `Outfit 700`, `clamp(48px, 6vw, 96px)`, letter-spacing `-2%` | 공간감 강조 위해 유체 크기 적용, weight는 900→700로 덜 무겁게 |
-| `h2` | — | `Outfit 600`, `clamp(32px, 4vw, 56px)` | 섹션 타이틀 |
-| `h3` | — | `Outfit 600`, `clamp(24px, 2.5vw, 32px)` | 레이어 탭 제목 |
-| `subtitle1` | — | `Pretendard 500`, `18px`, line-height `1.5` | 프로젝트 의도 문장 등 강조 본문 |
+| `h2` |. | `Outfit 600`, `clamp(32px, 4vw, 56px)` | 섹션 타이틀 |
+| `h3` |. | `Outfit 600`, `clamp(24px, 2.5vw, 32px)` | 레이어 탭 제목 |
+| `subtitle1` |. | `Pretendard 500`, `18px`, line-height `1.5` | 프로젝트 의도 문장 등 강조 본문 |
 | `body1` | 기본 | `Pretendard 400`, `16px`, line-height `1.7` | 여유있는 행간 |
 | `body2` | 기본 | `Pretendard 400`, `14px`, line-height `1.7` | 태그, 토큰 값 |
 | `caption` | 기본 | `Pretendard 500`, `12px`, letter-spacing `2%` | 레이블·메타 정보 |
@@ -93,10 +93,10 @@ Image-First Neutral Scale (은은한 바이올렛 틴트)
 |------|------|----------|
 | `spacing` 기본 단위 | `8px` | 유지 |
 | 페이지 좌우 패딩 | 기본 | PC `clamp(24px, 4vw, 64px)`, Mobile `20px` |
-| 섹션 간 간격 | — | PC `96~120px`, Mobile `64px` |
+| 섹션 간 간격 |. | PC `96~120px`, Mobile `64px` |
 | 카드 기본 패딩 | 기본 | `24~32px` |
 | 버튼 패딩 (lg) | 기본 | `16px 28px` |
-| 컴포넌트 간 gap (기본) | — | `16px` (sm) / `24px` (md) / `40px` (lg) |
+| 컴포넌트 간 gap (기본) |. | `16px` (sm) / `24px` (md) / `40px` (lg) |
 | 브레이크포인트 전략 | MUI 기본 | 유지 (`xs 0 / sm 600 / md 900 / lg 1200 / xl 1536`), `maxWidth`보다 fluid padding 우선 |
 
 ### 레이아웃 패턴
@@ -120,13 +120,13 @@ Image-First Neutral Scale (은은한 바이올렛 틴트)
 | 대상 | 값 | 근거 |
 |------|-----|------|
 | `shape.borderRadius` (전역 기본) | `0` (유지) | 비-클리커블 면은 각지게 |
-| Button (모든 사이즈) | `999px` (pill) | "제일 큰 radius" 해석 — 완전 pill |
+| Button (모든 사이즈) | `999px` (pill) | "제일 큰 radius" 해석. 완전 pill |
 | IconButton | `999px` | 원형 |
 | Chip, Tag | `999px` | pill 일관성 |
 | Switch | 기본(MUI) 유지 | 이미 pill |
 | Input (TextField, SearchBar) | `16px` | 클리커블이지만 안의 텍스트 정렬을 해치지 않는 큰 radius |
 | Select | `16px` | Input과 동일 |
-| Card (모든 Card) | `24px` | 클리커블/비클리커블 구분 없이 통일 — MUSE 톤의 부드러운 공간감 일관 유지 |
+| Card (모든 Card) | `24px` | 클리커블/비클리커블 구분 없이 통일. MUSE 톤의 부드러운 공간감 일관 유지 |
 | Dialog | `24px` | 최상위 면도 부드럽게 |
 | Paper / Section | `0` | 유지 |
 
@@ -155,7 +155,7 @@ shadows: [
 
 | # | 레퍼런스 | 참고 포인트 |
 |---|---------|------------|
-| — | (추후 매핑 예정) | 이미지 퍼스트 · 넉넉한 여백 · 라지 타이포 · pill 버튼 |
+|. | (추후 매핑 예정) | 이미지 퍼스트 · 넉넉한 여백 · 라지 타이포 · pill 버튼 |
 
 ---
 
@@ -177,15 +177,15 @@ shadows: [
 | `palette.info.main` (accent) | 기본 | `#4F46E5` | 분석 중 인디케이터 등 최소 강조 |
 | `typography.fontFamily` | `Pretendard Variable` | 유지 | 전역 |
 | `typography.h1` | `Outfit 900` | `Outfit 700`, `clamp(48px, 6vw, 96px)`, ls `-2%` | Hero, 랜딩 헤드라인 |
-| `typography.h2` | — | `Outfit 600`, `clamp(32px, 4vw, 56px)` | 섹션 타이틀 |
+| `typography.h2` |. | `Outfit 600`, `clamp(32px, 4vw, 56px)` | 섹션 타이틀 |
 | `typography.body1` | 기본 | `16px`, line-height `1.7` | 본문 |
 | `typography.button` | uppercase | `textTransform: 'none'`, weight 500 | 모든 버튼 |
 | `shape.borderRadius` | `0` | `0` (유지) | 전역 기본 |
-| `components.MuiButton.styleOverrides.root.borderRadius` | — | `999px` | 모든 Button |
-| `components.MuiChip.styleOverrides.root.borderRadius` | — | `999px` | Chip, Tag |
-| `components.MuiIconButton.styleOverrides.root.borderRadius` | — | `999px` | IconButton |
-| `components.MuiOutlinedInput.styleOverrides.root.borderRadius` | — | `16px` | TextField, Input |
-| `components.MuiDialog.styleOverrides.paper.borderRadius` | — | `24px` | 모든 Dialog |
+| `components.MuiButton.styleOverrides.root.borderRadius` |. | `999px` | 모든 Button |
+| `components.MuiChip.styleOverrides.root.borderRadius` |. | `999px` | Chip, Tag |
+| `components.MuiIconButton.styleOverrides.root.borderRadius` |. | `999px` | IconButton |
+| `components.MuiOutlinedInput.styleOverrides.root.borderRadius` |. | `16px` | TextField, Input |
+| `components.MuiDialog.styleOverrides.paper.borderRadius` |. | `24px` | 모든 Dialog |
 | `shadows` | 기본 (검정) | 바이올렛 틴트 버전으로 교체 | 전역 |
 
 ---

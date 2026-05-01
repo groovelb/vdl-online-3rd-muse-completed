@@ -563,9 +563,9 @@ const T2_IO = {
 const T3_IO = {
   input: [
     { name: 'intent', desc: '사용자 의도 (T2와 동일값)', example: '"차분한 다크 무드"' },
-    { name: 'mode', desc: 'concept | system | handoff (TP2)', example: "'system'" },
+    { name: 'mode', desc: 'concept | system (TP2)', example: "'system'" },
     { name: 'selectedRefs', desc: '선택된 레퍼런스 (≤4)의 메타데이터만 — 이미지는 보내지 않고 T1이 추출해둔 텍스트 토큰만 전달', example: '[{ id, title, tags, dominantColors, extracted, useLayers? }]  // thumbnailUrl 없음' },
-    { name: 'userNotes (Step 3)', desc: '레퍼런스 본 후 보강 노트 (HIGHEST PRIORITY). system=30+ / handoff=50+', example: '"엣지 라인 강하게, 첨자만 매그놀리아"' },
+    { name: 'userNotes (Step 3)', desc: '레퍼런스 본 후 보강 노트 (HIGHEST PRIORITY). system=30+ (concept=0)', example: '"엣지 라인 강하게, 첨자만 매그놀리아"' },
     { name: 'referenceNotes[refId]', desc: 'ref 별 차용 노트 (선택). 명시한 layer 외 무시', example: '{ "ref-002": "hero 영역 색감만 차용" }' },
   ],
   output: [
@@ -579,13 +579,12 @@ const T3_IO = {
     { name: '★ tokens.components', desc: 'NEW — UI components, 모든 값은 {a.b} token-ref (DESIGN.md 핵심)', example: '{ "button-primary": { backgroundColor: "{colors.primary-ink}", padding: "{spacing.md}", rounded: "{rounded.sm}", decisionRationale } }' },
     { name: 'visualDirection.markdown', desc: '디자인 디렉션 본문 (필수 섹션 1~6)', example: '"# Visual Direction\\n## 1. Mood…"' },
     { name: 'visualDirection.tags', desc: '집계 태그 3종', example: '{ genre: [...], style: [...], subject: [...] }' },
-    { name: '★ layerDetails (handoff only)', desc: 'NEW — 8 키 한글 상세 (color/typography/layout/gradient/visualDirection + spacing/rounded/components, elevation 은 토큰 있을 때만)', example: '{ color: "한글 200-500자…", spacing: "...", components: "..." }' },
+    { name: '(deprecated) layerDetails', desc: '구 handoff 모드 전용 8 키 한글 상세. handoff 폐기로 함께 제거됨. system 의 visualDirection.markdown 으로 의도 흡수.', example: '(없음)' },
   ],
   notes: [
     'concept 모드는 별도 함수 (runAnalyzeConcept) — 위 출력 shape 무관, conceptPrompt(string) 단일 산출.',
     'system 모드: token-ref dangling 시 1회 retry → fallback (components 빈 객체).',
-    'handoff 모드: STRICT — token-ref 위반 시 에러 표면화. kebab-case 강제.',
-    'Export: system → DESIGN.md ZIP / handoff → DESIGN.md + DTCG + 4 framework + decision-trace 풀세트 ZIP.',
+    'Export: system → DESIGN.md ZIP (DESIGN.md + DTCG + decision-trace + refs). 구 handoff 모드는 폐기, system 이 흡수.',
   ],
 };
 

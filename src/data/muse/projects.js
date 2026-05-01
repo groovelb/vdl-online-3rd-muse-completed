@@ -26,7 +26,7 @@ export const projects = [
     id: 'proj-002',
     name: 'Fintech Dashboard',
     intent: '데이터 밀도 높은 대시보드, 차분한 블루 기조',
-    mode: 'handoff',
+    mode: 'system',
     selectedRefs: [
       { id: 'ref-007', useLayers: ['color'] },
       { id: 'ref-008', useLayers: ['color', 'layout'] },

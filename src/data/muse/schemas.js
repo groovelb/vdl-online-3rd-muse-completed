@@ -73,10 +73,9 @@
  */
 
 /**
- * @typedef {'concept'|'system'|'handoff'} ProjectMode - TP2 프로젝트 모드
+ * @typedef {'concept'|'system'} ProjectMode - TP2 프로젝트 모드
  *   - 'concept'  : 컨셉 잡기 (다양성 우선, T2 정렬·T3 합성 톤이 distinctive 쪽)
- *   - 'system'   : 디자인 시스템 만들기 (일관성 우선, role 엄격, contrast 검증)
- *   - 'handoff'  : 코드 직행 (완전성 우선, MUI/DTCG naming 표준)
+ *   - 'system'   : 디자인 시스템 만들기 (일관성 우선, role 엄격, contrast 검증, DESIGN.md ZIP export 흡수)
  */
 
 /**

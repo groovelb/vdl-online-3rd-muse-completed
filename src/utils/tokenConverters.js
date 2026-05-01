@@ -1,15 +1,18 @@
 /**
- * Handoff Converters — tokens → framework configs (결정론적)
+ * Token Converters. tokens → framework configs / docs (결정론적)
  *
- * LLM 이 생성한 4 token layer 를 받아 프레임워크별 설정 파일/객체를 생성.
- * LLM 이 코드를 직접 작성하지 않으므로 형식 안정성 보장 (문법 오류 0).
+ * T3 가 산출한 token layers (color/typography/layout/gradient + spacing/rounded/elevation/components)
+ * 를 받아 외부 도구가 먹을 수 있는 산출물로 변환. LLM 재호출 0회, 순수 함수.
  *
  * 산출물:
  *  - DTCG (W3C Design Tokens Community Group) JSON
  *  - Tailwind config (tailwind.config.js 텍스트)
  *  - MUI theme (createTheme 인자 객체 텍스트)
  *  - CSS Variables (:root { --token: value })
- *  - .cursorrules (AI 코딩 도구용 컨텍스트)
+ *  - AI Paste Block (외부 AI 도구 paste 용 단일 .md)
+ *  - DESIGN.md (Google Labs alpha spec, system 모드 ZIP 메인)
+ *  - decision-trace.md (TP6 출처/근거/탈락 후보)
+ *  - 첨부물 매칭 표 (모든 가이드 문서 공통)
  */
 
 const onlyEnabled = (tokens = []) => tokens.filter((t) => t.isEnabled !== false);
@@ -388,7 +391,7 @@ export function buildCssVariables({
  *
  * @param {object} params
  * @param {object} params.project - { id, name, intent, mode, referenceIds, selectedRefs, referenceNotes }
- * @param {object} params.analysis - mode 별 layers (system/handoff: tokens / concept: { conceptPrompt })
+ * @param {object} params.analysis - mode 별 layers (system: tokens / concept: { conceptPrompt })
  * @param {Array} params.references - 전체 store references (id, thumbnailUrl, title)
  * @returns {string} markdown
  * ============================================ */
@@ -422,7 +425,7 @@ export function buildAiPasteBlock({ project, analysis, references }) {
       '',
     ];
   } else {
-    // system / handoff: 토큰 자연어 풀이
+    // system: 토큰 자연어 풀이
     const c = onlyEnabled(analysis?.color || []);
     const t = onlyEnabled(analysis?.typography || []);
     const l = onlyEnabled(analysis?.layout || []);
@@ -499,7 +502,7 @@ export function buildAiPasteBlock({ project, analysis, references }) {
 
 
 /* ============================================
- * DESIGN.md (Google Labs alpha spec, system / handoff 공통)
+ * DESIGN.md (Google Labs alpha spec, system 모드)
  *   - YAML front-matter: colors, typography, spacing, rounded, components
  *     + vendor extension x-gradient / x-elevation
  *   - prose 8 canonical sections (있는 섹션만 순서 유지)

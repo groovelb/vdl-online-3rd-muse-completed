@@ -72,7 +72,7 @@ const TOUCH_POINTS = [
   {
     id: 'Step 3 (NEW)', title: '활용 노트 (필수)', where: 'Wizard Step 3 — RefinementNotesField',
     before: '(없음 — TP5 확인 박스만 있었음)',
-    after: '레퍼런스 본 후 활용 지점 명시. 모드별 minLength 차등 (concept=0 / system=30 / handoff=50). T3 합성 HIGHEST PRIORITY 입력',
+    after: '레퍼런스 본 후 활용 지점 명시. 모드별 minLength 차등 (concept=0 / system=30). T3 합성 HIGHEST PRIORITY 입력',
     pain: 'T3 정확도, craft 보존',
     promptVar: 'userNotes (L4 우선)',
   },

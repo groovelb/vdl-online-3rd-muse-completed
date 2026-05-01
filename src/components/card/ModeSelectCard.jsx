@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography';
  * 3. 호버 시 미세 lift 효과
  *
  * Props:
- * @param {string} mode - 'concept' | 'system' | 'handoff' [Required]
+ * @param {string} mode - 'concept' | 'system' [Required]
  * @param {string} title - 카드 제목 (예: "컨셉 잡기") [Required]
  * @param {string} subtitle - 카드 부제 (예: "감을 잡고 싶다") [Required]
  * @param {string} description - 카드 설명 (예: "빠른 다양성 우선") [Required]

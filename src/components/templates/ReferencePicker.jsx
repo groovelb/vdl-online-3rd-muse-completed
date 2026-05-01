@@ -31,7 +31,7 @@ import { flattenTags } from '../../data/muse';
  * @param {object} referenceLayerMap - TP4 자동: { [refId]: layers[] } [Optional]
  * @param {Array} selectedRefs - TP4 사용자 큐레이션: [{id, useLayers}] [Optional]
  * @param {function} onUseLayersChange - TP4 (id, layers) => void [Optional]
- * @param {'concept'|'system'|'handoff'} mode - 추천/큐레이션 chip 셋 결정 (system/handoff 면 components chip 추가) [Optional, 기본값: 'system']
+ * @param {'concept'|'system'} mode - 추천/큐레이션 chip 셋 결정 (system 이면 components chip 추가) [Optional, 기본값: 'system']
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:

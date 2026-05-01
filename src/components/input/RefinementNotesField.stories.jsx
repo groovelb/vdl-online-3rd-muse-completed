@@ -66,8 +66,8 @@ export const Filled_System = {
   },
 };
 
-export const Filled_Handoff = {
-  name: 'Filled (handoff 50자+ref-id)',
+export const Filled_System_Long = {
+  name: 'Filled (system 50자+ref-id)',
   render: () => {
     const [value, setValue] = useState(
       'ref-002.dominantColors[0]를 brand-primary로 매핑, ref-005.layout.columns 12 적용, 타이포는 ref-002 보다 가볍게',
@@ -78,7 +78,7 @@ export const Filled_Handoff = {
           value={ value }
           onChange={ setValue }
           selectedRefs={ sampleRefs }
-          mode="handoff"
+          mode="system"
         />
       </Box>
     );

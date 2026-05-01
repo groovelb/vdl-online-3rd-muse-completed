@@ -23,7 +23,7 @@ import {
  * @param {string[]} value - 현재 선택된 useLayers (빈 배열 = 자동) [Optional, 기본값: []]
  * @param {function} onChange - (nextLayers) => void [Required]
  * @param {boolean} locked - 분석 시작 후 잠김 [Optional, 기본값: false]
- * @param {'concept'|'system'|'handoff'} mode - 활성 chip 셋 결정. system/handoff 면 'components' chip 추가 [Optional, 기본값: 'system']
+ * @param {'concept'|'system'} mode - 활성 chip 셋 결정. system 이면 'components' chip 추가 [Optional, 기본값: 'system']
  * @param {object} sx - 추가 스타일 [Optional]
  *
  * Example usage:
@@ -31,7 +31,7 @@ import {
  *   autoLayers={ ['color', 'typography'] }
  *   value={ selectedRefs[id]?.useLayers || [] }
  *   onChange={ (layers) => setUseLayers(id, layers) }
- *   mode="handoff"
+ *   mode="system"
  * />
  */
 export function ReferenceLayerChipRow({

@@ -23,7 +23,7 @@ import {
   exportSystemBundle,
   downloadUniversalJson,
 } from '../../utils/museExport.js';
-import { buildDesignMd } from '../../utils/handoffConverters.js';
+import { buildDesignMd } from '../../utils/tokenConverters.js';
 
 /**
  * ThemeExportDialog — Universal JSON 프리뷰 + ZIP 번들 / 단독 JSON 다운로드

@@ -22,7 +22,7 @@ import {
   buildAiPasteBlock,
   buildAttachmentTable,
   inferImageExt,
-} from './handoffConverters';
+} from './tokenConverters';
 
 const MUSE_EXPORT_VERSION = '1.0';
 
@@ -299,7 +299,7 @@ ${pasteBlock}
 }
 
 /**
- * 프로젝트 하나를 ZIP으로 묶어 다운로드. (system / handoff)
+ * 프로젝트 하나를 ZIP으로 묶어 다운로드. (system 모드)
  * concept 모드는 exportConceptPrompt 로 분기됨.
  * @param {object} params
  * @param {object} params.project - Project 엔티티

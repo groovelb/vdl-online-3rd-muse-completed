@@ -18,7 +18,7 @@ export const Default = {
   render: () => {
     const [selected, setSelected] = useState(null);
     return (
-      <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 280px))', gap: 2 } }>
+      <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(220px, 280px))', gap: 2 } }>
         { MODES.map((m) => (
           <ModeSelectCard
             key={ m.mode }
@@ -34,7 +34,7 @@ export const Default = {
 
 export const ConceptSelected = {
   render: () => (
-    <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 280px))', gap: 2 } }>
+    <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(220px, 280px))', gap: 2 } }>
       { MODES.map((m) => (
         <ModeSelectCard key={ m.mode } { ...m } isSelected={ m.mode === 'concept' } onSelect={ () => {} } />
       )) }
@@ -44,19 +44,9 @@ export const ConceptSelected = {
 
 export const SystemSelected = {
   render: () => (
-    <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 280px))', gap: 2 } }>
+    <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(220px, 280px))', gap: 2 } }>
       { MODES.map((m) => (
         <ModeSelectCard key={ m.mode } { ...m } isSelected={ m.mode === 'system' } onSelect={ () => {} } />
-      )) }
-    </Box>
-  ),
-};
-
-export const HandoffSelected = {
-  render: () => (
-    <Box sx={ { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(220px, 280px))', gap: 2 } }>
-      { MODES.map((m) => (
-        <ModeSelectCard key={ m.mode } { ...m } isSelected={ m.mode === 'handoff' } onSelect={ () => {} } />
       )) }
     </Box>
   ),

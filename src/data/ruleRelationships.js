@@ -58,7 +58,7 @@ export const ruleNodes = [
     "name": "cli-test (Skill)",
     "priority": "Skill",
     "path": ".claude/skills/cli-test/SKILL.md",
-    "description": "T3 (concept / system / handoff) 의 production 동일 LLM 호출을 CLI 로 실행. wizard UI 거치지 않고 빠른 prompt 룰 검증. 사용자가 \"/cli-test\", \"production 동일 호출\", \"실제 LLM 호출 테스트\", \"cli 로 테스트\" 등으로 호출."
+    "description": "T3 (concept / system) 의 production 동일 LLM 호출을 CLI 로 실행. wizard UI 거치지 않고 빠른 prompt 룰 검증. 사용자가 \"/cli-test\", \"production 동일 호출\", \"실제 LLM 호출 테스트\", \"cli 로 테스트\" 등으로 호출."
   },
   {
     "id": "cli-test--input-schema",

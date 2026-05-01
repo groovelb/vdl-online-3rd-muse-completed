@@ -37,7 +37,7 @@
 - **T3 system 의 8-axis 토큰 산출**: color/typography/layout/gradient + **spacing/rounded/elevation/components** (concept 영향 0).
 - **Token reference 문법 강제**: components 의 모든 값은 `{colors.<id>}` / `{typography.<id>}` / `{rounded.<scale>}` / `{spacing.<scale>}` / `{elevation.<id>}`. dangling/리터럴 검출기 `validateTokenRefs`. system 은 2-phase split call (core + designmd) + 1회 retry 후 fallback (components={}).
 - **Export: DESIGN.md (Google Labs alpha spec)** — `buildDesignMd` (YAML front-matter 8축 + prose 8 canonical sections, gradient/elevation 은 `x-` vendor extension). `buildDecisionTraceMd` 도 함께 생성. system → "DESIGN.md ZIP" (DESIGN.md + DTCG + decision-trace.md + refs/) — 기존 handoff 모드의 ZIP export 까지 흡수.
-- **max_tokens 16384** (Haiku 4.5, system 만). concept 은 1024 그대로.
+- **max_tokens 8192** (Haiku 4.5, system phase1/phase2 공통, `MAX_TOKENS` 상수). concept 은 1024 그대로.
 - **DB 마이그레이션 0**: `analysis_results.layers` jsonb 자유형식 그대로 — 신규 키 추가만.
 
 ### ❌ 폐기됨

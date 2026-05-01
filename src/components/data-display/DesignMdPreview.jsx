@@ -7,7 +7,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import DownloadIcon from '@mui/icons-material/Download';
-import { buildDesignMd } from '../../utils/handoffConverters.js';
+import { buildDesignMd } from '../../utils/tokenConverters.js';
 
 /**
  * DESIGN.md preview — getdesign.md 스타일.

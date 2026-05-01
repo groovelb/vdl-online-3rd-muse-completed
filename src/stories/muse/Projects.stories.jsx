@@ -64,7 +64,7 @@ export const Docs = {
               <TableRow><TableCell sx={ { fontFamily: 'monospace' } }>referenceIds</TableCell><TableCell>string[]</TableCell><TableCell>연결된 Reference id 배열</TableCell></TableRow>
               <TableRow>
                 <TableCell sx={ { fontFamily: 'monospace', fontWeight: 600, color: 'primary.main' } }>mode?</TableCell>
-                <TableCell><code>'concept'|'system'|'handoff'</code></TableCell>
+                <TableCell><code>'concept'|'system'</code></TableCell>
                 <TableCell>★ <strong>TP2</strong> — 모드 선택. T2 정렬 알고리즘 + T3 합성 톤 + Export default 모두 분기. default: 'system'</TableCell>
               </TableRow>
               <TableRow>

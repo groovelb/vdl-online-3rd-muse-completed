@@ -1,10 +1,10 @@
-# DESIGN.md (alpha) — 발췌 사본
+# DESIGN.md (alpha). 발췌 사본
 
 > 출처: https://github.com/google-labs-code/design.md (Google Labs, 2026-04 공개 알파 사양)
 > 본 문서는 MUSE T3 **system 모드** 의 산출물 포맷이 따라야 할 **고정된 참조본**이다.
 > upstream spec 갱신 발견 시 이 파일을 갱신하고 호환 영향 범위를 코드에 반영한다.
 >
-> **2026-04-29 변경**: 기존 `handoff` 모드 폐기 — system 모드가 ZIP export (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 본문에 남은 `system` / `handoff` 듀얼 표기는 모두 현 시점 기준 `system` 으로 읽으면 됨 (handoff 컬럼은 이력 보존).
+> **2026-04-29 변경**: 기존 `handoff` 모드 폐기. system 모드가 ZIP export (DESIGN.md + DTCG + decision-trace + refs) 까지 흡수. 본문에 남은 `system` / `handoff` 듀얼 표기는 모두 현 시점 기준 `system` 으로 읽으면 됨 (handoff 컬럼은 이력 보존).
 
 ---
 
@@ -23,7 +23,7 @@ DESIGN.md 파일은 두 계층으로 구성된다.
 
 ---
 
-## 2. YAML front matter — 토큰 키마
+## 2. YAML front matter. 토큰 키마
 
 ### 필수 (required)
 
@@ -74,18 +74,18 @@ x-elevation:
 
 ---
 
-## 3. Markdown prose — canonical 섹션
+## 3. Markdown prose. canonical 섹션
 
 다음 8 섹션을 사용한다. **있는 섹션만 쓰되, 쓸 거면 이 순서를 지킨다.**
 
-1. `## Overview` — 브랜드 철학, 스타일 방향
-2. `## Colors` — 팔레트 의도
-3. `## Typography` — 폰트 선택 근거
-4. `## Layout` — spacing / structure 가이드
-5. `## Elevation & Depth` — shadow, depth 레이어 (없으면 섹션 자체 생략)
-6. `## Shapes` — radius, 기하 원칙
-7. `## Components` — UI 요소 사양 / 적용 패턴
-8. `## Do's and Don'ts` — 권장 / 금지 패턴
+1. `## Overview`. 브랜드 철학, 스타일 방향
+2. `## Colors`. 팔레트 의도
+3. `## Typography`. 폰트 선택 근거
+4. `## Layout`. spacing / structure 가이드
+5. `## Elevation & Depth`. shadow, depth 레이어 (없으면 섹션 자체 생략)
+6. `## Shapes`. radius, 기하 원칙
+7. `## Components`. UI 요소 사양 / 적용 패턴
+8. `## Do's and Don'ts`. 권장 / 금지 패턴
 
 ---
 

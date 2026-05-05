@@ -39,51 +39,51 @@ export function UserMenu() {
   };
 
   return (
-    <Box sx={ { display: 'flex', alignItems: 'center', gap: 0.5 } }>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
       <ThemeSelector />
       <IconButton
-        onClick={ (e) => setAnchor(e.currentTarget) }
+        onClick={(e) => setAnchor(e.currentTarget)}
         size="small"
         aria-label="계정 메뉴"
-        sx={ { p: 0.5 } }
+        sx={{ p: 0.5 }}
       >
         <Avatar
-          sx={ {
+          sx={{
             width: 32,
             height: 32,
             bgcolor: 'primary.main',
             fontSize: '0.85rem',
             fontWeight: 600,
-          } }
+          }}
         >
-          { initial }
+          {initial}
         </Avatar>
       </IconButton>
       <Menu
-        anchorEl={ anchor }
-        open={ open }
-        onClose={ () => setAnchor(null) }
-        anchorOrigin={ { vertical: 'bottom', horizontal: 'right' } }
-        transformOrigin={ { vertical: 'top', horizontal: 'right' } }
-        slotProps={ { paper: { sx: { mt: 1, minWidth: 220, borderRadius: 2 } } } }
+        anchorEl={anchor}
+        open={open}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 2 } } }}
       >
-        <Box sx={ { px: 2, py: 1.5 } }>
-          <Typography variant="caption" color="text.secondary" sx={ { display: 'block' } }>
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
             로그인 계정
           </Typography>
-          <Typography variant="body2" sx={ { fontWeight: 500, wordBreak: 'break-all' } }>
-            { user.email }
+          <Typography variant="body2" sx={{ fontWeight: 500, wordBreak: 'break-all' }}>
+            {user.email}
           </Typography>
         </Box>
         <Divider />
-        <MenuItem onClick={ goSettings } sx={ { py: 1.25 } }>
+        <MenuItem onClick={goSettings} sx={{ py: 1.25 }}>
           <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
           <ListItemText>Settings</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem
-          onClick={ () => { setAnchor(null); signOut(); } }
-          sx={ { py: 1.25 } }
+          onClick={() => { setAnchor(null); signOut(); }}
+          sx={{ py: 1.25 }}
         >
           <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
           <ListItemText>로그아웃</ListItemText>
@@ -120,41 +120,41 @@ function ThemeSelector() {
 
   return (
     <>
-      <Tooltip title={ `테마: ${current}` }>
+      <Tooltip title={`테마: ${current}`}>
         <IconButton
-          onClick={ (e) => setAnchor(e.currentTarget) }
+          onClick={(e) => setAnchor(e.currentTarget)}
           size="small"
           aria-label="테마 선택"
           aria-haspopup="menu"
-          aria-expanded={ open }
-          sx={ { color: 'text.secondary' } }
+          aria-expanded={open}
+          sx={{ color: 'text.secondary' }}
         >
           <CurrentIcon fontSize="small" />
         </IconButton>
       </Tooltip>
       <Menu
-        anchorEl={ anchor }
-        open={ open }
-        onClose={ () => setAnchor(null) }
-        anchorOrigin={ { vertical: 'bottom', horizontal: 'right' } }
-        transformOrigin={ { vertical: 'top', horizontal: 'right' } }
-        slotProps={ { paper: { sx: { mt: 1, minWidth: 160, borderRadius: 2 } } } }
+        anchorEl={anchor}
+        open={open}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 160, borderRadius: 2 } } }}
       >
-        { THEME_OPTIONS.map((opt) => {
+        {THEME_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           return (
             <MenuItem
-              key={ opt.value }
-              selected={ opt.value === current }
-              onClick={ () => select(opt.value) }
-              sx={ { py: 1 } }
+              key={opt.value}
+              selected={opt.value === current}
+              onClick={() => select(opt.value)}
+              sx={{ py: 1 }}
             >
               <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
-              <ListItemText>{ opt.label }</ListItemText>
-              { opt.value === current && <CheckIcon fontSize="small" sx={ { ml: 1, color: 'primary.main' } } /> }
+              <ListItemText>{opt.label}</ListItemText>
+              {opt.value === current && <CheckIcon fontSize="small" sx={{ ml: 1, color: 'primary.main' }} />}
             </MenuItem>
           );
-        }) }
+        })}
       </Menu>
     </>
   );

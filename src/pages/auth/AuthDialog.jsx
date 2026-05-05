@@ -33,6 +33,8 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  const [info, setInfo] = useState(null);
+
   const { signIn, loading: signingIn, error: signInError } = useSignIn();
   const { signUp, loading: signingUp, error: signUpError } = useSignUp();
 
@@ -46,6 +48,7 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setInfo(null);
     if (mode === 'signin') {
       const { ok } = await signIn({ email, password });
       if (ok) navigate('/', { replace: true });
@@ -56,8 +59,8 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
         navigate('/', { replace: true });
         return;
       }
-      const { ok: signedIn } = await signIn({ email, password });
-      if (signedIn) navigate('/', { replace: true });
+      // mailer_autoconfirm OFF 인 경우: 메일 확인 안내 후 종료
+      setInfo('가입 확인 메일을 보냈습니다. 메일함을 확인하고 인증 링크를 눌러주세요.');
     }
   };
 
@@ -106,7 +109,7 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
 
         <Tabs
           value={ mode }
-          onChange={ (_, v) => setMode(v) }
+          onChange={ (_, v) => { setMode(v); setInfo(null); } }
           variant="fullWidth"
           sx={ {
             '& .MuiTab-root': {
@@ -143,6 +146,11 @@ export function AuthDialog({ open, onClose, initialMode = 'signin' }) {
             { error && (
               <Alert severity="error" sx={ { fontSize: '0.95rem', py: 1.25, borderRadius: 2 } }>
                 { error }
+              </Alert>
+            ) }
+            { !error && info && (
+              <Alert severity="success" sx={ { fontSize: '0.95rem', py: 1.25, borderRadius: 2 } }>
+                { info }
               </Alert>
             ) }
 

@@ -4,7 +4,7 @@
  * 수동 편집 금지. 재생성: pnpm generate-structure
  */
 export default {
-  "generatedAt": "2026-09-17T06:45:38.964Z",
+  "generatedAt": "2026-09-17T09:16:36.175Z",
   "root": {
     "name": "App",
     "kind": "component",
@@ -14,96 +14,82 @@ export default {
     "storyId": null,
     "children": [
       {
-        "name": "AuthPage",
+        "name": "museStore",
+        "kind": "component",
+        "category": "store",
+        "file": "store/museStore.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [],
+        "hooks": [
+          {
+            "name": "useAuth",
+            "file": "hooks/auth/useAuth.js",
+            "category": "hooks/auth"
+          }
+        ],
+        "data": [
+          {
+            "name": "index",
+            "file": "data/muse/index.js"
+          }
+        ]
+      },
+      {
+        "name": "AuthProvider",
+        "kind": "component",
+        "category": "hooks/auth",
+        "file": "hooks/auth/AuthProvider.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "ArchiveRoute",
         "kind": "page",
-        "category": "pages/auth",
-        "file": "pages/auth/AuthPage.jsx",
+        "category": "pages",
+        "file": "pages/ArchiveRoute.jsx",
         "storyTitle": null,
         "storyId": null,
         "children": [
           {
-            "name": "AppShell",
+            "name": "ArchivePage",
             "kind": "component",
-            "category": "components/layout",
-            "file": "components/layout/AppShell.jsx",
-            "storyTitle": "Component/8. Layout/AppShell",
-            "storyId": "component-8-layout-appshell",
+            "category": "components/templates",
+            "file": "components/templates/ArchivePage.jsx",
+            "storyTitle": "Page/ArchivePage",
+            "storyId": "page-archivepage",
             "children": [
               {
-                "name": "GNB",
+                "name": "PageContainer",
                 "kind": "component",
-                "category": "components/navigation",
-                "file": "components/navigation/GNB.jsx",
-                "storyTitle": "Component/10. Navigation/GNB",
-                "storyId": "component-10-navigation-gnb",
+                "category": "components/layout",
+                "file": "components/layout/PageContainer.jsx",
+                "storyTitle": "Component/8. Layout/PageContainer",
+                "storyId": "component-8-layout-pagecontainer",
                 "children": [],
                 "hooks": [],
                 "data": []
-              }
-            ],
-            "hooks": [],
-            "data": []
-          },
-          {
-            "name": "AuthHeroBackdrop",
-            "kind": "page",
-            "category": "pages/auth",
-            "file": "pages/auth/AuthHeroBackdrop.jsx",
-            "storyTitle": null,
-            "storyId": null,
-            "children": [
+              },
               {
-                "name": "ScatterGallery",
+                "name": "InfiniteMasonry",
                 "kind": "component",
-                "category": "components/media",
-                "file": "components/media/ScatterGallery.jsx",
-                "storyTitle": null,
-                "storyId": null,
-                "children": [
+                "category": "components/layout",
+                "file": "components/layout/InfiniteMasonry.jsx",
+                "storyTitle": "Component/8. Layout/InfiniteMasonry",
+                "storyId": "component-8-layout-infinitemasonry",
+                "children": [],
+                "hooks": [
                   {
-                    "name": "ReferenceAnnotationOverlay",
-                    "kind": "component",
-                    "category": "components/media",
-                    "file": "components/media/ReferenceAnnotationOverlay.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [],
-                    "hooks": [],
-                    "data": []
+                    "name": "useInfiniteScroll",
+                    "file": "components/layout/useInfiniteScroll.js",
+                    "category": "components/layout"
                   }
                 ],
-                "hooks": [],
                 "data": []
-              }
-            ],
-            "hooks": [
-              {
-                "name": "useScrollProgress",
-                "file": "hooks/useScrollProgress.js",
-                "category": "hooks"
-              }
-            ],
-            "data": []
-          },
-          {
-            "name": "AuthDialog",
-            "kind": "page",
-            "category": "pages/auth",
-            "file": "pages/auth/AuthDialog.jsx",
-            "storyTitle": null,
-            "storyId": null,
-            "children": [],
-            "hooks": [],
-            "data": []
-          },
-          {
-            "name": "LandingSolutionStage1",
-            "kind": "page",
-            "category": "pages/auth/sections",
-            "file": "pages/auth/sections/LandingSolutionStage1.jsx",
-            "storyTitle": null,
-            "storyId": null,
-            "children": [
+              },
               {
                 "name": "ReferenceCard",
                 "kind": "component",
@@ -159,6 +145,878 @@ export default {
                     "data": []
                   }
                 ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "FileDropzone",
+                "kind": "component",
+                "category": "components/input",
+                "file": "components/input/FileDropzone.jsx",
+                "storyTitle": "Component/7. Input & Control/FileDropzone",
+                "storyId": "component-7-input-control-filedropzone",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "ReferenceDetailDialog",
+                "kind": "component",
+                "category": "components/overlay-feedback",
+                "file": "components/overlay-feedback/ReferenceDetailDialog.jsx",
+                "storyTitle": null,
+                "storyId": null,
+                "children": [
+                  {
+                    "name": "RefImage",
+                    "kind": "component",
+                    "category": "components/media",
+                    "file": "components/media/RefImage.jsx",
+                    "storyTitle": null,
+                    "storyId": null,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "FilterPanel",
+                "kind": "component",
+                "category": "components/templates",
+                "file": "components/templates/FilterPanel.jsx",
+                "storyTitle": null,
+                "storyId": null,
+                "children": [
+                  {
+                    "name": "SearchBar",
+                    "kind": "component",
+                    "category": "components/input",
+                    "file": "components/input/SearchBar.jsx",
+                    "storyTitle": "Component/7. Input & Control/SearchBar",
+                    "storyId": "component-7-input-control-searchbar",
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [
+              {
+                "name": "useReferenceArchive",
+                "file": "components/templates/useReferenceArchive.js",
+                "category": "components/templates"
+              }
+            ],
+            "data": [
+              {
+                "name": "index",
+                "file": "data/muse/index.js"
+              }
+            ]
+          }
+        ],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "ProjectListRoute",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/ProjectListRoute.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "ProjectListPage",
+            "kind": "component",
+            "category": "components/templates",
+            "file": "components/templates/ProjectListPage.jsx",
+            "storyTitle": "Page/ProjectListPage",
+            "storyId": "page-projectlistpage",
+            "children": [
+              {
+                "name": "PageContainer",
+                "kind": "component",
+                "category": "components/layout",
+                "file": "components/layout/PageContainer.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "MoodboardCard",
+                "kind": "component",
+                "category": "components/card",
+                "file": "components/card/MoodboardCard.jsx",
+                "storyTitle": "Component/3. Card/MoodboardCard",
+                "storyId": "component-3-card-moodboardcard",
+                "children": [
+                  {
+                    "name": "CustomCard",
+                    "kind": "component",
+                    "category": "components/card",
+                    "file": "components/card/CustomCard.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "ImageTransition",
+                    "kind": "component",
+                    "category": "components/media",
+                    "file": "components/media/ImageTransition.jsx",
+                    "storyTitle": "Component/4. Media/ImageTransition",
+                    "storyId": "component-4-media-imagetransition",
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "museStore",
+            "kind": "component",
+            "category": "store",
+            "file": "store/museStore.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "ProjectCreateRoute",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/ProjectCreateRoute.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "ProjectCreateWizard",
+            "kind": "component",
+            "category": "components/templates",
+            "file": "components/templates/ProjectCreateWizard.jsx",
+            "storyTitle": "Template/ProjectCreateWizard",
+            "storyId": "template-projectcreatewizard",
+            "children": [
+              {
+                "name": "ReferencePicker",
+                "kind": "component",
+                "category": "components/templates",
+                "file": "components/templates/ReferencePicker.jsx",
+                "storyTitle": "Template/ReferencePicker",
+                "storyId": "template-referencepicker",
+                "children": [
+                  {
+                    "name": "ReferenceCard",
+                    "kind": "component",
+                    "category": "components/card",
+                    "file": "components/card/ReferenceCard.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "ReferenceLayerChipRow",
+                    "kind": "component",
+                    "category": "components/card",
+                    "file": "components/card/ReferenceLayerChipRow.jsx",
+                    "storyTitle": "Card / ReferenceLayerChipRow",
+                    "storyId": "card-referencelayerchiprow",
+                    "children": [],
+                    "hooks": [],
+                    "data": [
+                      {
+                        "name": "layers",
+                        "file": "data/muse/layers.js"
+                      }
+                    ]
+                  }
+                ],
+                "hooks": [
+                  {
+                    "name": "useInfiniteScroll",
+                    "file": "components/layout/useInfiniteScroll.js",
+                    "category": "components/layout"
+                  }
+                ],
+                "data": [
+                  {
+                    "name": "index",
+                    "file": "data/muse/index.js"
+                  }
+                ]
+              },
+              {
+                "name": "AnalysisProgress",
+                "kind": "component",
+                "category": "components/overlay-feedback",
+                "file": "components/overlay-feedback/AnalysisProgress.jsx",
+                "storyTitle": "Component/9. Overlay & Feedback/AnalysisProgress",
+                "storyId": "component-9-overlay-feedback-analysisprogress",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "ModeSelectCard",
+                "kind": "component",
+                "category": "components/card",
+                "file": "components/card/ModeSelectCard.jsx",
+                "storyTitle": "Card / ModeSelectCard",
+                "storyId": "card-modeselectcard",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "IntentGuideField",
+                "kind": "component",
+                "category": "components/input",
+                "file": "components/input/IntentGuideField.jsx",
+                "storyTitle": "Input / IntentGuideField",
+                "storyId": "input-intentguidefield",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "RefImage",
+                "kind": "component",
+                "category": "components/media",
+                "file": "components/media/RefImage.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [],
+            "data": [
+              {
+                "name": "layers",
+                "file": "data/muse/layers.js"
+              }
+            ]
+          },
+          {
+            "name": "museStore",
+            "kind": "component",
+            "category": "store",
+            "file": "store/museStore.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "ProjectDetailRoute",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/ProjectDetailRoute.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "ProjectDetailPage",
+            "kind": "component",
+            "category": "components/templates",
+            "file": "components/templates/ProjectDetailPage.jsx",
+            "storyTitle": "Page/ProjectDetailPage",
+            "storyId": "page-projectdetailpage",
+            "children": [
+              {
+                "name": "PageContainer",
+                "kind": "component",
+                "category": "components/layout",
+                "file": "components/layout/PageContainer.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "SplitScreen",
+                "kind": "component",
+                "category": "components/layout",
+                "file": "components/layout/SplitScreen.jsx",
+                "storyTitle": "Component/8. Layout/SplitScreen",
+                "storyId": "component-8-layout-splitscreen",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "CategoryTab",
+                "kind": "component",
+                "category": "components/in-page-navigation",
+                "file": "components/in-page-navigation/CategoryTab.jsx",
+                "storyTitle": null,
+                "storyId": null,
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "ColorSwatchList",
+                "kind": "component",
+                "category": "components/data-display",
+                "file": "components/data-display/ColorSwatchList.jsx",
+                "storyTitle": "Component/5. Data Display/ColorSwatchList",
+                "storyId": "component-5-data-display-colorswatchlist",
+                "children": [
+                  {
+                    "name": "TokenListItem",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenListItem.jsx",
+                    "storyTitle": "Component/5. Data Display/TokenListItem",
+                    "storyId": "component-5-data-display-tokenlistitem",
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "TokenDecisionTracePanel",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
+                    "storyTitle": null,
+                    "storyId": null,
+                    "children": [
+                      {
+                        "name": "RefImage",
+                        "kind": "component",
+                        "category": "components/media",
+                        "file": "components/media/RefImage.jsx",
+                        "ref": true,
+                        "children": [],
+                        "hooks": [],
+                        "data": []
+                      }
+                    ],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "TypographyPreview",
+                "kind": "component",
+                "category": "components/data-display",
+                "file": "components/data-display/TypographyPreview.jsx",
+                "storyTitle": "Component/5. Data Display/TypographyPreview",
+                "storyId": "component-5-data-display-typographypreview",
+                "children": [
+                  {
+                    "name": "TokenListItem",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenListItem.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "TokenDecisionTracePanel",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "LayoutTokenPreview",
+                "kind": "component",
+                "category": "components/data-display",
+                "file": "components/data-display/LayoutTokenPreview.jsx",
+                "storyTitle": "Component/5. Data Display/LayoutTokenPreview",
+                "storyId": "component-5-data-display-layouttokenpreview",
+                "children": [
+                  {
+                    "name": "TokenListItem",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenListItem.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "TokenDecisionTracePanel",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "GradientPreview",
+                "kind": "component",
+                "category": "components/data-display",
+                "file": "components/data-display/GradientPreview.jsx",
+                "storyTitle": "Component/5. Data Display/GradientPreview",
+                "storyId": "component-5-data-display-gradientpreview",
+                "children": [
+                  {
+                    "name": "TokenListItem",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenListItem.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  },
+                  {
+                    "name": "TokenDecisionTracePanel",
+                    "kind": "component",
+                    "category": "components/data-display",
+                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
+                    "ref": true,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "DesignMdPreview",
+                "kind": "component",
+                "category": "components/data-display",
+                "file": "components/data-display/DesignMdPreview.jsx",
+                "storyTitle": null,
+                "storyId": null,
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "ThemeExportDialog",
+                "kind": "component",
+                "category": "components/overlay-feedback",
+                "file": "components/overlay-feedback/ThemeExportDialog.jsx",
+                "storyTitle": "Component/9. Overlay & Feedback/ThemeExportDialog",
+                "storyId": "component-9-overlay-feedback-themeexportdialog",
+                "children": [],
+                "hooks": [],
+                "data": []
+              },
+              {
+                "name": "RefImage",
+                "kind": "component",
+                "category": "components/media",
+                "file": "components/media/RefImage.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [],
+            "data": [
+              {
+                "name": "layers",
+                "file": "data/muse/layers.js"
+              }
+            ]
+          },
+          {
+            "name": "PageContainer",
+            "kind": "component",
+            "category": "components/layout",
+            "file": "components/layout/PageContainer.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "museStore",
+            "kind": "component",
+            "category": "store",
+            "file": "store/museStore.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "SettingsRoute",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/SettingsRoute.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "SettingsPage",
+            "kind": "component",
+            "category": "components/templates",
+            "file": "components/templates/SettingsPage.jsx",
+            "storyTitle": "Page/SettingsPage",
+            "storyId": "page-settingspage",
+            "children": [
+              {
+                "name": "PageContainer",
+                "kind": "component",
+                "category": "components/layout",
+                "file": "components/layout/PageContainer.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "museStore",
+            "kind": "component",
+            "category": "store",
+            "file": "store/museStore.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [
+          {
+            "name": "useAuth",
+            "file": "hooks/auth/useAuth.js",
+            "category": "hooks/auth"
+          }
+        ],
+        "data": []
+      },
+      {
+        "name": "AdminRoute",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/AdminRoute.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "PageContainer",
+            "kind": "component",
+            "category": "components/layout",
+            "file": "components/layout/PageContainer.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "ReferenceCard",
+            "kind": "component",
+            "category": "components/card",
+            "file": "components/card/ReferenceCard.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "MoodboardCard",
+            "kind": "component",
+            "category": "components/card",
+            "file": "components/card/MoodboardCard.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [
+          {
+            "name": "useAuth",
+            "file": "hooks/auth/useAuth.js",
+            "category": "hooks/auth"
+          }
+        ],
+        "data": [
+          {
+            "name": "index",
+            "file": "data/muse/index.js"
+          }
+        ]
+      },
+      {
+        "name": "AppShellLayout",
+        "kind": "page",
+        "category": "pages",
+        "file": "pages/AppShellLayout.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "AppShell",
+            "kind": "component",
+            "category": "components/layout",
+            "file": "components/layout/AppShell.jsx",
+            "storyTitle": "Component/8. Layout/AppShell",
+            "storyId": "component-8-layout-appshell",
+            "children": [
+              {
+                "name": "GNB",
+                "kind": "component",
+                "category": "components/navigation",
+                "file": "components/navigation/GNB.jsx",
+                "storyTitle": "Component/10. Navigation/GNB",
+                "storyId": "component-10-navigation-gnb",
+                "children": [],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "MuseNav",
+            "kind": "page",
+            "category": "pages",
+            "file": "pages/MuseNav.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [],
+            "hooks": [
+              {
+                "name": "useAuth",
+                "file": "hooks/auth/useAuth.js",
+                "category": "hooks/auth"
+              }
+            ],
+            "data": []
+          },
+          {
+            "name": "UserMenu",
+            "kind": "page",
+            "category": "pages",
+            "file": "pages/UserMenu.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [
+              {
+                "name": "museStore",
+                "kind": "component",
+                "category": "store",
+                "file": "store/museStore.jsx",
+                "ref": true,
+                "children": [],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [
+              {
+                "name": "useAuth",
+                "file": "hooks/auth/useAuth.js",
+                "category": "hooks/auth"
+              },
+              {
+                "name": "useSignOut",
+                "file": "hooks/auth/useSignOut.js",
+                "category": "hooks/auth"
+              }
+            ],
+            "data": []
+          },
+          {
+            "name": "BetaNoticeDialog",
+            "kind": "page",
+            "category": "pages/auth",
+            "file": "pages/auth/BetaNoticeDialog.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [],
+            "hooks": [
+              {
+                "name": "useAuth",
+                "file": "hooks/auth/useAuth.js",
+                "category": "hooks/auth"
+              }
+            ],
+            "data": []
+          },
+          {
+            "name": "ArchiveRoute",
+            "kind": "page",
+            "category": "pages",
+            "file": "pages/ArchiveRoute.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "ProjectListRoute",
+            "kind": "page",
+            "category": "pages",
+            "file": "pages/ProjectListRoute.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "museStore",
+            "kind": "component",
+            "category": "store",
+            "file": "store/museStore.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          }
+        ],
+        "hooks": [],
+        "data": []
+      },
+      {
+        "name": "AuthPage",
+        "kind": "page",
+        "category": "pages/auth",
+        "file": "pages/auth/AuthPage.jsx",
+        "storyTitle": null,
+        "storyId": null,
+        "children": [
+          {
+            "name": "AppShell",
+            "kind": "component",
+            "category": "components/layout",
+            "file": "components/layout/AppShell.jsx",
+            "ref": true,
+            "children": [],
+            "hooks": [],
+            "data": []
+          },
+          {
+            "name": "AuthHeroBackdrop",
+            "kind": "page",
+            "category": "pages/auth",
+            "file": "pages/auth/AuthHeroBackdrop.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [
+              {
+                "name": "ScatterGallery",
+                "kind": "component",
+                "category": "components/media",
+                "file": "components/media/ScatterGallery.jsx",
+                "storyTitle": null,
+                "storyId": null,
+                "children": [
+                  {
+                    "name": "ReferenceAnnotationOverlay",
+                    "kind": "component",
+                    "category": "components/media",
+                    "file": "components/media/ReferenceAnnotationOverlay.jsx",
+                    "storyTitle": null,
+                    "storyId": null,
+                    "children": [],
+                    "hooks": [],
+                    "data": []
+                  }
+                ],
+                "hooks": [],
+                "data": []
+              }
+            ],
+            "hooks": [
+              {
+                "name": "useScrollProgress",
+                "file": "hooks/useScrollProgress.js",
+                "category": "hooks"
+              }
+            ],
+            "data": []
+          },
+          {
+            "name": "AuthDialog",
+            "kind": "page",
+            "category": "pages/auth",
+            "file": "pages/auth/AuthDialog.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [],
+            "hooks": [
+              {
+                "name": "useSignUp",
+                "file": "hooks/auth/useSignUp.js",
+                "category": "hooks/auth"
+              },
+              {
+                "name": "useSignIn",
+                "file": "hooks/auth/useSignIn.js",
+                "category": "hooks/auth"
+              }
+            ],
+            "data": []
+          },
+          {
+            "name": "LandingSolutionStage1",
+            "kind": "page",
+            "category": "pages/auth/sections",
+            "file": "pages/auth/sections/LandingSolutionStage1.jsx",
+            "storyTitle": null,
+            "storyId": null,
+            "children": [
+              {
+                "name": "ReferenceCard",
+                "kind": "component",
+                "category": "components/card",
+                "file": "components/card/ReferenceCard.jsx",
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               },
@@ -224,8 +1082,7 @@ export default {
                 "kind": "component",
                 "category": "components/in-page-navigation",
                 "file": "components/in-page-navigation/CategoryTab.jsx",
-                "storyTitle": null,
-                "storyId": null,
+                "ref": true,
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -235,44 +1092,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/ColorSwatchList.jsx",
-                "storyTitle": "Component/5. Data Display/ColorSwatchList",
-                "storyId": "component-5-data-display-colorswatchlist",
-                "children": [
-                  {
-                    "name": "TokenListItem",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenListItem.jsx",
-                    "storyTitle": "Component/5. Data Display/TokenListItem",
-                    "storyId": "component-5-data-display-tokenlistitem",
-                    "children": [],
-                    "hooks": [],
-                    "data": []
-                  },
-                  {
-                    "name": "TokenDecisionTracePanel",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [
-                      {
-                        "name": "RefImage",
-                        "kind": "component",
-                        "category": "components/media",
-                        "file": "components/media/RefImage.jsx",
-                        "storyTitle": null,
-                        "storyId": null,
-                        "children": [],
-                        "hooks": [],
-                        "data": []
-                      }
-                    ],
-                    "hooks": [],
-                    "data": []
-                  }
-                ],
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               },
@@ -281,44 +1102,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/TypographyPreview.jsx",
-                "storyTitle": "Component/5. Data Display/TypographyPreview",
-                "storyId": "component-5-data-display-typographypreview",
-                "children": [
-                  {
-                    "name": "TokenListItem",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenListItem.jsx",
-                    "storyTitle": "Component/5. Data Display/TokenListItem",
-                    "storyId": "component-5-data-display-tokenlistitem",
-                    "children": [],
-                    "hooks": [],
-                    "data": []
-                  },
-                  {
-                    "name": "TokenDecisionTracePanel",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [
-                      {
-                        "name": "RefImage",
-                        "kind": "component",
-                        "category": "components/media",
-                        "file": "components/media/RefImage.jsx",
-                        "storyTitle": null,
-                        "storyId": null,
-                        "children": [],
-                        "hooks": [],
-                        "data": []
-                      }
-                    ],
-                    "hooks": [],
-                    "data": []
-                  }
-                ],
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               },
@@ -327,44 +1112,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/LayoutTokenPreview.jsx",
-                "storyTitle": "Component/5. Data Display/LayoutTokenPreview",
-                "storyId": "component-5-data-display-layouttokenpreview",
-                "children": [
-                  {
-                    "name": "TokenListItem",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenListItem.jsx",
-                    "storyTitle": "Component/5. Data Display/TokenListItem",
-                    "storyId": "component-5-data-display-tokenlistitem",
-                    "children": [],
-                    "hooks": [],
-                    "data": []
-                  },
-                  {
-                    "name": "TokenDecisionTracePanel",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [
-                      {
-                        "name": "RefImage",
-                        "kind": "component",
-                        "category": "components/media",
-                        "file": "components/media/RefImage.jsx",
-                        "storyTitle": null,
-                        "storyId": null,
-                        "children": [],
-                        "hooks": [],
-                        "data": []
-                      }
-                    ],
-                    "hooks": [],
-                    "data": []
-                  }
-                ],
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               },
@@ -373,44 +1122,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/GradientPreview.jsx",
-                "storyTitle": "Component/5. Data Display/GradientPreview",
-                "storyId": "component-5-data-display-gradientpreview",
-                "children": [
-                  {
-                    "name": "TokenListItem",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenListItem.jsx",
-                    "storyTitle": "Component/5. Data Display/TokenListItem",
-                    "storyId": "component-5-data-display-tokenlistitem",
-                    "children": [],
-                    "hooks": [],
-                    "data": []
-                  },
-                  {
-                    "name": "TokenDecisionTracePanel",
-                    "kind": "component",
-                    "category": "components/data-display",
-                    "file": "components/data-display/TokenDecisionTracePanel.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [
-                      {
-                        "name": "RefImage",
-                        "kind": "component",
-                        "category": "components/media",
-                        "file": "components/media/RefImage.jsx",
-                        "storyTitle": null,
-                        "storyId": null,
-                        "children": [],
-                        "hooks": [],
-                        "data": []
-                      }
-                    ],
-                    "hooks": [],
-                    "data": []
-                  }
-                ],
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               },
@@ -419,8 +1132,7 @@ export default {
                 "kind": "page",
                 "category": "pages/auth/sections",
                 "file": "pages/auth/sections/SectionShell.jsx",
-                "storyTitle": null,
-                "storyId": null,
+                "ref": true,
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -451,21 +1163,8 @@ export default {
                 "kind": "component",
                 "category": "components/media",
                 "file": "components/media/ScatterGallery.jsx",
-                "storyTitle": null,
-                "storyId": null,
-                "children": [
-                  {
-                    "name": "ReferenceAnnotationOverlay",
-                    "kind": "component",
-                    "category": "components/media",
-                    "file": "components/media/ReferenceAnnotationOverlay.jsx",
-                    "storyTitle": null,
-                    "storyId": null,
-                    "children": [],
-                    "hooks": [],
-                    "data": []
-                  }
-                ],
+                "ref": true,
+                "children": [],
                 "hooks": [],
                 "data": []
               }
@@ -485,7 +1184,13 @@ export default {
         "storyTitle": null,
         "storyId": null,
         "children": [],
-        "hooks": [],
+        "hooks": [
+          {
+            "name": "useAuth",
+            "file": "hooks/auth/useAuth.js",
+            "category": "hooks/auth"
+          }
+        ],
         "data": []
       }
     ],

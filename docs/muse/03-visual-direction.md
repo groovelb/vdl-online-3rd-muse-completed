@@ -29,7 +29,7 @@
 - **4절 잠정**: 원문에 이미지·에셋 절이 없다. 랜딩과 데모가 쓰는 예시 이미지 19장, 더미 레퍼런스 26장, 아이콘 출처를 코드에서 확인해 채웠다.
 - **5절 현재값 출처**: 스타터킷 `src/styles/themes/default.js`. 스타터킷이 정하지 않은 축은 "없음"으로 적었다.
 - **원문에서 달라진 값**: 원문이 제안한 좌우 여백과 좌우 분할 비율은 코드에서 다른 값으로 구현됐다. 코드 값을 적고 원문 값은 2절 비고에 남겼다.
-- **분량**: 220줄(권장 200). 가독성 규칙(비고 목록, 구분선)으로 늘었다. 4절 에셋별 방향을 부록으로 옮기면 줄일 수 있다.
+- **분량**: 232줄(권장 200). 가독성 규칙(비고 목록, 구분선)으로 늘었다. 4절 에셋별 방향을 부록으로 옮기면 줄일 수 있다.
 
 ---
 
@@ -95,6 +95,8 @@
 - 악센트는 `info` 자리에 올렸다. 상태 색 중 정보 색을 브랜드 악센트로 쓰고, 나머지 상태 색(error·warning·success)은 기본값을 유지한다.
 - 다크 팔레트의 회색 스케일은 라이트의 역순이다. 50이 가장 어둡고 900이 가장 밝다.
 - 액션 상태는 전경색을 저투명으로 깐다. 라이트는 hover 4% / selected 6% / focus 12%다.
+- 라이트 회색 스케일의 실제 값은 `#FAFAFD`(50) · `#F3F3F9`(100) · `#E8E7F0`(200) · `#D6D5E0`(300) · `#B5B4C2`(400) · `#9493A3`(500) · `#7A798E`(600) · `#5A586E`(700) · `#3A384E`(800) · `#14132B`(900)이다.
+- 순수한 검정 `#000000`은 팔레트 어디에도 없다. 가장 어두운 값이 `#14132B`이고, 흰색은 대비 글자색으로만 남는다.
 
 ### 3.2 타이포
 
@@ -110,7 +112,10 @@
 | 캡션 | Pretendard Variable | 500, 12px, 자간 0.02em | caption |
 | 오버라인 | Pretendard Variable | 500, 12px, 자간 0.08em, 대문자 | overline |
 
-비고: 제목은 Outfit, 본문은 Pretendard Variable로 나눈 스타터킷 조합을 유지했다. 바꾼 것은 웨이트를 낮추고 큰 제목을 화면 폭에 따라 늘린 것이다.
+비고:
+
+- 제목은 Outfit, 본문은 Pretendard Variable로 나눈 스타터킷 조합을 유지했다. 바꾼 것은 웨이트를 낮추고 큰 제목을 화면 폭에 따라 늘린 것이다.
+- 유체 크기를 px로 환산하면 h1은 48px에서 96px, h2는 32px에서 56px, h3은 30px에서 42px이다. 테마 파일의 주석 값과 같다.
 
 ### 3.3 형태·표면·모션
 
@@ -180,7 +185,8 @@
 | `palette.info.main` | `#0288d1` | `#4F46E5` | 악센트, 분석 중 |
 | `palette.background.default` | `#FFFFFF` | `#FCFCFF` | 지면 |
 | `palette.background.paper` | `#FFFFFF` | `#F8F8FC` | 카드와 패널 |
-| `palette.text.primary` / `.secondary` | 검정 87% / 60% | `#14132B` / `#7A798E` | 본문 위계 |
+| `palette.text.primary` | 검정 87% | `#14132B` | 본문 |
+| `palette.text.secondary` | 검정 60% | `#7A798E` | 보조 텍스트 |
 | `palette.divider` | 검정 12% | 전경 틴트 8% | 모든 구분선 |
 | `palette.grey.*` | MUI 기본 회색 | `#FAFAFD`(50) ~ `#14132B`(900) | 보조 톤 전체 |
 | `palette.action.*` | 검정 기반 | 전경 틴트 기반 | hover·선택·비활성 |
@@ -192,21 +198,27 @@
 | `typography.button` | 14px 600 | 15px 500, 자간 0 | 모든 버튼 |
 | `typography.overline` | 600, 자간 0.08em | 500, 자간 0.08em (유지) | 라벨 |
 | `shape.borderRadius` | `0` | `0` (유지) | 전역 기본 |
-| `components.MuiButton` | radius 0 | radius 999, 여백 확대 | 모든 버튼 |
-| `components.MuiIconButton` | 없음 | radius 999 (신설) | 아이콘 버튼 |
-| `components.MuiChip` | radius 4 | radius 999 | chip과 태그 |
-| `components.MuiCard` | radius 0 | radius 24, 그림자 없음 | 모든 카드 |
-| `components.MuiDialog` | 없음 | radius 24, 그림자 없음 (신설) | 모든 모달 |
-| `components.MuiOutlinedInput` | 없음 | radius 16, 여백 확대 (신설) | 입력 전체 |
-| `components.MuiPaper` | elevation 1~4 그림자 | 전 단계 그림자 없음 | 면 전체 |
-| `components.MuiAppBar` | 없음 | 그림자 없음 (신설) | 상단 바 |
+| `MuiButton` radius | `0` | `999` | 모든 버튼 |
+| `MuiButton` 여백 | 없음 | 32/10px, 큰 것 36/14px | 모든 버튼 |
+| `MuiIconButton` radius | 없음 | `999` (신설) | 아이콘 버튼 |
+| `MuiChip` radius | `4` | `999` | chip과 태그 |
+| `MuiCard` radius | `0` | `24`, 그림자 없음 | 모든 카드 |
+| `MuiDialog` radius | 없음 | `24` (신설) | 모든 모달 |
+| `MuiOutlinedInput` radius | 없음 | `16` (신설) | 입력 전체 |
+| `MuiOutlinedInput` 여백 | 없음 | 상하 16px, 좌우 18px (신설) | 입력 전체 |
+| `MuiTextField` 기본 변형 | 없음 | `outlined` 고정 (신설) | 모든 TextField |
+| `MuiPaper` 그림자 | elevation 1~4 그림자 | 전 단계 그림자 없음 | 면 전체 |
+| `MuiAppBar` 그림자 | 없음 | 그림자 없음 (신설) | 상단 바 |
 | `customShadows` | 검정 6~12% | 전경 틴트 5~10% | 따로 부르는 표면 |
 | `spacing` | `8` | `8` (유지) | 전역 |
 | `breakpoints.values` | xs 0 ~ xl 1536 | 같은 값 (유지) | 전역 |
 | `transitions` | MUI 기본 | 같은 값 (유지) | 전역 |
 | 다크 테마 파일 | 없음 | palette만 바꾼 두 번째 테마 (신설) | 화면 밝기 설정 |
 
-비고: 현재값은 스타터킷 테마 파일이고 변경값은 이 저장소의 테마 파일이다. 유지하는 토큰도 "(유지)"로 남겨 비교가 끊기지 않게 했다.
+비고:
+
+- 현재값은 스타터킷 테마 파일이고 변경값은 이 저장소의 테마 파일이다. 유지하는 토큰도 "(유지)"로 남겨 비교가 끊기지 않게 했다.
+- 표의 `Mui*` 행은 전부 `components.` 아래 경로다. 전체 경로는 차례로 `components.MuiButton.styleOverrides.root.borderRadius`, `components.MuiIconButton.styleOverrides.root.borderRadius`, `components.MuiChip.styleOverrides.root.borderRadius`, `components.MuiCard.styleOverrides.root.borderRadius`, `components.MuiDialog.styleOverrides.paper.borderRadius`, `components.MuiOutlinedInput.styleOverrides.root.borderRadius`다. 입력 여백은 같은 오버라이드의 `input` 자리에, 기본 변형은 `components.MuiTextField.defaultProps.variant`에 들어간다.
 
 ---
 

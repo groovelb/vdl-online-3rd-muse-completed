@@ -22,6 +22,10 @@ import {
   getVisualDirectionTags,
 } from '../../data/muse';
 import { LAYER_LABEL, ANALYSIS_LAYERS } from '../../data/muse/layers.js';
+import { AI_TASKS } from '../../data/muse/aiTasks.js';
+import tagPreset from '../../data/muse/tag/muse_tags_preset.json';
+import exampleTokens from '../../data/exampleTokens.json';
+import schemasSource from '../../data/muse/schemas.js?raw';
 
 export default {
   title: 'Overview/MUSE/05 Reference Data',
@@ -115,6 +119,32 @@ const tagSummary = (ref) => {
     .concat(`${LAYER_LABEL.visualDirection} ${vdCount}`)
     .join(' · ');
 };
+
+/** 타입 정의 원문 경로. 표 설명에 그대로 보여 준다 */
+const SCHEMA_FILE = 'src/data/muse/schemas.js';
+
+/** schemas.js 원문에서 typedef 이름과 설명을 뽑는다 */
+const SCHEMA_TYPES = [...schemasSource.matchAll(/@typedef\s*\{[^}]*\}\s*(\w+)([^\n]*)/g)]
+  .map((m) => ({ name: m[1], note: m[2].replace(/^\s*-\s*/, '').trim() }));
+
+/** 태그 프리셋의 레이어별 어휘 수 */
+const PRESET_LAYERS = Object.entries(tagPreset.layers).map(([key, v]) => ({
+  key,
+  target: v.output_target,
+  mapping: v.token_mapping,
+  count: v.tags
+    ? v.tags.length
+    : Object.values(v.categories || {}).reduce((sum, c) => sum + (c.tags || c).length, 0),
+}));
+
+/** 예시 이미지 추출 결과. 큰 JSON 이라 상위 20행만 보여준다 */
+const EXAMPLE_TOKEN_ROWS = Object.entries(exampleTokens).map(([file, v]) => ({
+  file,
+  title: v.title,
+  colors: v.dominantColors || [],
+  tags: (v.tags || []).join(', '),
+}));
+const EXAMPLE_TOKEN_HEAD = EXAMPLE_TOKEN_ROWS.slice(0, 20);
 
 /** 프로젝트별 레퍼런스 활용(ProjectReference) 행을 편다 */
 const curationRows = projects.flatMap((p) => (p.selectedRefs || []).map((s) => ({
@@ -335,6 +365,114 @@ export const Default = {
             </TableBody>
           </Table>
         </TableContainer>
+        <SectionTitle
+          title="태그 프리셋 구조"
+          description={ `muse_tags_preset.json v${tagPreset.version} · 레이어마다 산출 대상과 토큰 매핑이 붙는다` }
+        />
+        <TableContainer sx={ { mb: 4 } }>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 160 } }>layer</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 90 } }>어휘 수</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>output_target</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>token_mapping</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { PRESET_LAYERS.map((l) => (
+                <TableRow key={ l.key }>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ l.key }</TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ l.count }</TableCell>
+                  <TableCell sx={ { fontSize: 12 } }>{ l.target }</TableCell>
+                  <TableCell sx={ { fontSize: 12, color: 'text.secondary' } }>{ l.mapping }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <SectionTitle
+          title="AI 태스크 정의"
+          description={ `aiTasks.js · ${AI_TASKS.length}개. 자동 태깅, 추천, 토큰 분석 두 갈래가 언제 어떤 모델로 도는지` }
+        />
+        <TableContainer sx={ { mb: 4 } }>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 90 } }>id</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 170 } }>name</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 150 } }>stage</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 150 } }>model</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>purpose</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { AI_TASKS.map((task) => (
+                <TableRow key={ task.id }>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ task.id }</TableCell>
+                  <TableCell sx={ { fontSize: 13, fontWeight: 600 } }>{ task.name }</TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 11 } }>{ task.stage }</TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 11 } }>{ task.model }</TableCell>
+                  <TableCell sx={ { fontSize: 12, color: 'text.secondary' } }>{ task.purpose }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <SectionTitle
+          title="데이터 타입 정의"
+          description={ `${SCHEMA_FILE} · ${SCHEMA_TYPES.length}개 typedef. 런타임 값이 없는 참조 파일이라 원문에서 이름만 읽어 온다` }
+        />
+        <TableContainer sx={ { mb: 4 } }>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 260 } }>typedef</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>설명</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { SCHEMA_TYPES.map((s) => (
+                <TableRow key={ s.name }>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ s.name }</TableCell>
+                  <TableCell sx={ { fontSize: 12, color: 'text.secondary' } }>{ s.note || '(설명 없음)' }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <SectionTitle
+          title="예시 이미지 추출 결과"
+          description={ `exampleTokens.json · 총 ${EXAMPLE_TOKEN_ROWS.length}건 중 상위 ${EXAMPLE_TOKEN_HEAD.length}건. 자동 태깅이 실제로 낸 값이다` }
+        />
+        <TableContainer sx={ { mb: 4 } }>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 230 } }>file</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 200 } }>title</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 110 } }>dominantColors</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>tags</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { EXAMPLE_TOKEN_HEAD.map((r) => (
+                <TableRow key={ r.file }>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 10 } }>{ r.file }</TableCell>
+                  <TableCell sx={ { fontSize: 12 } }>{ r.title }</TableCell>
+                  <TableCell><Swatches colors={ r.colors } /></TableCell>
+                  <TableCell sx={ { fontSize: 11, color: 'text.secondary' } }>{ r.tags }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Typography variant="body2" color="text.secondary" sx={ { mb: 4 } }>
+          총 { EXAMPLE_TOKEN_ROWS.length }건. 위 표는 상위 { EXAMPLE_TOKEN_HEAD.length }건만 보여준다.
+        </Typography>
       </PageContainer>
     </>
   ),

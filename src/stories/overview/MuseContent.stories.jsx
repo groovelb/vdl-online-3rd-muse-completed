@@ -30,6 +30,7 @@ import {
   LAYER_CHIP_DEF_COMPONENTS,
   TOKEN_LAYER_CATEGORIES,
 } from '../../data/muse/layers.js';
+import landingStage2Analysis from '../../data/landingStage2Analysis.json';
 
 export default {
   title: 'Overview/MUSE/06 Content Data',
@@ -111,6 +112,16 @@ function ArrayTable({ rows, columns }) {
     </TableContainer>
   );
 }
+
+/** 랜딩 출력 갈래가 보여 주는 분석 결과. 큰 JSON 이라 상위 20행만 표로 만든다 */
+const STAGE2_ROWS = Object.entries(landingStage2Analysis.tokens || {})
+  .flatMap(([layer, list]) => (Array.isArray(list) ? list : []).map((token) => ({
+    layer,
+    id: token.id,
+    label: token.label,
+    why: token.decisionRationale?.whyChosen || '',
+  })));
+const STAGE2_HEAD = STAGE2_ROWS.slice(0, 20);
 
 const LANDING_BLOCKS = [
   { name: 'COMMON', note: '브랜드명과 접근성 라벨', data: COMMON },
@@ -205,6 +216,36 @@ export const Default = {
             </TableBody>
           </Table>
         </TableContainer>
+        <SectionTitle
+          title="landingStage2Analysis"
+          description={ `랜딩 출력 갈래가 그리는 분석 결과. 총 ${STAGE2_ROWS.length}개 토큰 중 상위 ${STAGE2_HEAD.length}개` }
+        />
+        <TableContainer sx={ { mb: 2 } }>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 110 } }>layer</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 200 } }>id</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 170 } }>label</TableCell>
+                <TableCell sx={ { fontWeight: 600 } }>고른 이유</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              { STAGE2_HEAD.map((r) => (
+                <TableRow key={ `${r.layer}-${r.id}` }>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ r.layer }</TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 11 } }>{ r.id }</TableCell>
+                  <TableCell sx={ { fontSize: 12 } }>{ r.label }</TableCell>
+                  <TableCell sx={ { fontSize: 11, color: 'text.secondary' } }>{ r.why }</TableCell>
+                </TableRow>
+              )) }
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Typography variant="body2" color="text.secondary" sx={ { mb: 4 } }>
+          총 { STAGE2_ROWS.length }개. 무드 갈래는 토큰이 아니라 서술형 Markdown 한 덩이라 표에 넣지 않았다
+          ({ (landingStage2Analysis.visualDirection?.markdown || '').length }자).
+        </Typography>
       </PageContainer>
     </>
   ),

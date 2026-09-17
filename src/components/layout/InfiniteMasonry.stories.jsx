@@ -4,7 +4,7 @@ import { InfiniteMasonry } from './InfiniteMasonry.jsx';
 import Placeholder from '../../common/ui/Placeholder';
 
 export default {
-  title: 'Component/8. Layout/InfiniteMasonry',
+  title: 'Custom Component/layout/InfiniteMasonry',
   component: InfiniteMasonry,
   tags: ['autodocs'],
   parameters: {

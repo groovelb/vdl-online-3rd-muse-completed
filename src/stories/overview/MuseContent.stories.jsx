@@ -31,6 +31,7 @@ import {
   TOKEN_LAYER_CATEGORIES,
 } from '../../data/muse/layers.js';
 import landingStage2Analysis from '../../data/landingStage2Analysis.json';
+import { references } from '../../data/muse';
 
 export default {
   title: 'Overview/MUSE/06 Content Data',
@@ -113,14 +114,27 @@ function ArrayTable({ rows, columns }) {
   );
 }
 
+/** 레퍼런스 id 로 더미 썸네일을 찾는 표 */
+const THUMB_BY_REF = Object.fromEntries(references.map((r) => [r.id, r.thumbnailUrl]));
+
+/** 토큰 한 건을 표 한 행으로. 배열 레이어와 객체 레이어를 모두 받는다 */
+const toRow = (layer, key, token) => {
+  const isObject = token && typeof token === 'object';
+  const rationale = isObject ? token.decisionRationale : null;
+  return {
+    layer,
+    id: isObject ? (token.id || key) : key,
+    label: isObject ? (token.label || key) : String(token),
+    why: rationale?.whyChosen || '',
+    refs: (isObject ? (token.sourceReferenceIds || rationale?.whichReferences) : null) || [],
+  };
+};
+
 /** 랜딩 출력 갈래가 보여 주는 분석 결과. 큰 JSON 이라 상위 20행만 표로 만든다 */
 const STAGE2_ROWS = Object.entries(landingStage2Analysis.tokens || {})
-  .flatMap(([layer, list]) => (Array.isArray(list) ? list : []).map((token) => ({
-    layer,
-    id: token.id,
-    label: token.label,
-    why: token.decisionRationale?.whyChosen || '',
-  })));
+  .flatMap(([layer, list]) => (Array.isArray(list)
+    ? list.map((token) => toRow(layer, token.id, token))
+    : Object.entries(list || {}).map(([key, token]) => toRow(layer, key, token))));
 const STAGE2_HEAD = STAGE2_ROWS.slice(0, 20);
 
 const LANDING_BLOCKS = [
@@ -226,7 +240,8 @@ export const Default = {
               <TableRow>
                 <TableCell sx={ { fontWeight: 600, width: 110 } }>layer</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 200 } }>id</TableCell>
-                <TableCell sx={ { fontWeight: 600, width: 170 } }>label</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 150 } }>label</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 130 } }>출처 레퍼런스</TableCell>
                 <TableCell sx={ { fontWeight: 600 } }>고른 이유</TableCell>
               </TableRow>
             </TableHead>
@@ -236,6 +251,23 @@ export const Default = {
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ r.layer }</TableCell>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 11 } }>{ r.id }</TableCell>
                   <TableCell sx={ { fontSize: 12 } }>{ r.label }</TableCell>
+                  <TableCell>
+                    <Box sx={ { display: 'flex', gap: 0.25 } }>
+                      { r.refs.map((id) => (THUMB_BY_REF[id] ? (
+                        <Box
+                          key={ id }
+                          component="img"
+                          src={ THUMB_BY_REF[id] }
+                          alt={ id }
+                          loading="lazy"
+                          title={ id }
+                          sx={ { width: 40, height: 30, objectFit: 'cover', border: '1px solid', borderColor: 'divider' } }
+                        />
+                      ) : (
+                        <Box key={ id } component="span" sx={ { fontFamily: 'monospace', fontSize: 10 } }>{ id }</Box>
+                      ))) }
+                    </Box>
+                  </TableCell>
                   <TableCell sx={ { fontSize: 11, color: 'text.secondary' } }>{ r.why }</TableCell>
                 </TableRow>
               )) }

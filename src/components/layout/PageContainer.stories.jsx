@@ -6,7 +6,7 @@ import { PageContainer } from './PageContainer';
 import { DocumentTitle, SectionTitle } from '../storybookDocumentation';
 
 export default {
-  title: 'Component/8. Layout/PageContainer',
+  title: 'Custom Component/layout/PageContainer',
   component: PageContainer,
   tags: ['autodocs'],
   parameters: {

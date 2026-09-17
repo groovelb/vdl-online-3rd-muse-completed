@@ -12,7 +12,7 @@ const ALL_EXAMPLES = Object.keys(URL_BY_BASENAME)
 
 const SAMPLE = ALL_EXAMPLES[0] || {
   src: '',
-  title: 'Sample Reference',
+  title: 'Custom Component/card/ReferenceCard',
   tags: ['minimal', 'editorial'],
   dominantColors: ['#1a1a1a', '#f5f5f5'],
 };

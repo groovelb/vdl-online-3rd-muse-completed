@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { GradientPreview } from './GradientPreview';
 
 export default {
-  title: 'Component/5. Data Display/GradientPreview',
+  title: 'Custom Component/data-display/GradientPreview',
   component: GradientPreview,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

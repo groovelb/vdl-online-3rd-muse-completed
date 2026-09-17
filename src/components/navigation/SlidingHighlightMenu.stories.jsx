@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { SlidingHighlightMenu } from './SlidingHighlightMenu';
 
 export default {
-  title: 'Component/10. Navigation/SlidingHighlightMenu',
+  title: 'Custom Component/navigation/SlidingHighlightMenu',
   component: SlidingHighlightMenu,
   tags: ['autodocs'],
   argTypes: {

@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { ColorSwatchList } from './ColorSwatchList';
 
 export default {
-  title: 'Component/5. Data Display/ColorSwatchList',
+  title: 'Custom Component/data-display/ColorSwatchList',
   component: ColorSwatchList,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

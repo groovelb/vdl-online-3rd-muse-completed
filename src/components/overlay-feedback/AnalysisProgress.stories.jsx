@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { AnalysisProgress } from './AnalysisProgress';
 
 export default {
-  title: 'Component/9. Overlay & Feedback/AnalysisProgress',
+  title: 'Custom Component/overlay-feedback/AnalysisProgress',
   component: AnalysisProgress,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

@@ -9,7 +9,7 @@ import {
 } from '../../data/muse';
 
 export default {
-  title: 'Component/9. Overlay & Feedback/ThemeExportDialog',
+  title: 'Custom Component/overlay-feedback/ThemeExportDialog',
   component: ThemeExportDialog,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

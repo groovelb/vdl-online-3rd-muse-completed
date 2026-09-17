@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { LayoutTokenPreview } from './LayoutTokenPreview';
 
 export default {
-  title: 'Component/5. Data Display/LayoutTokenPreview',
+  title: 'Custom Component/data-display/LayoutTokenPreview',
   component: LayoutTokenPreview,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

@@ -4,7 +4,7 @@ import { RefinementNotesField } from './RefinementNotesField.jsx';
 import { references } from '../../data/muse';
 
 export default {
-  title: 'Input / RefinementNotesField',
+  title: 'Custom Component/input/RefinementNotesField',
   component: RefinementNotesField,
   parameters: { layout: 'padded' },
 };

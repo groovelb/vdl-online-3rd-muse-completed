@@ -22,6 +22,7 @@ import {
   getVisualDirectionTags,
 } from '../../data/muse';
 import { LAYER_LABEL, ANALYSIS_LAYERS } from '../../data/muse/layers.js';
+import { URL_BY_BASENAME as exampleUrlByName } from '../../utils/exampleImageTokens.js';
 import { AI_TASKS } from '../../data/muse/aiTasks.js';
 import tagPreset from '../../data/muse/tag/muse_tags_preset.json';
 import exampleTokens from '../../data/exampleTokens.json';
@@ -108,6 +109,36 @@ function Swatches({ colors }) {
   );
 }
 
+/**
+ * 작은 썸네일 상자. 데이터가 가리키는 이미지를 그 자리에서 보여 준다
+ *
+ * Props:
+ * @param {string} src - 이미지 주소 [Required]
+ * @param {string} alt - 대체 텍스트 [Required]
+ *
+ * Example usage:
+ * <Thumb src={ ref.thumbnailUrl } alt={ ref.id } />
+ */
+function Thumb({ src, alt }) {
+  if (!src) return null;
+  return (
+    <Box
+      component="img"
+      src={ src }
+      alt={ alt }
+      loading="lazy"
+      sx={ {
+        width: 56,
+        height: 42,
+        objectFit: 'cover',
+        display: 'block',
+        border: '1px solid',
+        borderColor: 'divider',
+      } }
+    />
+  );
+}
+
 /** 레퍼런스 한 건의 레이어 태그 수를 문자열로 만든다 */
 const tagSummary = (ref) => {
   const t = ref.tags || {};
@@ -147,9 +178,12 @@ const EXAMPLE_TOKEN_ROWS = Object.entries(exampleTokens).map(([file, v]) => ({
 const EXAMPLE_TOKEN_HEAD = EXAMPLE_TOKEN_ROWS.slice(0, 20);
 
 /** 프로젝트별 레퍼런스 활용(ProjectReference) 행을 편다 */
+const thumbById = Object.fromEntries(references.map((r) => [r.id, r.thumbnailUrl]));
+
 const curationRows = projects.flatMap((p) => (p.selectedRefs || []).map((s) => ({
   projectId: p.id,
   refId: s.id,
+  thumbnailUrl: thumbById[s.id],
   useLayers: (s.useLayers || []).length
     ? s.useLayers.map((l) => LAYER_LABEL[l] || l).join(', ')
     : '자동 (전체)',
@@ -207,8 +241,8 @@ export const Default = {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 70 } }>썸네일</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 90 } }>id</TableCell>
-                <TableCell sx={ { fontWeight: 600, width: 70 } }>source</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 110 } }>dominantColors</TableCell>
                 <TableCell sx={ { fontWeight: 600 } }>tags (레이어별 개수)</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 90 } }>extracted</TableCell>
@@ -217,8 +251,11 @@ export const Default = {
             <TableBody>
               { references.map((r) => (
                 <TableRow key={ r.id } sx={ { '&:hover': { backgroundColor: 'action.hover' } } }>
-                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ r.id }</TableCell>
-                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ r.source }</TableCell>
+                  <TableCell><Thumb src={ r.thumbnailUrl } alt={ r.id } /></TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>
+                    { r.id }
+                    <Box component="span" sx={ { display: 'block', color: 'text.disabled' } }>{ r.source }</Box>
+                  </TableCell>
                   <TableCell><Swatches colors={ r.dominantColors } /></TableCell>
                   <TableCell sx={ { fontSize: 12 } }>{ tagSummary(r) }</TableCell>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>
@@ -242,7 +279,7 @@ export const Default = {
                 <TableCell sx={ { fontWeight: 600, width: 150 } }>name</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 80 } }>mode</TableCell>
                 <TableCell sx={ { fontWeight: 600 } }>intent</TableCell>
-                <TableCell sx={ { fontWeight: 600, width: 80 } }>refs</TableCell>
+                <TableCell sx={ { fontWeight: 600, width: 200 } }>refs</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -252,8 +289,15 @@ export const Default = {
                   <TableCell sx={ { fontSize: 13, fontWeight: 600 } }>{ p.name }</TableCell>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ p.mode }</TableCell>
                   <TableCell sx={ { fontSize: 12, color: 'text.secondary' } }>{ p.intent }</TableCell>
-                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>
-                    { (p.referenceIds || []).length }
+                  <TableCell>
+                    <Box sx={ { display: 'flex', gap: 0.25, flexWrap: 'wrap' } }>
+                      { (p.referenceIds || []).slice(0, 3).map((id) => (
+                        <Thumb key={ id } src={ thumbById[id] } alt={ id } />
+                      )) }
+                    </Box>
+                    <Box component="span" sx={ { fontFamily: 'monospace', fontSize: 11, color: 'text.disabled' } }>
+                      { (p.referenceIds || []).length }건
+                    </Box>
                   </TableCell>
                 </TableRow>
               )) }
@@ -278,7 +322,10 @@ export const Default = {
               { curationRows.map((c) => (
                 <TableRow key={ `${c.projectId}-${c.refId}` }>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ c.projectId }</TableCell>
-                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>{ c.refId }</TableCell>
+                  <TableCell sx={ { fontFamily: 'monospace', fontSize: 12 } }>
+                    <Thumb src={ c.thumbnailUrl } alt={ c.refId } />
+                    { c.refId }
+                  </TableCell>
                   <TableCell sx={ { fontSize: 12 } }>{ c.useLayers }</TableCell>
                 </TableRow>
               )) }
@@ -452,6 +499,7 @@ export const Default = {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell sx={ { fontWeight: 600, width: 70 } }>썸네일</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 230 } }>file</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 200 } }>title</TableCell>
                 <TableCell sx={ { fontWeight: 600, width: 110 } }>dominantColors</TableCell>
@@ -461,6 +509,7 @@ export const Default = {
             <TableBody>
               { EXAMPLE_TOKEN_HEAD.map((r) => (
                 <TableRow key={ r.file }>
+                  <TableCell><Thumb src={ exampleUrlByName[r.file] } alt={ r.file } /></TableCell>
                   <TableCell sx={ { fontFamily: 'monospace', fontSize: 10 } }>{ r.file }</TableCell>
                   <TableCell sx={ { fontSize: 12 } }>{ r.title }</TableCell>
                   <TableCell><Swatches colors={ r.colors } /></TableCell>

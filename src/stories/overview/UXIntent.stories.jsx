@@ -9,7 +9,7 @@ import {
 } from '../../components/storybookDocumentation';
 
 export default {
-  title: 'Overview / UX Intent Map',
+  title: 'Overview/UX Intent Map',
   parameters: { layout: 'padded' },
 };
 

@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { TypographyPreview } from './TypographyPreview';
 
 export default {
-  title: 'Component/5. Data Display/TypographyPreview',
+  title: 'Custom Component/data-display/TypographyPreview',
   component: TypographyPreview,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

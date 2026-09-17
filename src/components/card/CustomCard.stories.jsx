@@ -10,7 +10,7 @@ import Placeholder, { placeholderSvg } from '../../common/ui/Placeholder';
 import { CustomCard } from './CustomCard';
 
 export default {
-  title: 'Component/3. Card/CustomCard',
+  title: 'Custom Component/card/CustomCard',
   component: CustomCard,
   tags: ['autodocs'],
   parameters: {

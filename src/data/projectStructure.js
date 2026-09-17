@@ -4,7 +4,7 @@
  * 수동 편집 금지. 재생성: pnpm generate-structure
  */
 export default {
-  "generatedAt": "2026-09-17T09:16:36.175Z",
+  "generatedAt": "2026-09-17T09:51:39.885Z",
   "root": {
     "name": "App",
     "kind": "component",
@@ -67,8 +67,8 @@ export default {
                 "kind": "component",
                 "category": "components/layout",
                 "file": "components/layout/PageContainer.jsx",
-                "storyTitle": "Component/8. Layout/PageContainer",
-                "storyId": "component-8-layout-pagecontainer",
+                "storyTitle": "Custom Component/layout/PageContainer",
+                "storyId": "custom-component-layout-pagecontainer",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -78,8 +78,8 @@ export default {
                 "kind": "component",
                 "category": "components/layout",
                 "file": "components/layout/InfiniteMasonry.jsx",
-                "storyTitle": "Component/8. Layout/InfiniteMasonry",
-                "storyId": "component-8-layout-infinitemasonry",
+                "storyTitle": "Custom Component/layout/InfiniteMasonry",
+                "storyId": "custom-component-layout-infinitemasonry",
                 "children": [],
                 "hooks": [
                   {
@@ -95,32 +95,32 @@ export default {
                 "kind": "component",
                 "category": "components/card",
                 "file": "components/card/ReferenceCard.jsx",
-                "storyTitle": "Sample Reference",
-                "storyId": "sample-reference",
+                "storyTitle": "Custom Component/card/ReferenceCard",
+                "storyId": "custom-component-card-referencecard",
                 "children": [
                   {
                     "name": "ImageCard",
                     "kind": "component",
                     "category": "components/card",
                     "file": "components/card/ImageCard.jsx",
-                    "storyTitle": "Component/3. Card/ImageCard",
-                    "storyId": "component-3-card-imagecard",
+                    "storyTitle": "Custom Component/card/ImageCard",
+                    "storyId": "custom-component-card-imagecard",
                     "children": [
                       {
                         "name": "CustomCard",
                         "kind": "component",
                         "category": "components/card",
                         "file": "components/card/CustomCard.jsx",
-                        "storyTitle": "Component/3. Card/CustomCard",
-                        "storyId": "component-3-card-customcard",
+                        "storyTitle": "Custom Component/card/CustomCard",
+                        "storyId": "custom-component-card-customcard",
                         "children": [
                           {
                             "name": "CardContainer",
                             "kind": "component",
                             "category": "components/card",
                             "file": "components/card/CardContainer.jsx",
-                            "storyTitle": "Component/3. Card/CardContainer",
-                            "storyId": "component-3-card-cardcontainer",
+                            "storyTitle": "Custom Component/card/CardContainer",
+                            "storyId": "custom-component-card-cardcontainer",
                             "children": [],
                             "hooks": [],
                             "data": []
@@ -138,8 +138,8 @@ export default {
                     "kind": "component",
                     "category": "components/data-display",
                     "file": "components/data-display/LayerAnalysisStrip.jsx",
-                    "storyTitle": "Component/5. Data Display/LayerAnalysisStrip",
-                    "storyId": "component-5-data-display-layeranalysisstrip",
+                    "storyTitle": "Custom Component/data-display/LayerAnalysisStrip",
+                    "storyId": "custom-component-data-display-layeranalysisstrip",
                     "children": [],
                     "hooks": [],
                     "data": []
@@ -153,8 +153,8 @@ export default {
                 "kind": "component",
                 "category": "components/input",
                 "file": "components/input/FileDropzone.jsx",
-                "storyTitle": "Component/7. Input & Control/FileDropzone",
-                "storyId": "component-7-input-control-filedropzone",
+                "storyTitle": "Custom Component/input/FileDropzone",
+                "storyId": "custom-component-input-filedropzone",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -195,8 +195,8 @@ export default {
                     "kind": "component",
                     "category": "components/input",
                     "file": "components/input/SearchBar.jsx",
-                    "storyTitle": "Component/7. Input & Control/SearchBar",
-                    "storyId": "component-7-input-control-searchbar",
+                    "storyTitle": "Custom Component/input/SearchBar",
+                    "storyId": "custom-component-input-searchbar",
                     "children": [],
                     "hooks": [],
                     "data": []
@@ -255,8 +255,8 @@ export default {
                 "kind": "component",
                 "category": "components/card",
                 "file": "components/card/MoodboardCard.jsx",
-                "storyTitle": "Component/3. Card/MoodboardCard",
-                "storyId": "component-3-card-moodboardcard",
+                "storyTitle": "Custom Component/card/MoodboardCard",
+                "storyId": "custom-component-card-moodboardcard",
                 "children": [
                   {
                     "name": "CustomCard",
@@ -340,8 +340,8 @@ export default {
                     "kind": "component",
                     "category": "components/card",
                     "file": "components/card/ReferenceLayerChipRow.jsx",
-                    "storyTitle": "Card / ReferenceLayerChipRow",
-                    "storyId": "card-referencelayerchiprow",
+                    "storyTitle": "Custom Component/card/ReferenceLayerChipRow",
+                    "storyId": "custom-component-card-referencelayerchiprow",
                     "children": [],
                     "hooks": [],
                     "data": [
@@ -371,8 +371,8 @@ export default {
                 "kind": "component",
                 "category": "components/overlay-feedback",
                 "file": "components/overlay-feedback/AnalysisProgress.jsx",
-                "storyTitle": "Component/9. Overlay & Feedback/AnalysisProgress",
-                "storyId": "component-9-overlay-feedback-analysisprogress",
+                "storyTitle": "Custom Component/overlay-feedback/AnalysisProgress",
+                "storyId": "custom-component-overlay-feedback-analysisprogress",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -382,8 +382,8 @@ export default {
                 "kind": "component",
                 "category": "components/card",
                 "file": "components/card/ModeSelectCard.jsx",
-                "storyTitle": "Card / ModeSelectCard",
-                "storyId": "card-modeselectcard",
+                "storyTitle": "Custom Component/card/ModeSelectCard",
+                "storyId": "custom-component-card-modeselectcard",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -393,8 +393,8 @@ export default {
                 "kind": "component",
                 "category": "components/input",
                 "file": "components/input/IntentGuideField.jsx",
-                "storyTitle": "Input / IntentGuideField",
-                "storyId": "input-intentguidefield",
+                "storyTitle": "Custom Component/input/IntentGuideField",
+                "storyId": "custom-component-input-intentguidefield",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -485,16 +485,16 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/ColorSwatchList.jsx",
-                "storyTitle": "Component/5. Data Display/ColorSwatchList",
-                "storyId": "component-5-data-display-colorswatchlist",
+                "storyTitle": "Custom Component/data-display/ColorSwatchList",
+                "storyId": "custom-component-data-display-colorswatchlist",
                 "children": [
                   {
                     "name": "TokenListItem",
                     "kind": "component",
                     "category": "components/data-display",
                     "file": "components/data-display/TokenListItem.jsx",
-                    "storyTitle": "Component/5. Data Display/TokenListItem",
-                    "storyId": "component-5-data-display-tokenlistitem",
+                    "storyTitle": "Custom Component/data-display/TokenListItem",
+                    "storyId": "custom-component-data-display-tokenlistitem",
                     "children": [],
                     "hooks": [],
                     "data": []
@@ -530,8 +530,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/TypographyPreview.jsx",
-                "storyTitle": "Component/5. Data Display/TypographyPreview",
-                "storyId": "component-5-data-display-typographypreview",
+                "storyTitle": "Custom Component/data-display/TypographyPreview",
+                "storyId": "custom-component-data-display-typographypreview",
                 "children": [
                   {
                     "name": "TokenListItem",
@@ -562,8 +562,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/LayoutTokenPreview.jsx",
-                "storyTitle": "Component/5. Data Display/LayoutTokenPreview",
-                "storyId": "component-5-data-display-layouttokenpreview",
+                "storyTitle": "Custom Component/data-display/LayoutTokenPreview",
+                "storyId": "custom-component-data-display-layouttokenpreview",
                 "children": [
                   {
                     "name": "TokenListItem",
@@ -594,8 +594,8 @@ export default {
                 "kind": "component",
                 "category": "components/data-display",
                 "file": "components/data-display/GradientPreview.jsx",
-                "storyTitle": "Component/5. Data Display/GradientPreview",
-                "storyId": "component-5-data-display-gradientpreview",
+                "storyTitle": "Custom Component/data-display/GradientPreview",
+                "storyId": "custom-component-data-display-gradientpreview",
                 "children": [
                   {
                     "name": "TokenListItem",
@@ -637,8 +637,8 @@ export default {
                 "kind": "component",
                 "category": "components/overlay-feedback",
                 "file": "components/overlay-feedback/ThemeExportDialog.jsx",
-                "storyTitle": "Component/9. Overlay & Feedback/ThemeExportDialog",
-                "storyId": "component-9-overlay-feedback-themeexportdialog",
+                "storyTitle": "Custom Component/overlay-feedback/ThemeExportDialog",
+                "storyId": "custom-component-overlay-feedback-themeexportdialog",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -802,16 +802,16 @@ export default {
             "kind": "component",
             "category": "components/layout",
             "file": "components/layout/AppShell.jsx",
-            "storyTitle": "Component/8. Layout/AppShell",
-            "storyId": "component-8-layout-appshell",
+            "storyTitle": "Custom Component/layout/AppShell",
+            "storyId": "custom-component-layout-appshell",
             "children": [
               {
                 "name": "GNB",
                 "kind": "component",
                 "category": "components/navigation",
                 "file": "components/navigation/GNB.jsx",
-                "storyTitle": "Component/10. Navigation/GNB",
-                "storyId": "component-10-navigation-gnb",
+                "storyTitle": "Custom Component/navigation/GNB",
+                "storyId": "custom-component-navigation-gnb",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -926,8 +926,8 @@ export default {
         "kind": "page",
         "category": "pages/auth",
         "file": "pages/auth/AuthPage.jsx",
-        "storyTitle": null,
-        "storyId": null,
+        "storyTitle": "Page/AuthPage",
+        "storyId": "page-authpage",
         "children": [
           {
             "name": "AppShell",
@@ -944,8 +944,8 @@ export default {
             "kind": "page",
             "category": "pages/auth",
             "file": "pages/auth/AuthHeroBackdrop.jsx",
-            "storyTitle": null,
-            "storyId": null,
+            "storyTitle": "Section/AuthHeroBackdrop",
+            "storyId": "section-authherobackdrop",
             "children": [
               {
                 "name": "ScatterGallery",
@@ -1007,8 +1007,8 @@ export default {
             "kind": "page",
             "category": "pages/auth/sections",
             "file": "pages/auth/sections/LandingSolutionStage1.jsx",
-            "storyTitle": null,
-            "storyId": null,
+            "storyTitle": "Section/LandingSolutionStage1",
+            "storyId": "section-landingsolutionstage1",
             "children": [
               {
                 "name": "ReferenceCard",
@@ -1025,8 +1025,8 @@ export default {
                 "kind": "page",
                 "category": "pages/auth/sections",
                 "file": "pages/auth/sections/SectionShell.jsx",
-                "storyTitle": null,
-                "storyId": null,
+                "storyTitle": "Section/SectionShell",
+                "storyId": "section-sectionshell",
                 "children": [],
                 "hooks": [],
                 "data": []
@@ -1046,8 +1046,8 @@ export default {
             "kind": "page",
             "category": "pages/auth/sections",
             "file": "pages/auth/sections/LandingTagFlow.jsx",
-            "storyTitle": null,
-            "storyId": null,
+            "storyTitle": "Section/LandingTagFlow",
+            "storyId": "section-landingtagflow",
             "children": [
               {
                 "name": "MarqueeContainer",
@@ -1074,8 +1074,8 @@ export default {
             "kind": "page",
             "category": "pages/auth/sections",
             "file": "pages/auth/sections/LandingSolutionStage2.jsx",
-            "storyTitle": null,
-            "storyId": null,
+            "storyTitle": "Section/LandingSolutionStage2",
+            "storyId": "section-landingsolutionstage2",
             "children": [
               {
                 "name": "CategoryTab",
@@ -1155,8 +1155,8 @@ export default {
             "kind": "page",
             "category": "pages/auth/sections",
             "file": "pages/auth/sections/LandingCta.jsx",
-            "storyTitle": null,
-            "storyId": null,
+            "storyTitle": "Section/LandingCta",
+            "storyId": "section-landingcta",
             "children": [
               {
                 "name": "ScatterGallery",

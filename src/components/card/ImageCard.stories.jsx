@@ -5,7 +5,7 @@ import { ImageCard } from './ImageCard';
 import Placeholder, { placeholderSvg } from '../../common/ui/Placeholder';
 
 export default {
-  title: 'Component/3. Card/ImageCard',
+  title: 'Custom Component/card/ImageCard',
   component: ImageCard,
   tags: ['autodocs'],
   argTypes: {

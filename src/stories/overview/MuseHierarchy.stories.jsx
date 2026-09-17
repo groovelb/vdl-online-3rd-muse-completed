@@ -13,6 +13,7 @@ import {
   SectionTitle,
 } from '../../components/storybookDocumentation';
 import projectStructure from '../../data/projectStructure.js';
+import { assemblySteps } from '../../data/assemblySteps.js';
 
 export default {
   title: 'Custom Component/0. Hierarchy',
@@ -246,6 +247,35 @@ export const Default = {
             신규와 수정은 펼친 채로 시작하고, 스타터킷 그대로 쓰는 것은 접은 채 회색으로 둔다.
             분류는 판단이 아니라 스타터킷과의 파일 대조 결과다.
           </Typography>
+
+          <SectionTitle
+            title="조립 순서"
+            description={ `${assemblySteps.length}단계. 자세한 자료 목록은 Overview/MUSE/09 Domain Knowledge & Research` }
+          />
+          <Box sx={ { display: 'flex', flexWrap: 'wrap', gap: 1, mb: 6 } }>
+            { assemblySteps.map((step) => (
+              <Box
+                key={ step.id }
+                sx={ {
+                  px: 1.5,
+                  py: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  bgcolor: 'background.paper',
+                  minWidth: 150,
+                  flex: '1 1 150px',
+                } }
+              >
+                <Typography sx={ { fontSize: 12, fontWeight: 700 } }>
+                  { step.no }. { step.title }
+                </Typography>
+                <Typography sx={ { fontSize: 11, color: 'text.secondary' } }>
+                  { step.storyTitles.length }개 화면
+                </Typography>
+              </Box>
+            )) }
+          </Box>
 
           <SectionTitle title="분류별 스토리 수" description={ `스토리 title 의 첫 마디로 센다. 전체 ${ALL_TITLES.length}개` } />
           <TableContainer sx={ { mb: 6 } }>

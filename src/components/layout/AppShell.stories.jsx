@@ -19,7 +19,7 @@ const navItems = [
 ];
 
 export default {
-  title: 'Custom Component/layout/AppShell',
+  title: 'Custom Component/8. Adapted Starter/AppShell',
   component: AppShell,
   tags: ['autodocs'],
   parameters: {

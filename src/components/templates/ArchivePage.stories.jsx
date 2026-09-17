@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { ArchivePage } from './ArchivePage';
 import { references as allReferences } from '../../data/muse';
-import { withAppShell } from './_appShellDecorator.jsx';
+import { withAppShell } from '../../stories/decorators/museDecorators.jsx';
 
 export default {
-  title: 'Page/ArchivePage',
+  title: 'Custom Component/3. Archive & Filter/ArchivePage',
   component: ArchivePage,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

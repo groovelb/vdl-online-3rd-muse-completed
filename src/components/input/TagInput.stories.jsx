@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import { TagInput } from './TagInput';
 
 export default {
-  title: 'Custom Component/input/TagInput',
+  title: 'Custom Component/1. Reference & Tagging/TagInput',
   component: TagInput,
   tags: ['autodocs'],
   parameters: {

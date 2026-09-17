@@ -21,7 +21,7 @@ import {
 } from '.';
 
 export default {
-  title: 'Custom Component/typography/InlineTypography',
+  title: 'Custom Component/8. Adapted Starter/InlineTypography',
   component: InlineTypography,
   tags: ['autodocs'],
   parameters: {

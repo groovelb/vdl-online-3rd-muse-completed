@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { ReferenceLayerChipRow } from './ReferenceLayerChipRow.jsx';
 
 export default {
-  title: 'Custom Component/card/ReferenceLayerChipRow',
+  title: 'Custom Component/1. Reference & Tagging/ReferenceLayerChipRow',
   component: ReferenceLayerChipRow,
   parameters: { layout: 'centered' },
 };

@@ -5,7 +5,7 @@ import { ProjectCreateWizard } from './ProjectCreateWizard';
 import { references as allReferences } from '../../data/muse';
 
 export default {
-  title: 'Template/ProjectCreateWizard',
+  title: 'Custom Component/2. Project & Wizard/ProjectCreateWizard',
   component: ProjectCreateWizard,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

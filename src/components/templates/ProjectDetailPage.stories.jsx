@@ -5,10 +5,10 @@ import {
   getAnalysisResult,
   references as allReferences,
 } from '../../data/muse';
-import { withAppShell } from './_appShellDecorator.jsx';
+import { withAppShell } from '../../stories/decorators/museDecorators.jsx';
 
 export default {
-  title: 'Page/ProjectDetailPage',
+  title: 'Custom Component/2. Project & Wizard/ProjectDetailPage',
   component: ProjectDetailPage,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

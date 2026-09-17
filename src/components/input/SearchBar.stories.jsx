@@ -4,7 +4,7 @@ import Typography from '@mui/material/Typography';
 import { SearchBar } from './SearchBar';
 
 export default {
-  title: 'Custom Component/input/SearchBar',
+  title: 'Custom Component/3. Archive & Filter/SearchBar',
   component: SearchBar,
   tags: ['autodocs'],
   parameters: {

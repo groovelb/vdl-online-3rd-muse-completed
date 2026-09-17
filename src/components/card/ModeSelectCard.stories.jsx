@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { ModeSelectCard } from './ModeSelectCard.jsx';
 
 export default {
-  title: 'Custom Component/card/ModeSelectCard',
+  title: 'Custom Component/2. Project & Wizard/ModeSelectCard',
   component: ModeSelectCard,
   parameters: { layout: 'centered' },
 };

@@ -1,7 +1,7 @@
 import { LandingCta } from './LandingCta.jsx';
 
 export default {
-  title: 'Section/LandingCta',
+  title: 'Custom Component/6. Landing & Auth/LandingCta',
   component: LandingCta,
   parameters: { layout: 'fullscreen' },
 };

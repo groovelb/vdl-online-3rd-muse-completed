@@ -37,7 +37,7 @@ import {
 } from '../../components/storybookDocumentation';
 
 export default {
-  title: 'MUSE/AI Playground',
+  title: 'Overview/MUSE/Appendix/AI Playground',
   parameters: { layout: 'padded' },
 };
 

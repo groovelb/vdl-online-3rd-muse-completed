@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { IntentGuideField } from './IntentGuideField.jsx';
 
 export default {
-  title: 'Custom Component/input/IntentGuideField',
+  title: 'Custom Component/2. Project & Wizard/IntentGuideField',
   component: IntentGuideField,
   parameters: { layout: 'centered' },
 };

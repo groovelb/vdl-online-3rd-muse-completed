@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { SettingsPage } from './SettingsPage';
 import { defaultUserSettings } from '../../data/muse';
-import { withAppShell } from './_appShellDecorator.jsx';
+import { withAppShell } from '../../stories/decorators/museDecorators.jsx';
 
 export default {
-  title: 'Page/SettingsPage',
+  title: 'Custom Component/7. Shell & Routes/SettingsPage',
   component: SettingsPage,
   tags: ['autodocs'],
   parameters: { layout: 'fullscreen' },

@@ -5,7 +5,7 @@ import { FileDropzone } from './FileDropzone';
 import Placeholder, { placeholderSvg } from '../../common/ui/Placeholder';
 
 export default {
-  title: 'Custom Component/input/FileDropzone',
+  title: 'Custom Component/3. Archive & Filter/FileDropzone',
   component: FileDropzone,
   tags: ['autodocs'],
   parameters: {

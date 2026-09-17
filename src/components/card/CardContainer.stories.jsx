@@ -7,7 +7,7 @@ import { CardContainer } from './CardContainer';
 import Placeholder from '../../common/ui/Placeholder';
 
 export default {
-  title: 'Custom Component/card/CardContainer',
+  title: 'Custom Component/8. Adapted Starter/CardContainer',
   component: CardContainer,
   tags: ['autodocs'],
   parameters: {

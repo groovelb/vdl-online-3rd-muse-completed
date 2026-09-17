@@ -1,7 +1,7 @@
 import AuthPage from './AuthPage.jsx';
 
 export default {
-  title: 'Page/AuthPage',
+  title: 'Custom Component/6. Landing & Auth/AuthPage',
   component: AuthPage,
   parameters: { layout: 'fullscreen' },
 };

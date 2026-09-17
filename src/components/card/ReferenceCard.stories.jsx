@@ -12,13 +12,13 @@ const ALL_EXAMPLES = Object.keys(URL_BY_BASENAME)
 
 const SAMPLE = ALL_EXAMPLES[0] || {
   src: '',
-  title: 'Custom Component/card/ReferenceCard',
+  title: 'Sample Reference',
   tags: ['minimal', 'editorial'],
   dominantColors: ['#1a1a1a', '#f5f5f5'],
 };
 
 export default {
-  title: 'Component/3. Card/ReferenceCard',
+  title: 'Custom Component/1. Reference & Tagging/ReferenceCard',
   component: ReferenceCard,
   tags: ['autodocs'],
   parameters: {

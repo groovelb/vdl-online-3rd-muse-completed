@@ -5,16 +5,9 @@
  * App 루트에서 한 번 구독, 나머지는 useContext 로 동일 state 참조.
  */
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-
-const AuthContext = createContext({
-  session: null,
-  user: null,
-  loading: true,
-  isAuthenticated: false,
-  isAdmin: false,
-});
+import { AuthContext } from './authContext.js';
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);

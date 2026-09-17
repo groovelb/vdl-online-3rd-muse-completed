@@ -26,7 +26,7 @@ import {
 } from '../../components/storybookDocumentation';
 
 export default {
-  title: 'MUSE/AI Tasks',
+  title: 'Overview/MUSE/Appendix/AI Tasks',
   parameters: { layout: 'padded' },
 };
 
@@ -653,9 +653,24 @@ const TaskDetail = ({ task }) => (
       <CodeBlock>{ task.userMessageTemplate }</CodeBlock>
     </Box>
 
-    {/* Tool Schema */}
-    <SectionTitle title="Tool Schema" description="Tool use로 구조화 출력 강제" />
-    <CodeBlock>{ task.toolSchema }</CodeBlock>
+    {/* Tool Schema — t1/t2 는 toolSchema 하나, t3 계열은 toolSchemas 배열 */}
+    <SectionTitle
+      title={ task.toolSchemas ? `Tool Schemas (${task.toolSchemas.length})` : 'Tool Schema' }
+      description="Tool use로 구조화 출력 강제"
+    />
+    { task.toolSchemas
+      ? task.toolSchemas.map((schema) => (
+        <Box key={ schema.name } sx={ { mb: 2 } }>
+          <Typography variant="body2" sx={ { fontFamily: 'monospace', fontWeight: 600, mb: 0.5 } }>
+            { schema.name }
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={ { mb: 1 } }>
+            { schema.description }
+          </Typography>
+          <CodeBlock>{ JSON.stringify(schema.input_schema, null, 2) }</CodeBlock>
+        </Box>
+      ))
+      : <CodeBlock>{ task.toolSchema }</CodeBlock> }
 
     {/* Quality criteria */}
     <Box sx={ { mt: 3, mb: 3 } }>
@@ -691,12 +706,16 @@ const TaskDetail = ({ task }) => (
       </TableContainer>
     </Box>
 
-    {/* Golden example */}
-    <SectionTitle title="Golden Example" description="기대 출력 샘플" />
-    <Typography variant="body2" color="text.secondary" sx={ { mb: 1 } }>
-      <strong>Input:</strong> { task.goldenExample.inputDescription }
-    </Typography>
-    <CodeBlock>{ task.goldenExample.expectedOutput }</CodeBlock>
+    {/* Golden example — 없는 태스크가 있다(t3-concept) */}
+    { task.goldenExample && (
+      <>
+        <SectionTitle title="Golden Example" description="기대 출력 샘플" />
+        <Typography variant="body2" color="text.secondary" sx={ { mb: 1 } }>
+          <strong>Input:</strong> { task.goldenExample.inputDescription }
+        </Typography>
+        <CodeBlock>{ task.goldenExample.expectedOutput }</CodeBlock>
+      </>
+    ) }
 
     {/* Workflow */}
     <Box sx={ { mt: 3 } }>

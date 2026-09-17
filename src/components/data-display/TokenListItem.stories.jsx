@@ -5,7 +5,7 @@ import Divider from '@mui/material/Divider';
 import { TokenListItem } from './TokenListItem';
 
 export default {
-  title: 'Custom Component/data-display/TokenListItem',
+  title: 'Custom Component/5. Token Decision/TokenListItem',
   component: TokenListItem,
   tags: ['autodocs'],
   parameters: {

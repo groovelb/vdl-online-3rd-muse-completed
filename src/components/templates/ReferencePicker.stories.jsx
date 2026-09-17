@@ -4,7 +4,7 @@ import { ReferencePicker } from './ReferencePicker';
 import { references as allReferences } from '../../data/muse';
 
 export default {
-  title: 'Template/ReferencePicker',
+  title: 'Custom Component/2. Project & Wizard/ReferencePicker',
   component: ReferencePicker,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

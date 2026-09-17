@@ -1,7 +1,7 @@
 import { AuthHeroBackdrop } from './AuthHeroBackdrop.jsx';
 
 export default {
-  title: 'Section/AuthHeroBackdrop',
+  title: 'Custom Component/6. Landing & Auth/AuthHeroBackdrop',
   component: AuthHeroBackdrop,
   parameters: { layout: 'fullscreen' },
 };

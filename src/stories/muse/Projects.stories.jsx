@@ -16,7 +16,7 @@ import {
 } from '../../components/storybookDocumentation';
 
 export default {
-  title: 'MUSE/Data/Projects',
+  title: 'Overview/MUSE/Appendix/Projects',
   parameters: { layout: 'padded' },
 };
 

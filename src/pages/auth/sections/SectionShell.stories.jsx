@@ -2,7 +2,7 @@ import Typography from '@mui/material/Typography';
 import { SectionShell } from './SectionShell.jsx';
 
 export default {
-  title: 'Section/SectionShell',
+  title: 'Custom Component/6. Landing & Auth/SectionShell',
   component: SectionShell,
   parameters: { layout: 'fullscreen' },
 };

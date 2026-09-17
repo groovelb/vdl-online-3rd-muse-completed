@@ -68,7 +68,7 @@ const sampleMoodboards = [
 ];
 
 export default {
-  title: 'Custom Component/card/MoodboardCard',
+  title: 'Custom Component/2. Project & Wizard/MoodboardCard',
   component: MoodboardCard,
   tags: ['autodocs'],
   parameters: {

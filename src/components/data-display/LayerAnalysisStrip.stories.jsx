@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { LayerAnalysisStrip } from './LayerAnalysisStrip';
 
 export default {
-  title: 'Custom Component/data-display/LayerAnalysisStrip',
+  title: 'Custom Component/1. Reference & Tagging/LayerAnalysisStrip',
   component: LayerAnalysisStrip,
   tags: ['autodocs'],
   parameters: {

@@ -1,7 +1,7 @@
 import { LandingTagFlow } from './LandingTagFlow.jsx';
 
 export default {
-  title: 'Section/LandingTagFlow',
+  title: 'Custom Component/6. Landing & Auth/LandingTagFlow',
   component: LandingTagFlow,
   parameters: { layout: 'fullscreen' },
 };

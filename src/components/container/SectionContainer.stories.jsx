@@ -7,7 +7,7 @@ import { DocumentTitle, SectionTitle } from '../storybookDocumentation';
 import Placeholder from '../../common/ui/Placeholder';
 
 export default {
-  title: 'Custom Component/container/SectionContainer',
+  title: 'Custom Component/8. Adapted Starter/SectionContainer',
   component: SectionContainer,
   tags: ['autodocs'],
   parameters: {

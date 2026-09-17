@@ -1,6 +1,5 @@
-import { MemoryRouter } from 'react-router-dom';
-import { AuthProvider } from '../../hooks/auth';
 import AuthPage from '../../pages/auth/AuthPage';
+import { signedOutParams } from '../decorators/museDecorators.jsx';
 
 /**
  * Landing Page (AuthPage) — 비로그인 진입 페이지
@@ -8,14 +7,15 @@ import AuthPage from '../../pages/auth/AuthPage';
  * GNB(AppShell) → Hero(ScatterGallery) → PROBLEM → SOLUTION → HOW IT WORKS → PERSONAS → CTA
  * → AuthDialog (signin/signup 팝업).
  *
- * 항상 light 테마 고정. 실제 production AuthPage 를 그대로 마운트.
- * Storybook 환경에서 react-router 와 AuthProvider 가 필요하므로 데코레이터로 감싼다.
+ * 실제 production AuthPage 를 그대로 마운트.
+ * 라우터와 세션은 전역 데코레이터가 하나만 만든다. 여기서는 `parameters` 로 주소와 로그인 상태만 고른다.
  */
 export default {
   title: 'Page/Landing',
   component: AuthPage,
   parameters: {
     layout: 'fullscreen',
+    ...signedOutParams,
     docs: {
       description: {
         component: `
@@ -29,15 +29,6 @@ export default {
       },
     },
   },
-  decorators: [
-    (Story) => (
-      <MemoryRouter initialEntries={['/auth']}>
-        <AuthProvider>
-          <Story />
-        </AuthProvider>
-      </MemoryRouter>
-    ),
-  ],
 };
 
 export const Default = {

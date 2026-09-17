@@ -14,7 +14,7 @@ import {
 } from '../../components/storybookDocumentation';
 
 export default {
-  title: 'MUSE/Data/UserSettings',
+  title: 'Overview/MUSE/Appendix/UserSettings',
   parameters: { layout: 'padded' },
 };
 

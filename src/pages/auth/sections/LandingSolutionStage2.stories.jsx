@@ -1,7 +1,7 @@
 import { LandingSolutionStage2 } from './LandingSolutionStage2.jsx';
 
 export default {
-  title: 'Section/LandingSolutionStage2',
+  title: 'Custom Component/6. Landing & Auth/LandingSolutionStage2',
   component: LandingSolutionStage2,
   parameters: { layout: 'fullscreen' },
 };

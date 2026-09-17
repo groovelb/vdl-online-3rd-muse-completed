@@ -86,7 +86,7 @@ function KeyValueTable({ data, keyLabel = 'key', valueLabel = 'value' }) {
  * @param {string[]} colors - HEX 배열 [Required]
  *
  * Example usage:
- * <Swatches colors={ ['#111111', '#EEEEEE'] } />
+ * <Swatches colors={ reference.dominantColors } />
  */
 function Swatches({ colors }) {
   return (

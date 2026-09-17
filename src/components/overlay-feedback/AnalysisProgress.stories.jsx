@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { AnalysisProgress } from './AnalysisProgress';
 
 export default {
-  title: 'Custom Component/overlay-feedback/AnalysisProgress',
+  title: 'Custom Component/4. AI Flow & Output/AnalysisProgress',
   component: AnalysisProgress,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },

@@ -1,6 +1,6 @@
 ---
 name: project-planning
-description: Creates structured planning documents (project-summary, ux-flow, visual-direction) in docs/ for new feature or project initiatives. Owns the single source of truth for the data model (ux-flow § Data Model + § Data Model Dictionary).
+description: Creates structured planning documents (01-project-summary, 02-ux-flow, 03-visual-direction) in docs/{project}/ with a shared skeleton, a per-section status block (확정/잠정/미정), and hard gates that allow provisional approval so work can continue before every section is final.
 when_to_use: When user explicitly invokes /project-planning. Do not auto-activate. Wait for direct user invocation.
 user-invocable: true
 disable-model-invocation: true
@@ -8,8 +8,8 @@ disable-model-invocation: true
 
 # Project Planning Skill
 
-> 기획 문서 (project-summary → ux-flow → visual-direction) 를 순차 작성하는 워크플로우.
-> **데이터 모델의 단일 진실 원천은 이 스킬이 소유**. ux-flow 의 "데이터 모델 활용" 이 `/supabase-integration` 의 유일한 입력.
+> 기획 문서 3종(01-project-summary, 02-ux-flow, 03-visual-direction)을 `docs/{project}/`에 작성한다.
+> 문서 포맷의 단일 기준은 `resources/doc-templates.md`다. 이 파일은 절차와 가드레일만 다룬다.
 
 ## 활성화 조건
 
@@ -18,138 +18,112 @@ disable-model-invocation: true
 | 기획 시작 | "기획 문서 작성해줘", "프로젝트 계획", "새 기능 기획" |
 | 개별 문서 | "project-summary 작성", "ux-flow 만들어줘", "visual-direction" |
 | 이어서 작성 | "다음 단계 진행해줘", "ux-flow 이어서" |
-| 데이터 모델 갱신 | "데이터 모델 추가해줘", "사전 갱신", "ux-flow 데이터 손봐" |
-
-같은 호출 (`/project-planning`) 로 첫 작성 / 갱신 / 데이터 모델 변경 모두 처리. 사용자가 서브명령을 외울 필요 없음. 스킬이 기존 문서 유무를 확인해 자동 분기.
+| 앞 문서 수정 | "대상 이름 바꿔줘", "과업 하나 추가", "01 고쳐줘" |
 
 ---
 
-## 워크플로우
+## 시작 절차 (모든 호출 공통)
 
-### 전체 흐름
+1. `docs/{project}/`를 확인한다. 문서가 있으면 각 문서 상단 결정 현황 블록을 읽는다.
+2. 현재 위치를 3줄로 보고한다: 어느 문서가 어떤 상태인지, 미정 항목 수, 다음에 할 일.
+3. 진입 모드를 고른다.
 
-```
-Phase 1          Phase 2 (데이터 모델 단독 소유)   Phase 3
-project-summary → ux-flow                       → visual-direction
-     │                │                              │
-  [승인 게이트]    [승인 게이트 · 3 단답 체크]       [승인 게이트]
-```
-
-### Phase 1: project-summary
-
-1. 사용자에게 프로젝트 목적/범위 질문
-2. `resources/doc-templates.md` Read → project-summary 템플릿 확인
-3. `docs/{project-name}/01-project-summary.md` 작성
-   - 프로젝트명, 목적, 핵심 기능 개조식
-   - 대상 사용자, 기술적 제약사항
-4. **승인 게이트**: 사용자에게 요약 제시 → 수정/승인
-
-### Phase 2: ux-flow (데이터 모델 단독 소유)
-
-**Phase 1 승인 후에만 진행**
-
-1. `docs/{project-name}/01-project-summary.md` Read (승인된 문서)
-2. `resources/doc-templates.md` Read → ux-flow 템플릿 확인
-3. `component-work/resources/components.md` Read → 기존 컴포넌트 확인
-4. `component-work/resources/taxonomy-index.md` Read → 카테고리 매핑
-5. `docs/{project-name}/02-ux-flow.md` 작성. **문서 성격 = 프로젝트 초반 가이드** (현 상태 리포트가 아님). 디자이너가 "이 프로젝트에서 어떤 데이터를 어떻게 다루는지" 처음 이해하는 단계.
-   - **본문**: 자연어 / 표. SQL · 컬럼 · 제약 · 백엔드 의존성 등장 금지.
-   - **부록**: 컴포넌트 상세 표 → `appendix-screen-component-map.md`.
-   - **본문 섹션 순서 (강제)**:
-     1. 유저 시나리오 (3~5개. 4줄 양식: 사용자 / 목표 / 흐름 / 다루는 데이터)
-     2. **데이터 모델** (카드 only). 시나리오에서 등장한 데이터를 정의 → UX-flow 가 그걸 단계별로 풀어쓸 수 있게 됨.
-     3. **UX-flow** (시나리오를 데이터 관점에서 단계별로 쪼갠 서사. 각 단계의 페이지·사용자 행동·발생 데이터·결과)
-     4. 페이지 리스트 (페이지 / 경로 / 한 줄 설명 / 다루는 데이터)
-     5. **데이터 모델 활용** (`/supabase-integration` 의 유일한 입력. 데이터명 ↔ 테이블명 1:1 매핑)
-     6. 컴포넌트 리스트 (신규만. 기존 디자인 시스템에 없는 것)
-     7. 참조
-   - **금지**: ~~UX 플로우 mermaid flowchart~~ (UX-flow 단계별 서사가 흡수). ~~정보 구조 (IA) 트리~~ (페이지 리스트가 흡수). ~~데이터 모델 관계도 (erDiagram)~~ (초반 가이드에 ER 부담). ~~화면 ↔ 데이터 매트릭스~~ (사전이 같은 정보 제공). ~~외부 의존성 핀~~ (초반에 백엔드 언급 시기상조). ~~Supabase / Anthropic API / Storage / Auth 같은 백엔드 용어~~ 본문 등장 금지.
-6. **승인 게이트**: 3 단답 체크
-   - "데이터 모델 카드 N종 OK?"
-   - "데이터 모델 활용 OK?"
-   - "UX-flow 단계별 서사 OK?"
-
-7. **Storybook 미러 자동 생성** (승인 후 자동):
-   - `02-ux-flow.md` → `src/stories/overview/{project}-planning/02-ux-flow.mdx`
-   - `appendix-screen-component-map.md` 가 분리됐다면 → `src/stories/overview/{project}-planning/appendix-screen-component-map.mdx`
-   - 양식: 1줄 import + `<Meta title="Overview/{Project} Planning/..." />` + `<Markdown>{raw}</Markdown>`
-   - 이미 .mdx 가 있으면 sidebar 경로만 갱신, 아니면 신규 생성
-
-#### UX-flow 섹션 규약 (NEW, 강제)
-
-시나리오를 **데이터 관점에서 단계별로 쪼개** 자연어로 서술. 데이터 모델 카드의 "만드는 곳" 이 왜 그 페이지인지의 근거가 됨.
-
-양식:
-```
-### 시나리오 N 단계별
-
-1. **{단계 이름}** ({페이지명})
-   - 사용자 행동: {한 줄}
-   - 발생하는 데이터: `{데이터명}` W (생성) / R (읽기) / D (수정)
-   - 결과: {다음 단계로 가는 트리거}
-
-2. ...
-```
-
-#### 데이터 모델 섹션 규약 (CRITICAL, 강제)
-
-ux-flow 의 "## 데이터 모델" 섹션은 **카드만**으로 구성. 사전은 별도 섹션 (§ 데이터 모델 활용) 으로 분리. 관계도/매트릭스/외부 의존성 핀 폐기.
-
-**데이터 모델 카드**. 데이터 하나당 1 카드. **4 항목 양식 강제**:
-- 1줄 설명
-- **보이는 페이지**: {페이지명 1~3개}
-- **만드는 사람**: 사용자 / AI / 시스템 (한 단어)
-- **만드는 곳**: {페이지명 1개}
-- 금지: SQL/필드 나열, 수명, 비고, "엔티티" / "M:N" / "FK" / "TTL" 같은 개발 용어, 백엔드 용어.
-
-#### 데이터 모델 활용 섹션 규약 (CRITICAL, 강제)
-
-**페이지 리스트 바로 아래** 위치. **`/supabase-integration` 의 유일한 입력**. 컬럼: 데이터명 (PascalCase) / 한국어 / 코드 식별자 / 예상 테이블명 / 생성 책임 페이지. 표 위에 한 줄 주석으로 계약 명시.
-
-**예상 테이블명 충돌 검증** (강제):
-- `resources/sql-reserved-words.md` Read.
-- 사전 작성·갱신 시 "예상 테이블명" 컬럼이 PG 예약어 또는 흔한 충돌 단어 (`references` / `user` / `order` / `group` 등) 와 일치하는지 자동 grep.
-- 충돌 발견 즉시 사용자에게 대안 제안 (`references` → `reference_items`, `order` → `orders` 등). 사용자가 거부하지 않는 한 자동 적용.
-- Supabase 예약 스키마 (`auth.*`, `storage.*`, `realtime.*`) 는 `auth.users` 만 허용 (Supabase 내장 표기). 그 외는 차단.
-
-#### 컴포넌트 리스트 규약 (NEW, 강제)
-
-본문에 **신규 컴포넌트만** 표시. 재활용/수정은 본문 등장 금지 (디자이너 의사결정 무관).
-
-| 컴포넌트 | 카테고리 | 한 줄 용도 |
+| 모드 | 조건 | 동작 |
 |---|---|---|
-| ... | ... | ... |
+| 신규 | `docs/{project}/` 없음 | 01부터 시작 |
+| 이어서 | 상류 문서가 잠정 승인 이상 | 다음 문서 작성 |
+| 개별 | 특정 문서만 요청 | 상류 하드 게이트 확인. 미충족이면 빠진 항목을 표로 보여주고 멈춘다 |
+| 역류 | 하류 작업 중 상류 변경 필요 | 아래 "역류 절차" |
 
-상세 양식은 `resources/doc-templates.md`.
+4. `resources/doc-templates.md`의 0장 공통 규칙과 해당 문서 템플릿을 Read한다.
+5. 프로젝트에 `.storybook/`이 있으면 `src/stories/overview/`의 문서 MDX 래퍼를 확인한다. 없으면 템플릿 0.6대로 만든다(원본 raw import + `EditorialDocument`). 본문이 복사돼 있으면 래퍼로 바꾼다. 문서를 고친 뒤 스토리북 사본을 남기지 않는다.
 
-### Phase 3: visual-direction
+---
 
-**Phase 2 승인 후에만 진행** (Phase 1 만으로도 작성 가능, 사용자 요청 시)
+## 문서별 절차
 
-1. `docs/{project-name}/01-project-summary.md` Read
-2. `resources/doc-templates.md` Read → visual-direction 템플릿 확인
-3. `component-work/resources/mui-theme.md` Read → 현재 토큰 확인
-4. `docs/{project-name}/03-visual-direction.md` 작성:
-   - 디자인 토큰 커스텀 방향 (색상, 타이포, 간격)
-   - 현재 테마 대비 변경 필요 사항
-   - 레퍼런스 이미지/사이트 목록 (사용자 제공)
-   - 톤앤매너 키워드
-5. **승인 게이트**: 사용자에게 제시 → 수정/승인
+### 01 project-summary
 
-### 개별 문서 직접 작성
+1. 질문은 최대 4개(목적, 사용자, 다루는 것, 과업). 초안을 먼저 쓰고 "확인 포인트"로 묻는 방식을 권장한다.
+2. 템플릿 1절 기준으로 `docs/{project}/01-project-summary.md` 작성.
+3. 금지 목록(화면 이름, 컴포넌트명, 색상값, 레이아웃 패턴, 연출, 구현 상태) 자가 점검. 걸리는 내용은 버리지 않고 결정 현황 블록 비고에 "02 4절 후보" 또는 "03 1절 후보"로 메모.
+4. 하드 게이트 체크리스트를 출력하고 승인을 묻는다(확정 승인 또는 잠정 승인).
 
-사용자가 특정 Phase 만 요청할 수 있음:
-- "ux-flow 만 작성해줘" → 기존 project-summary 확인 후 Phase 2 진행
-- 기존 project-summary 가 없으면 → Phase 1 부터 시작하도록 안내
+### 02 ux-flow
 
-### 데이터 모델 갱신 (재호출 시 자동 분기)
+1. 01 4절(사용자·대상)와 5절(과업)를 Read. 확정·잠정 항목만 인용하고 미정은 인용하지 않는다.
+2. `component-work/resources/components.md`와 `taxonomy-index.md`를 Read(재활용 확인, 카테고리 매핑).
+3. 템플릿 2절 기준으로 `docs/{project}/02-ux-flow.md` 작성. 과업 1개가 시나리오 1개, 같은 번호. 대상 이름은 01 글자 그대로.
+4. 3.2절 이름 사전 작성 시 `resources/sql-reserved-words.md`와 대조. 충돌이면 이름을 바꾸지 말고 예상 테이블명만 바꾸거나 사용자에게 묻는다.
+5. 정합성 점검(템플릿 5장): 이름 일치, 과업 수 = 시나리오 수, 단계 표의 화면이 2.1절에 전부.
+6. 하드 게이트 체크리스트 출력, 승인.
 
-이미 `02-ux-flow.md` 가 있고 사용자가 "데이터 추가/이름 변경/사전 갱신" 류 요청을 하면:
-1. 기존 ux-flow 의 2 컴포넌트 (카드 / 사전) + UX-flow 단계별 서사 읽기
-2. 영향 받는 부분만 수정 (전체 재작성 금지)
-3. 정합성 자동 검증 (사전 ↔ 카드 ↔ UX-flow 단계별 서사의 데이터명 글자 단위 일치)
-4. 변경 요약 + 3 단답 체크로 승인
-5. 사용자에게 안내: "이 변경은 `/supabase-integration` 을 다시 호출해야 data-bridge / appendix 가 동기화됩니다."
+### 03 visual-direction
+
+1. 01 3절(정체성), 02 2.1절(페이지)·4절(인터랙션 원칙)를 Read.
+2. `component-work/resources/mui-theme.md`를 Read(현재 토큰값).
+3. 템플릿 3절 기준으로 `docs/{project}/03-visual-direction.md` 작성.
+   - 2절 아키타입은 `src/data/layoutTaxonomyData.js`의 id만 쓴다.
+   - 4절 이미지·에셋 방향은 FORMAT / LOOK / SUBJECT 구조. LOOK 키워드는 1~2개. 해당 없으면 "해당 없음: {이유}".
+   - 레퍼런스는 사용자 제공만. 임의 URL·경로 금지.
+4. 정합성 점검: 02 2.1절 페이지가 2절 표에 전부.
+5. 하드 게이트 체크리스트 출력, 승인.
+
+---
+
+## 가드레일
+
+### 완료도 3단계
+
+모든 문서는 상단 결정 현황 블록에 섹션별 상태를 적는다.
+
+| 값 | 뜻 | 하류에서의 취급 |
+|---|---|---|
+| 확정 | 승인됐고 바뀔 계획 없음 | 그대로 인용 |
+| 잠정 | 채웠지만 승인 전 또는 변경 가능 | 인용하되 `(잠정)` 표기 |
+| 미정 | 내용 없음 또는 결정 대기. 비고에 이유와 질문 번호 | 인용 금지 |
+
+### 승인 두 종류
+
+- **초안은 잠정·미정만.** AI가 쓴 초안에 확정은 없다. 확정은 사용자의 승인 답에서만 생긴다.
+- **확정 승인**: 모든 섹션 확정.
+- **잠정 승인**: 하드 게이트(템플릿 4장)만 충족. 나머지는 잠정·미정.
+- 잠정 승인으로도 다음 문서를 시작할 수 있다. 승인 요청 시 게이트 항목의 충족 여부를 표로 보여준다.
+- 사용자가 "100% 완성 후 진행"을 원하면 확정 승인만 인정한다.
+
+### 미정 의존 금지
+
+- 하류 문서는 상류의 미정 항목을 인용하지 않는다.
+- 필요하면 하류 작성을 멈추지 말고 해당 셀을 미정으로 두고 상류 질문을 하나 만든다.
+- 상류가 확정되면 하류의 `(잠정)` 표기와 미정 셀을 갱신한다.
+
+### 역류 절차
+
+하류 작업 중 상류를 바꿔야 할 때:
+
+1. 상류 문서의 해당 섹션을 수정하고 상태를 잠정으로 내린다.
+2. 상류 결정 현황 블록의 개정 줄을 갱신한다.
+3. 하류 문서에서 영향받는 섹션을 잠정으로 내리고 비고에 "상류 n절 변경"을 적는다.
+
+사용자에게는 이 형식으로 알린다.
+
+```
+상류 갱신 필요
+- 발견: {무엇이 필요한가}
+- 영향: {상류 문서 n절, 하류 문서 m절}
+- 다음 행동: {상류 수정 → 하류 갱신}
+```
+
+### 질문 예산
+
+- 문서 하나를 시작할 때 질문은 최대 4개.
+- 답이 없는 질문은 미정으로 기록하고 진행한다. 다시 묻지 않는다.
+- 문서에 없는 판단이 필요하면 임의로 채우지 않고 미정 + 질문으로 남긴다.
+
+### 분량과 부록
+
+- 권장 상한: 01 120줄, 02 250줄, 03 200줄 (구분선·비고 목록 포함).
+- 넘으면 자르지 않는다. 구현 디테일(SQL, 좌표계, 프롬프트 전문)을 `appendix-{주제}.md`로 분리하자고 제안한다.
 
 ---
 
@@ -157,28 +131,38 @@ ux-flow 의 "## 데이터 모델" 섹션은 **카드만**으로 구성. 사전�
 
 | 파일 | 용도 | 언제 Read |
 |------|------|----------|
-| `doc-templates.md` | 3 개 문서 유형 템플릿 + ux-flow 데이터 모델 섹션 양식 | 각 Phase 시작 시 |
-| `sql-reserved-words.md` | PG 예약어 + 흔한 충돌 단어 + 권장 대안 | Phase 2 사전 작성/갱신 시 |
+| `resources/doc-templates.md` | 공통 규칙, 템플릿 3종, 하드 게이트, 정합성 점검 | 시작 절차 4단계, 각 문서 작성 시 |
+| `resources/sql-reserved-words.md` | 02 3.2절 예상 테이블명 충돌 검사 | 02 작성 시 |
 
 ### 참조하는 외부 리소스 (복제하지 않음)
 
 | 파일 | 위치 | 언제 Read |
 |------|------|----------|
-| `components.md` | `component-work/resources/` | Phase 2 (재활용성 확인) |
-| `taxonomy-index.md` | `component-work/resources/` | Phase 2 (카테고리 매핑) |
-| `mui-theme.md` | `component-work/resources/` | Phase 3 (현재 토큰 확인) |
+| `components.md` | `.claude/skills/component-work/resources/` | 02 (재활용 확인) |
+| `taxonomy-index.md` | `.claude/skills/component-work/resources/` | 02 (신규 카테고리) |
+| `mui-theme.md` | `.claude/skills/component-work/resources/` | 03 (현재 토큰) |
+| `layoutTaxonomyData.js` | `src/data/` | 03 2절 (아키타입 id) |
+
+### 산출물을 읽는 스킬
+
+| 스킬 | 읽는 섹션 |
+|---|---|
+| `/supabase-integration` | 02 3.2절 데이터 모델 활용(사전), 2.1절 페이지 리스트, 1절 UX-flow 단계 표, 5절 컴포넌트 리스트 |
+| `/visual-asset-prompt` | 03 4절 이미지·에셋 방향(FORMAT / LOOK / SUBJECT), 4.1절 레퍼런스 |
+| `/layout-composer` | 03 2절 레이아웃 전략(아키타입, 콘텐츠 신호 4축) |
+| `/component-work` | 02 5절, 03 3절·5절 |
 
 ---
 
 ## 핵심 원칙
 
-- **데이터 모델은 ux-flow 단독 소유**. `/supabase-integration` 은 이 문서를 읽기만. 직접 수정 금지. 구현 제약은 보고만 가능, 사용자가 다시 `/project-planning` 을 호출해 ux-flow 를 갱신해야 함.
-- **본문은 쉬운 설명, 디테일은 부록**. 분량은 필요한 만큼. 본문에 SQL/컬럼/제약 표가 보이면 안 됨. 컴포넌트 상세 표는 `appendix-screen-component-map.md` 로 분리.
-- **어려운 용어 금지**. "엔티티" / "M:N" / "FK" / "TTL" 같은 개발 용어 본문 등장 금지. 한국어로 풀어쓰기.
-- **flowchart 다이어그램 금지** (UX 플로우 mermaid). 시나리오 흐름 1줄 + 화면-데이터 매트릭스로 흐름 표현. mermaid 는 관계도 (`erDiagram`) 만 허용.
-- **시나리오 = 데이터 관점의 서사**. 각 시나리오 양식에 "다루는 데이터" 줄 강제. 어떤 데이터가 W (생성/수정), 어떤 게 R (읽기) 인지 명시.
-- **승인 게이트는 3 단답 체크**. 모호한 "맞나요?" 금지. 디자이너가 ✅/❌ 로 답할 수 있는 3개 질문만.
-- **승인 없이 다음 Phase 진행 금지**. 각 Phase 는 독립적 승인 단위.
-- **개조식 우선**. 기획 문서는 산문보다 구조화된 목록/표.
-- **기존 컴포넌트 재활용 우선**. ux-flow 의 컴포넌트 리스트에서 반드시 기존 것 먼저 확인.
-- **레퍼런스 이미지는 사용자 제공**. Claude 가 임의로 URL 생성하지 않음.
+- **포맷은 템플릿이 기준.** 섹션 번호·제목을 바꾸지 않는다. 덧붙일 것은 H3 또는 부록으로.
+- **이름은 01에서 한 번만 짓는다.** 02·03은 글자 단위로 그대로 쓴다.
+- **표 우선, 한 셀 한 사실.** 산문은 01 2절·3절에만.
+- **렌더링 가독성(템플릿 0.4).** 표는 열 5개 이하, 셀 45자 이내. 모든 H2 앞에 `---`. 상태는 컬럼이 아니라 셀 끝 `(잠정)` 표기.
+- **다이어그램 금지.** Mermaid를 쓰지 않는다. 흐름은 단계 표, 계층은 코드 블록 트리.
+- **기존 컴포넌트 재활용 우선.** 02 5절에서 `components.md`를 먼저 확인.
+- **레퍼런스는 사용자 제공.** URL·경로를 만들지 않는다.
+- **em dash 금지.** 콜론, 쉼표, 괄호로 푼다.
+- **판단이 필요한 빈칸은 미정으로.** 임의로 채우지 않는다.
+- **스토리북 노출은 원본 참조로.** Docs 페이지(MDX)에 문서 내용을 복사하지 않는다. `import doc from '.../docs/{project}/01-project-summary.md?raw'` 뒤 `<EditorialDocument source={doc} />`(`src/components/storybookDocumentation/`)로 원본을 브랜드 테마로 그린다. 사본이 있으면 docs/ 수정이 스토리북에 반영되지 않고, MDX는 GFM 표를 파싱하지 못한다.

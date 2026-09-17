@@ -5,7 +5,7 @@
  * 직접 수정하지 마세요. 수정이 필요하면 스크립트를 수정하세요.
  *
  * 생성: pnpm generate-rules
- * 생성일: 2026-04-29
+ * 생성일: 2026-09-17
  */
 
 export const priorityMeta = {
@@ -58,7 +58,7 @@ export const ruleNodes = [
     "name": "cli-test (Skill)",
     "priority": "Skill",
     "path": ".claude/skills/cli-test/SKILL.md",
-    "description": "T3 (concept / system) 의 production 동일 LLM 호출을 CLI 로 실행. wizard UI 거치지 않고 빠른 prompt 룰 검증. 사용자가 \"/cli-test\", \"production 동일 호출\", \"실제 LLM 호출 테스트\", \"cli 로 테스트\" 등으로 호출."
+    "description": "T3 (concept / system / handoff) 의 production 동일 LLM 호출을 CLI 로 실행. wizard UI 거치지 않고 빠른 prompt 룰 검증. 사용자가 \"/cli-test\", \"production 동일 호출\", \"실제 LLM 호출 테스트\", \"cli 로 테스트\" 등으로 호출."
   },
   {
     "id": "cli-test--input-schema",
@@ -96,18 +96,18 @@ export const ruleNodes = [
     "description": "MUI 커스텀 테마 설정 규칙"
   },
   {
-    "id": "component-work--project-summary",
-    "name": "project-summary.md",
-    "priority": "Skill Resource",
-    "path": ".claude/skills/component-work/resources/project-summary.md",
-    "description": "**Starter Kit Basic**은 React + MUI + Storybook 환경을 디자이너에게 마치 디자인 툴처럼 사용할 수 있도록 도와주는 개발 환경입니다."
-  },
-  {
     "id": "component-work--refactoring-guide",
     "name": "refactoring-guide.md",
     "priority": "Skill Resource",
     "path": ".claude/skills/component-work/resources/refactoring-guide.md",
     "description": "> 리팩토링 작업 시 준수해야 할 가이드."
+  },
+  {
+    "id": "component-work--starterkit-overview",
+    "name": "starterkit-overview.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/component-work/resources/starterkit-overview.md",
+    "description": "**Starter Kit Basic**은 React + MUI + Storybook 환경을 디자이너에게 마치 디자인 툴처럼 사용할 수 있도록 도와주는 개발 환경입니다."
   },
   {
     "id": "component-work--storybook-writing",
@@ -145,18 +145,32 @@ export const ruleNodes = [
     "description": "> 외부 코드 분석 시 감지해야 할 항목과 변환 규칙"
   },
   {
+    "id": "practice-example-verify",
+    "name": "practice-example-verify (Skill)",
+    "priority": "Skill",
+    "path": ".claude/skills/practice-example-verify/SKILL.md",
+    "description": "실습예제 변환 작업 후 빠진 게 없는지 항목별로 검증하는 체크리스트 스킬. `vibe-design-starterkit-v1.0-practice/` 같은 변환 결과물 폴더 경로를 인자로 받아 실행. 사용자가 \"/practice-example-verify <path>\" 또는 \"실습예제 점검해줘\" 호출 시 사용."
+  },
+  {
     "id": "project-planning",
     "name": "project-planning (Skill)",
     "priority": "Skill",
     "path": ".claude/skills/project-planning/SKILL.md",
-    "description": "Creates structured planning documents (project-summary, ux-flow, visual-direction) in docs/ for new feature or project initiatives."
+    "description": "Creates structured planning documents (01-project-summary, 02-ux-flow, 03-visual-direction) in docs/{project}/ with a shared skeleton, a per-section status block (확정/잠정/미정), and hard gates that allow provisional approval so work can continue before every section is final."
   },
   {
     "id": "project-planning--doc-templates",
     "name": "doc-templates.md",
     "priority": "Skill Resource",
     "path": ".claude/skills/project-planning/resources/doc-templates.md",
-    "description": "> 각 Phase에서 문서 작성 시 이 템플릿의 구조를 따른다."
+    "description": "> `/project-planning` 스킬이 만드는 문서 3종(01-project-summary, 02-ux-flow, 03-visual-direction)의 단일 기준."
+  },
+  {
+    "id": "project-planning--sql-reserved-words",
+    "name": "sql-reserved-words.md",
+    "priority": "Skill Resource",
+    "path": ".claude/skills/project-planning/resources/sql-reserved-words.md",
+    "description": "`supabase-integration` 스킬의 Phase 0에서 참조하는 SSOT. ux-flow의 Entity ID Dictionary에서 뽑은 \"예상 테이블명/컬럼명\"이 아래 목록과 충돌하면 **차단**하고 사용자에게 ux-flow 갱신(이름 변경)을 요청한다."
   },
   {
     "id": "rule-visualization",
@@ -170,7 +184,7 @@ export const ruleNodes = [
     "name": "supabase-integration (Skill)",
     "priority": "Skill",
     "path": ".claude/skills/supabase-integration/SKILL.md",
-    "description": "Converts the data model in docs/{project}/02-ux-flow.md into a production-ready Supabase backend — schema, auth (email+password), RLS, client hooks, and Edge Functions for external API integration — so the user only has to think about UX and data."
+    "description": "Reads ux-flow's Entity ID Dictionary as the single input and produces data-bridge (main) plus appendix-* (db-schema / auth-design / rls-policies / api-integration / edge-functions). Read-only on ux-flow. Implementation constraints are reported back to the user, who must update ux-flow via /project-planning."
   },
   {
     "id": "supabase-integration--auth-flows",
@@ -191,7 +205,7 @@ export const ruleNodes = [
     "name": "doc-templates.md",
     "priority": "Skill Resource",
     "path": ".claude/skills/supabase-integration/resources/doc-templates.md",
-    "description": "Phase 1~5에서 산출할 4개 문서의 템플릿. 사용자에게 제시할 때는 반드시 이 구조를 따른다."
+    "description": "Phase 0.5 ~ 6 에서 산출할 문서 템플릿. 본문 1종 (`04-data-bridge.md`) + 부록 5종 (`appendix-*.md`)."
   },
   {
     "id": "supabase-integration--edge-functions",
@@ -332,13 +346,13 @@ export const ruleEdges = [
   },
   {
     "from": "component-work",
-    "to": "component-work--project-summary",
+    "to": "component-work--refactoring-guide",
     "type": "resources",
     "note": ""
   },
   {
     "from": "component-work",
-    "to": "component-work--refactoring-guide",
+    "to": "component-work--starterkit-overview",
     "type": "resources",
     "note": ""
   },
@@ -374,6 +388,12 @@ export const ruleEdges = [
   },
   {
     "from": "claude-md",
+    "to": "practice-example-verify",
+    "type": "activates",
+    "note": ""
+  },
+  {
+    "from": "claude-md",
     "to": "project-planning",
     "type": "activates",
     "note": ""
@@ -381,6 +401,12 @@ export const ruleEdges = [
   {
     "from": "project-planning",
     "to": "project-planning--doc-templates",
+    "type": "resources",
+    "note": ""
+  },
+  {
+    "from": "project-planning",
+    "to": "project-planning--sql-reserved-words",
     "type": "resources",
     "note": ""
   },
